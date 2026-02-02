@@ -1,0 +1,85 @@
+{% extends 'layout/base_bird.html' %}
+
+{% block content %}
+
+<div class="sticky top-0 bg-white/90 backdrop-blur-md z-40 border-b border-gray-100 pt-2">
+    <div class="flex w-full">
+        <div class="flex-1 hover:bg-gray-50 cursor-pointer transition flex flex-col items-center justify-center h-12 relative group">
+            <span class="font-bold text-gray-900">Para você</span>
+            <div class="absolute bottom-0 w-14 h-1 bg-blue-500 rounded-full"></div>
+        </div>
+        <div class="flex-1 hover:bg-gray-50 cursor-pointer transition flex flex-col items-center justify-center h-12 text-gray-500 font-medium">
+            <span>Seguindo</span>
+        </div>
+    </div>
+</div>
+
+<div class="flex space-x-4 px-4 py-4 border-b border-gray-100 overflow-x-auto no-scrollbar">
+    <div class="flex flex-col items-center space-y-1 min-w-[70px] cursor-pointer group">
+        <div class="h-[70px] w-[70px] rounded-full border-2 border-white ring-2 ring-gray-200 p-0.5 relative">
+            <div class="w-full h-full bg-gray-100 rounded-full flex items-center justify-center">
+                {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" class="rounded-full w-full h-full object-cover">
+                {% else %}
+                    <i class="fas fa-plus text-2xl text-gray-400"></i>
+                {% endif %}
+            </div>
+            <div class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center border-2 border-white text-xs">
+                <i class="fas fa-plus"></i>
+            </div>
+        </div>
+        <span class="text-xs text-gray-600 truncate w-16 text-center">Seu story</span>
+    </div>
+
+    {% for story in stories %}
+    <div class="flex flex-col items-center space-y-1 min-w-[70px] cursor-pointer">
+        <div class="h-[70px] w-[70px] rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500">
+            <div class="bg-white p-[2px] rounded-full w-full h-full">
+                <img src="{{ story.author.profile.avatar.url }}" class="rounded-full w-full h-full object-cover">
+            </div>
+        </div>
+        <span class="text-xs text-gray-600 truncate w-16 text-center">{{ story.author.username }}</span>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="px-4 py-4 border-b border-gray-100">
+    <div class="flex space-x-3">
+        <div class="h-10 w-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+             {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" class="h-full w-full object-cover">
+            {% endif %}
+        </div>
+        <div class="flex-1">
+            <form hx-post="{% url 'create_bird' %}" 
+                  hx-target="#feed-list" 
+                  hx-swap="afterbegin"
+                  hx-on::after-request="this.reset()">
+                {% csrf_token %}
+                <input type="text" name="content" 
+                       class="w-full text-lg placeholder-gray-500 focus:outline-none py-2 bg-transparent"
+                       placeholder="O que está acontecendo?">
+                
+                <div class="flex justify-between items-center mt-3">
+                    <div class="flex space-x-4 text-blue-500">
+                        <button type="button" class="hover:bg-blue-50 p-2 rounded-full transition"><i class="far fa-image"></i></button>
+                        <button type="button" class="hover:bg-blue-50 p-2 rounded-full transition"><i class="fas fa-video"></i></button>
+                        <button type="button" class="hover:bg-blue-50 p-2 rounded-full transition"><i class="far fa-smile"></i></button>
+                    </div>
+                    <button type="submit" class="bg-blue-500 text-white font-bold px-5 py-1.5 rounded-full hover:bg-blue-600 transition disabled:opacity-50 text-sm">
+                        Postar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="feed-list" class="pb-32">
+    {% for bird in birds %}
+        {% include 'components/bird_item.html' %}
+    {% empty %}
+        {% endfor %}
+</div>
+
+{% endblock %}
