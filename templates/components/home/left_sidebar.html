@@ -1,0 +1,84 @@
+{% load static %}
+
+<aside class="fixed left-6 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-6 p-3 py-8 rounded-[3rem] w-[76px] hidden md:flex transition-all duration-500
+              bg-white/40 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_rgba(31,38,135,0.15)] ring-1 ring-white/40">
+
+    <a href="{% url 'profile_detail' user.username %}" 
+       class="relative flex items-center justify-center transition-all duration-500 w-13 h-13 rounded-2xl group 
+              bg-white/40 border border-white/60 hover:rounded-full hover:bg-white/80 hover:scale-110 hover:shadow-lg hover:shadow-indigo-500/20 p-3
+              {% if request.resolver_match.url_name == 'profile_detail' %}ring-2 ring-indigo-400{% endif %}">
+        
+        {% if user.profile.avatar %}
+            <img src="{{ user.profile.avatar.url }}" class="w-full h-full rounded-xl object-cover group-hover:rounded-full transition-all">
+        {% else %}
+            <i class="fas fa-dove text-2xl text-transparent bg-clip-text bg-gradient-to-tr from-indigo-600 to-purple-600"></i>
+        {% endif %}
+        
+        <div class="absolute left-20 px-4 py-2 bg-slate-800/90 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 whitespace-nowrap shadow-xl translate-x-2 group-hover:translate-x-0 z-50">
+            Meu Perfil
+        </div>
+    </a>
+
+    <div class="w-8 h-[1px] bg-indigo-900/10"></div>
+
+    <nav class="flex flex-col items-center w-full gap-5">
+        
+        <a href="{% url 'home' %}" 
+           class="relative flex items-center justify-center transition-all duration-300 w-11 h-11 rounded-2xl group shadow-transparent
+                  {% if request.resolver_match.url_name == 'home' %}text-indigo-600 bg-white/80 shadow-sm{% else %}text-slate-500 hover:text-indigo-600 hover:bg-white/60{% endif %}">
+            <i class="text-xl transition-transform fas fa-home group-hover:scale-110"></i>
+            <div class="absolute left-20 px-4 py-2 bg-slate-800/90 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 whitespace-nowrap shadow-xl translate-x-2 group-hover:translate-x-0 z-50">
+                Início
+            </div>
+        </a>
+
+        <a href="{% url 'explore' %}" 
+           class="relative flex items-center justify-center transition-all duration-300 w-11 h-11 rounded-2xl group shadow-transparent
+                  {% if request.resolver_match.url_name == 'explore' %}text-purple-600 bg-white/80 shadow-sm{% else %}text-slate-500 hover:text-purple-600 hover:bg-white/60{% endif %}">
+            <i class="text-xl transition-transform fas fa-compass group-hover:scale-110"></i>
+            <div class="absolute left-20 px-4 py-2 bg-slate-800/90 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 whitespace-nowrap shadow-xl translate-x-2 group-hover:translate-x-0 z-50">
+                Explorar
+            </div>
+        </a>
+
+        <a href="{% url 'reels' %}" 
+           class="relative flex items-center justify-center transition-all duration-300 w-11 h-11 rounded-2xl group shadow-transparent
+                  {% if request.resolver_match.url_name == 'reels' %}text-pink-600 bg-white/80 shadow-sm{% else %}text-slate-500 hover:text-pink-500 hover:bg-white/60{% endif %}">
+            <i class="text-xl transition-transform fas fa-video group-hover:scale-110"></i>
+            <div class="absolute left-20 px-4 py-2 bg-slate-800/90 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 whitespace-nowrap shadow-xl translate-x-2 group-hover:translate-x-0 z-50">
+                Reels
+            </div>
+        </a>
+
+        <a href="{% url 'network_dashboard' %}" 
+           class="relative flex items-center justify-center transition-all duration-300 w-11 h-11 rounded-2xl group shadow-transparent
+                  {% if 'network' in request.path %}text-teal-600 bg-white/80 shadow-sm{% else %}text-slate-500 hover:text-teal-500 hover:bg-white/60{% endif %}">
+            <i class="text-xl transition-transform fas fa-user-friends group-hover:scale-110"></i>
+            <div class="absolute left-20 px-4 py-2 bg-slate-800/90 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 whitespace-nowrap shadow-xl translate-x-2 group-hover:translate-x-0 z-50">
+                Minha Rede
+            </div>
+        </a>
+
+        <a href="{% url 'groups' %}" 
+           class="relative flex items-center justify-center transition-all duration-300 w-11 h-11 rounded-2xl group shadow-transparent
+                  {% if 'groups' in request.path %}text-orange-600 bg-white/80 shadow-sm{% else %}text-slate-500 hover:text-orange-500 hover:bg-white/60{% endif %}">
+            <i class="text-xl transition-transform fas fa-users group-hover:scale-110"></i>
+            <div class="absolute left-20 px-4 py-2 bg-slate-800/90 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 whitespace-nowrap shadow-xl translate-x-2 group-hover:translate-x-0 z-50">
+                Comunidades
+            </div>
+        </a>
+
+    </nav>
+
+    <div class="w-8 h-[1px] mt-auto bg-indigo-900/10"></div>
+
+    <a href="{% url 'settings' %}" 
+       class="relative flex items-center justify-center transition-all duration-300 w-11 h-11 rounded-2xl group text-slate-400 hover:text-slate-900 hover:rotate-90
+              {% if 'settings' in request.path %}text-slate-800 bg-white/60{% endif %}">
+        <i class="text-xl fas fa-cog"></i>
+        <div class="absolute left-20 px-4 py-2 bg-slate-800/90 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 whitespace-nowrap shadow-xl translate-x-2 group-hover:translate-x-0 z-50">
+            Ajustes
+        </div>
+    </a>
+
+</aside>

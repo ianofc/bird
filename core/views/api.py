@@ -1,6 +1,5 @@
-# Arquivo: bird/social/views/api.py
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
@@ -9,7 +8,8 @@ import json
 import random
 from datetime import date
 
-# Importação segura do modelo
+# Tenta importar o modelo de Notificação. 
+# Se não existir ainda, o sistema usa Mock Data para não quebrar o frontend.
 try:
     from ..models import Notification
 except ImportError:
@@ -18,136 +18,154 @@ except ImportError:
 User = get_user_model()
 
 # ========================================================
-# 🔔 NOTIFICAÇÕES (AJAX)
+# 🔔 SISTEMA DE NOTIFICAÇÕES (AJAX)
 # ========================================================
 
 @login_required
+@require_GET
 def get_notifications(request):
     """
-    Retorna as últimas notificações do usuário formatadas para o frontend.
+    Retorna as últimas notificações. Se o model não existir, retorna dados de teste.
     """
-    if not Notification:
-        return JsonResponse({'notifications': [], 'unread_count': 0})
-
-    # Busca as últimas 20 notificações
-    notifs = Notification.objects.filter(recipient=request.user).order_by('-created_at')[:20]
-    unread_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
-    
     data = []
-    
-    for n in notifs:
-        # 1. Definição de Ícones e Cores (Visual)
-        icon = "fas fa-bell"
-        color = "bg-slate-500"
-        
-        if n.tipo == 'like':
-            icon = "fas fa-heart"
-            color = "bg-rose-500"
-        elif n.tipo == 'comment':
-            icon = "fas fa-comment"
-            color = "bg-blue-500"
-        elif n.tipo == 'follow':
-            icon = "fas fa-user-plus"
-            color = "bg-emerald-500"
-        elif n.tipo == 'system':
-            icon = "fas fa-shield-alt"
-            color = "bg-indigo-600"
+    unread_count = 0
 
-        # 2. Dados do Ator (Quem gerou a notificação)
-        actor_name = "Sistema"
-        actor_avatar = "https://ui-avatars.com/api/?name=System&background=334155&color=fff"
-        
-        if n.sender:
-            actor_name = n.sender.get_full_name() or n.sender.username
-            # Tenta pegar avatar se o perfil existir
-            if hasattr(n.sender, 'profile') and n.sender.profile.avatar:
-                actor_avatar = n.sender.profile.avatar.url
-            else:
-                actor_avatar = f"https://ui-avatars.com/api/?name={n.sender.first_name}&background=random"
+    # CENÁRIO 1: O Modelo Existe (Produção)
+    if Notification:
+        notifs = Notification.objects.filter(recipient=request.user).order_by('-created_at')[:20]
+        unread_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
 
-        # 3. URL de Destino (Para onde o clique leva)
-        url = "#"
-        if n.link:
-            url = n.link
-        elif n.post:
-            url = f"/social/post/{n.post.id}/" # Vai para o detalhe do post
+        for n in notifs:
+            # Lógica visual de ícones
+            icon, color = get_notification_style(n.tipo)
+            
+            # Formata tempo
+            time_str = format_time_ago(n.created_at)
 
-        # 4. Formatação da Data (Simples)
-        time_diff = timezone.now() - n.created_at
-        if time_diff.days > 0:
-            time_str = f"{time_diff.days}d atrás"
-        elif time_diff.seconds > 3600:
-            time_str = f"{time_diff.seconds // 3600}h atrás"
-        else:
-            time_str = f"{time_diff.seconds // 60}m atrás"
+            data.append({
+                'id': n.id,
+                'actor_name': n.sender.username if n.sender else "Sistema",
+                'actor_avatar': n.sender.profile.avatar.url if (n.sender and n.sender.profile.avatar) else f"https://ui-avatars.com/api/?name={n.sender.username if n.sender else 'Sys'}&background=random",
+                'message': n.message,
+                'time_ago': time_str,
+                'icon': icon,
+                'color': color,
+                'is_read': n.is_read,
+                'url': n.link if n.link else "#"
+            })
 
-        data.append({
-            'id': n.id,
-            'actor_name': actor_name,
-            'actor_avatar': actor_avatar,
-            'message': n.message,
-            'time_ago': time_str,
-            'icon': icon,
-            'color': color,
-            'is_read': n.is_read,
-            'url': url
-        })
+    # CENÁRIO 2: Mock Data (Para testes visuais quando não há dados)
+    else:
+        # Apenas para você ver o menu funcionando bonito
+        unread_count = 2
+        data = [
+            {
+                'id': 1,
+                'actor_name': 'Zios AI',
+                'actor_avatar': 'https://ui-avatars.com/api/?name=Zios&background=6366f1&color=fff',
+                'message': 'Bem-vindo ao Bird! Sua conta foi configurada.',
+                'time_ago': 'Agora',
+                'icon': 'fas fa-robot',
+                'color': 'text-indigo-500 bg-indigo-50',
+                'is_read': False,
+                'url': '#'
+            },
+            {
+                'id': 2,
+                'actor_name': 'Equipe Bird',
+                'actor_avatar': 'https://ui-avatars.com/api/?name=Bird&background=0f172a&color=fff',
+                'message': 'Novo recurso: Grupos e Comunidades disponíveis.',
+                'time_ago': '1h atrás',
+                'icon': 'fas fa-layer-group',
+                'color': 'text-blue-500 bg-blue-50',
+                'is_read': False,
+                'url': '/groups/'
+            }
+        ]
 
     return JsonResponse({'notifications': data, 'unread_count': unread_count})
+
 
 @login_required
 @require_POST
 def mark_as_read(request):
     """
-    Marca todas as notificações do usuário como lidas.
+    Marca todas como lidas.
     """
     if Notification:
         Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
     return JsonResponse({'status': 'ok'})
 
+
 # ========================================================
-# 🤖 INTEGRAÇÃO ZIOS (API)
+# 🛠️ UTILITÁRIOS INTERNOS
+# ========================================================
+
+def get_notification_style(type):
+    """Retorna (Icon Class, Color Class) baseado no tipo"""
+    if type == 'like':
+        return "fas fa-heart", "text-rose-500 bg-rose-50"
+    elif type == 'comment':
+        return "fas fa-comment", "text-blue-500 bg-blue-50"
+    elif type == 'follow':
+        return "fas fa-user-plus", "text-emerald-500 bg-emerald-50"
+    elif type == 'system':
+        return "fas fa-shield-alt", "text-slate-500 bg-slate-100"
+    return "fas fa-bell", "text-slate-500 bg-slate-100"
+
+def format_time_ago(timestamp):
+    diff = timezone.now() - timestamp
+    if diff.days > 0:
+        return f"{diff.days}d"
+    elif diff.seconds > 3600:
+        return f"{diff.seconds // 3600}h"
+    elif diff.seconds > 60:
+        return f"{diff.seconds // 60}m"
+    return "Agora"
+
+
+# ========================================================
+# 🤖 INTEGRAÇÃO ZIOS & FAST-TRACK
 # ========================================================
 
 def api_zios_chat(request): 
-    return JsonResponse({'reply': 'ZIOS Nural Link: Ativo e aguardando comandos.'})
+    """Stub para futuro chatbot"""
+    return JsonResponse({'reply': 'ZIOS Nural Link: Sistema Aurora operante.'})
 
 @csrf_exempt
 @require_POST
 def api_finalize(request):
     """
-    Endpoint para criação rápida de contas (Fast-Track) via IA.
-    Gera um usuário com matrícula automática.
+    Criação rápida de usuários (Ex: Via App Mobile ou Totem).
     """
     try:
-        data = json.loads(request.body)
+        body_data = json.loads(request.body)
         
-        # Gera credenciais únicas
-        # Formato: user.XXXXX
+        # Gera identidade única
         base_id = random.randint(10000, 99999)
         username = f"user.{base_id}"
+        matricula = f"{date.today().year}{base_id}"
         
-        # Formato Matrícula: ANO + 99 + ID
-        matricula = f"{date.today().year}99{base_id}"
-        
-        # Criação do Usuário
+        # Cria usuário
         user = User.objects.create(
             username=username,
             first_name="Novo",
             last_name="Usuário",
-            email=f"{matricula}@niocortex.temp", # Email temporário
+            email=f"{username}@bird.social",
             is_active=True
         )
-        # Senha padrão (Deve ser forçada a troca no primeiro login)
-        user.set_password('123456')
+        user.set_password('bird123') # Senha temporária padrão
         user.save()
+        
+        # Cria perfil associado se necessário (dependendo do signals.py)
+        # Profile.objects.create(user=user) 
         
         return JsonResponse({
             'status': 'success', 
-            'matricula': matricula, 
             'username': username,
-            'message': 'Usuário criado com sucesso no NioCortex.',
-            'redirect': '/social/login/'
+            'matricula': matricula,
+            'message': 'Conta Fast-Track criada.',
+            'redirect': '/login/'
         })
         
     except Exception as e:

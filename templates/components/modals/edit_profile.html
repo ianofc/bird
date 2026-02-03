@@ -1,0 +1,201 @@
+<div id="edit-profile-modal" 
+     class="fixed inset-0 z-[60] hidden" 
+     aria-labelledby="modal-title" 
+     role="dialog" 
+     aria-modal="true">
+    
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"></div>
+
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl"
+                 x-data="{ activeTab: 'basic' }">
+                
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900">Editar Perfil</h3>
+                    <button type="button" onclick="document.getElementById('edit-profile-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 transition">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <form action="{% url 'edit_profile' %}" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="flex border-b border-slate-100 bg-slate-50/50 px-6">
+                        <button type="button" @click="activeTab = 'basic'" 
+                                class="px-4 py-3 text-sm font-bold border-b-2 transition"
+                                :class="activeTab === 'basic' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'">
+                            Básico
+                        </button>
+                        <button type="button" @click="activeTab = 'visual'" 
+                                class="px-4 py-3 text-sm font-bold border-b-2 transition"
+                                :class="activeTab === 'visual' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'">
+                            Visual
+                        </button>
+                        <button type="button" @click="activeTab = 'details'" 
+                                class="px-4 py-3 text-sm font-bold border-b-2 transition"
+                                :class="activeTab === 'details' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'">
+                            Detalhes
+                        </button>
+                        <button type="button" @click="activeTab = 'interests'" 
+                                class="px-4 py-3 text-sm font-bold border-b-2 transition"
+                                :class="activeTab === 'interests' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'">
+                            Interesses
+                        </button>
+                    </div>
+
+                    <div class="p-6 h-[60vh] overflow-y-auto custom-scrollbar">
+                        
+                        <div x-show="activeTab === 'basic'" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome</label>
+                                    <input type="text" name="first_name" value="{{ user.first_name }}" class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Sobrenome</label>
+                                    <input type="text" name="last_name" value="{{ user.last_name }}" class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nome de Exibição (Completo)</label>
+                                <input type="text" name="full_name" value="{{ user.profile.full_name }}" placeholder="Como aparece no perfil" class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bio</label>
+                                <textarea name="bio" rows="3" class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Conte um pouco sobre você...">{{ user.profile.bio }}</textarea>
+                                <p class="text-xs text-slate-400 mt-1 text-right">Seja breve e marcante.</p>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cidade Atual</label>
+                                    <input type="text" name="current_city" value="{{ user.profile.current_city }}" class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cidade Natal</label>
+                                    <input type="text" name="hometown" value="{{ user.profile.hometown }}" class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div x-show="activeTab === 'visual'" style="display: none;" class="space-y-6">
+                            
+                            <div class="flex items-center gap-4 p-4 border border-slate-100 rounded-xl bg-slate-50/50">
+                                <div class="h-16 w-16 rounded-full bg-slate-200 overflow-hidden shrink-0">
+                                    {% if user.profile.avatar %}
+                                        <img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover">
+                                    {% else %}
+                                        <div class="w-full h-full flex items-center justify-center text-slate-400"><i class="fas fa-user"></i></div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-1">
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Foto de Perfil</label>
+                                    <input type="file" name="avatar" accept="image/*" class="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="block text-sm font-bold text-slate-700">Foto de Capa</label>
+                                <div class="relative h-32 w-full bg-slate-200 rounded-xl overflow-hidden border border-dashed border-slate-300 flex items-center justify-center group hover:border-indigo-400 transition">
+                                    {% if user.profile.cover_image %}
+                                        <img src="{{ user.profile.cover_image.url }}" class="absolute inset-0 w-full h-full object-cover opacity-60">
+                                    {% endif %}
+                                    <div class="relative z-10 text-center">
+                                        <i class="fas fa-cloud-upload-alt text-2xl text-slate-500 mb-1"></i>
+                                        <p class="text-xs text-slate-500 font-medium">Clique para alterar a capa</p>
+                                        <input type="file" name="cover" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div x-show="activeTab === 'details'" style="display: none;" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email Público</label>
+                                <input type="email" name="public_email" value="{{ user.profile.public_email }}" class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">WhatsApp / Telefone</label>
+                                    <input type="text" name="phone" value="{{ user.profile.phone }}" class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Data de Nascimento</label>
+                                    <input type="date" name="birth_date" value="{{ user.profile.birth_date|date:'Y-m-d' }}" class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Gênero</label>
+                                <select name="gender" class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="M" {% if user.profile.gender == 'M' %}selected{% endif %}>Masculino</option>
+                                    <option value="F" {% if user.profile.gender == 'F' %}selected{% endif %}>Feminino</option>
+                                    <option value="O" {% if user.profile.gender == 'O' %}selected{% endif %}>Outro / Prefiro não dizer</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div x-show="activeTab === 'interests'" style="display: none;" class="space-y-4">
+                            <div class="bg-indigo-50 p-3 rounded-lg flex items-start gap-2 text-xs text-indigo-700 mb-4">
+                                <i class="fas fa-info-circle mt-0.5"></i>
+                                <p>Esses dados ajudam a conectar você com pessoas parecidas. Separe os itens por vírgula.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1"><i class="fas fa-music mr-1"></i> Música</label>
+                                <input type="text" name="interest_music" value="{{ user.profile.interests.music }}" placeholder="Rock, Gospel, Jazz..." class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1"><i class="fas fa-film mr-1"></i> Filmes & Séries</label>
+                                <input type="text" name="interest_movies" value="{{ user.profile.interests.movies }}" placeholder="Interestelar, Breaking Bad..." class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1"><i class="fas fa-gamepad mr-1"></i> Games</label>
+                                <input type="text" name="interest_games" value="{{ user.profile.interests.games }}" placeholder="FIFA, LoL, CS..." class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1"><i class="fas fa-futbol mr-1"></i> Esportes</label>
+                                <input type="text" name="interest_sports" value="{{ user.profile.interests.sports }}" placeholder="Futebol, Basquete..." class="w-full rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 rounded-b-2xl">
+                        <button type="button" onclick="document.getElementById('edit-profile-modal').classList.add('hidden')" class="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-white hover:text-slate-800 border border-transparent hover:border-slate-200 transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-200 transition transform active:scale-95">
+                            Salvar Alterações
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Se quiser abrir via JS:
+    // document.getElementById('edit-profile-modal').classList.remove('hidden');
+    
+    // Auto-binding para o botão do perfil
+    document.addEventListener('DOMContentLoaded', () => {
+        const triggerBtn = document.getElementById('edit-profile-btn');
+        if(triggerBtn) {
+            triggerBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // Impede navegação se for link
+                document.getElementById('edit-profile-modal').classList.remove('hidden');
+            });
+        }
+    });
+</script>

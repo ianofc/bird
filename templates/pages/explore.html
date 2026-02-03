@@ -1,0 +1,73 @@
+{% extends 'layout/base_bird.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="flex-1 h-full overflow-y-auto no-scrollbar">
+    <div class="w-full max-w-5xl mx-auto pb-20">
+        
+        <div class="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-100 p-4">
+            <form method="get" action="{% url 'search' %}" class="relative max-w-2xl mx-auto">
+                <i class="fas fa-search absolute left-5 top-3.5 text-slate-400"></i>
+                <input type="text" name="q" value="{{ request.GET.q|default:'' }}" 
+                       class="w-full bg-slate-100 border-transparent focus:bg-white rounded-full py-3 pl-12 pr-4 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm"
+                       placeholder="Buscar pessoas, fotos ou vídeos...">
+            </form>
+        </div>
+
+        <div class="grid grid-cols-3 gap-0.5 md:gap-4 p-0.5 md:p-4">
+            {% for bird in posts %}
+                <a href="{% url 'bird_detail' bird.id %}" class="relative group aspect-square bg-slate-100 overflow-hidden cursor-pointer md:rounded-2xl block">
+                    
+                    {% if bird.post_type == 'image' and bird.image %}
+                        <img src="{{ bird.image.url }}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
+                    
+                    {% elif bird.post_type == 'video' %}
+                        {% if bird.is_processing %}
+                            <div class="w-full h-full bg-slate-800 flex flex-col items-center justify-center text-slate-500">
+                                <i class="fas fa-cog fa-spin text-2xl mb-2"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-wider">Processando</span>
+                            </div>
+                        {% elif bird.thumbnail %}
+                            <img src="{{ bird.thumbnail.url }}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110 opacity-90">
+                            <div class="absolute top-2 right-2 text-white drop-shadow-md">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white border border-white/40">
+                                    <i class="fas fa-play text-xs ml-1"></i>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="w-full h-full bg-gray-900 flex items-center justify-center">
+                                <i class="fas fa-film text-white/20 text-4xl"></i>
+                            </div>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="w-full h-full p-4 flex items-center justify-center text-center bg-gradient-to-br from-indigo-400 to-purple-500 group-hover:hue-rotate-15 transition duration-500">
+                            <p class="text-white font-bold text-xs md:text-sm line-clamp-4 leading-relaxed">
+                                "{{ bird.content|truncatechars:100 }}"
+                            </p>
+                        </div>
+                    {% endif %}
+
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-6 text-white font-bold">
+                        <span class="flex items-center gap-2"><i class="fas fa-heart"></i> {{ bird.likes.count }}</span>
+                        </div>
+
+                </a>
+
+            {% empty %}
+                <div class="col-span-3 py-32 text-center">
+                    <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 text-3xl">
+                        <i class="far fa-images"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-700 text-lg">Explorar</h3>
+                    <p class="text-slate-400">Nenhum conteúdo encontrado.</p>
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

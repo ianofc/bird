@@ -1,70 +1,177 @@
-# Arquivo: bird/social/views/network.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 
 User = get_user_model()
 
-# Importação segura
+# Importação Segura dos Novos Modelos
 try:
-    from ..models import Follow
+    from ..models import Connection, SocialBond, Notification
 except ImportError:
-    Follow = None
+    Connection = SocialBond = Notification = None
+
+# ========================================================
+# 🌐 REDE PRINCIPAL (DASHBOARD)
+# ========================================================
 
 @login_required
 def network_view(request):
     """
-    Página principal da rede ('Amigos').
-    Exibe abas de Seguidores e Seguindo.
+    Painel central de relacionamentos.
+    Lista: Seguidores, Seguindo e Laços Afetivos (Família/Amigos).
     """
-    followers_list = []
-    following_list = []
+    user = request.user
     
-    if Follow:
-        # Quem segue o usuário logado
-        followers_list = Follow.objects.filter(user_to=request.user).select_related('user_from')
-        
-        # Quem o usuário logado segue
-        following_list = Follow.objects.filter(user_from=request.user).select_related('user_to')
+    # 1. Dados de Seguir (Twitter Style)
+    followers = []
+    following = []
+    
+    if Connection:
+        followers = Connection.objects.filter(target=user, status='active').select_related('follower')
+        following = Connection.objects.filter(follower=user, status='active').select_related('target')
+
+    # 2. Dados de Laços Afetivos (Facebook/Life Style)
+    # Busca laços onde sou o requisitante OU o alvo, mas que estejam ACEITOS
+    bonds = []
+    if SocialBond:
+        bonds = SocialBond.objects.filter(
+            Q(requester=user) | Q(target=user),
+            status='active'
+        ).select_related('requester', 'target')
 
     context = {
-        'followers': followers_list,
-        'following': following_list,
+        'followers': followers,
+        'following': following,
+        'bonds': bonds,
         'section': 'network'
     }
-    return render(request, 'social/friends/list.html', context)
+    return render(request, 'pages/network/list.html', context)
+
+
+# ========================================================
+# 💡 SUGESTÕES (DISCOVERY)
+# ========================================================
 
 @login_required
 def suggestions_view(request):
     """
-    Sugestões de novas conexões (Pessoas que você talvez conheça).
+    Sugere pessoas baseadas em exclusão (quem eu ainda não sigo).
     """
     suggestions = []
-    if Follow:
+    
+    if Connection and SocialBond:
         # Pega IDs de quem eu já sigo
-        following_ids = Follow.objects.filter(user_from=request.user).values_list('user_to', flat=True)
+        following_ids = list(Connection.objects.filter(follower=request.user).values_list('target_id', flat=True))
         
-        # Busca usuários que NÃO sigo e NÃO sou eu mesmo
-        # Lógica simples: Pega aleatórios (order_by '?')
-        suggestions = User.objects.exclude(
-            id__in=following_ids
-        ).exclude(
-            id=request.user.id
-        ).order_by('?')[:20]
+        # Pega IDs de quem eu tenho laço (pai, mãe, amigo)
+        bonds_ids_1 = SocialBond.objects.filter(requester=request.user).values_list('target_id', flat=True)
+        bonds_ids_2 = SocialBond.objects.filter(target=request.user).values_list('requester_id', flat=True)
+        
+        # Junta todos os IDs "bloqueados" (já conectados)
+        exclude_ids = following_ids + list(bonds_ids_1) + list(bonds_ids_2) + [request.user.id]
 
-    return render(request, 'social/friends/suggestions.html', {'suggestions': suggestions})
+        # Busca aleatórios que não estão na lista
+        suggestions = User.objects.exclude(id__in=exclude_ids).order_by('?')[:20]
+
+    return render(request, 'pages/network/suggestions.html', {'suggestions': suggestions})
+
+
+# ========================================================
+# 📩 SOLICITAÇÕES PENDENTES (REQUESTS)
+# ========================================================
 
 @login_required
 def requests_view(request):
     """
-    Solicitações de amizade (se o sistema for fechado) ou notificações de novos seguidores.
+    Lista pedidos pendentes de Relacionamento (Ex: Alguém pediu para ser seu Pai/Namorado).
     """
-    # Como estamos usando modelo "Follow" (Assíncrono tipo Insta/Twitter), 
-    # geralmente não há "aceitar solicitação", mas podemos listar quem começou a seguir recentemente.
+    pending_requests = []
     
-    recent_followers = []
-    if Follow:
-        recent_followers = Follow.objects.filter(user_to=request.user).order_by('-created_at')[:10]
+    if SocialBond:
+        # Apenas requisições onde EU sou o alvo (target) e o status é 'pending'
+        pending_requests = SocialBond.objects.filter(
+            target=request.user, 
+            status='pending'
+        ).select_related('requester')
 
-    return render(request, 'social/friends/requests.html', {'recent_followers': recent_followers})
+    return render(request, 'pages/network/requests.html', {'requests': pending_requests})
+
+
+# ========================================================
+# ⚡ AÇÕES DE LAÇOS (ENVIAR / ACEITAR / RECUSAR)
+# ========================================================
+
+@login_required
+def request_bond(request, username, bond_type):
+    """
+    Envia um pedido de relacionamento (Ex: "Quero ser seu Pai", "Quero namorar você").
+    """
+    target_user = get_object_or_404(User, username=username)
+    
+    if target_user == request.user:
+        messages.error(request, "Você não pode criar um laço consigo mesmo.")
+        return redirect('profile_detail', username=username)
+
+    if SocialBond:
+        # Verifica se já existe qualquer laço entre os dois
+        exists = SocialBond.objects.filter(
+            (Q(requester=request.user, target=target_user) | 
+             Q(requester=target_user, target=request.user))
+        ).exists()
+
+        if exists:
+            messages.warning(request, "Já existe um vínculo ou solicitação pendente com este usuário.")
+        else:
+            # Cria a solicitação
+            SocialBond.objects.create(
+                requester=request.user,
+                target=target_user,
+                type=bond_type, # 'father', 'dating', 'friend', etc.
+                status='pending'
+            )
+            
+            # Notificação
+            if Notification:
+                Notification.objects.create(
+                    recipient=target_user,
+                    sender=request.user,
+                    tipo='bond',
+                    message=f"enviou uma solicitação de: {bond_type}.",
+                    link="/network/requests/"
+                )
+            
+            messages.success(request, f"Solicitação de {bond_type} enviada para @{username}!")
+
+    return redirect('profile_detail', username=username)
+
+
+@login_required
+def manage_bond(request, bond_id, action):
+    """
+    Aceita ou Rejeita uma solicitação.
+    Action: 'accept' ou 'reject'.
+    """
+    bond = get_object_or_404(SocialBond, id=bond_id, target=request.user)
+    
+    if action == 'accept':
+        bond.status = 'active'
+        bond.save()
+        messages.success(request, f"Você aceitou o vínculo com @{bond.requester.username}!")
+        
+        # Notifica o requisitante que foi aceito
+        if Notification:
+            Notification.objects.create(
+                recipient=bond.requester,
+                sender=request.user,
+                tipo='bond',
+                message=f"aceitou sua solicitação de {bond.get_type_display()}.",
+                link=f"/profile/{request.user.username}/"
+            )
+
+    elif action == 'reject':
+        bond.delete()
+        messages.info(request, "Solicitação recusada e removida.")
+        
+    return redirect('network_requests')

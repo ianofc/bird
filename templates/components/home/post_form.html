@@ -1,0 +1,30 @@
+<div class="px-4 py-4 border-b border-gray-100">
+    <div class="flex space-x-3">
+        <div class="h-10 w-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+             {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" class="h-full w-full object-cover">
+            {% endif %}
+        </div>
+        <div class="flex-1">
+            <form hx-post="{% url 'create_bird' %}" 
+                  hx-target="#feed-list" 
+                  hx-swap="afterbegin"
+                  hx-on::after-request="this.reset()">
+                {% csrf_token %}
+                <input type="text" name="content" 
+                       class="w-full text-lg placeholder-gray-500 focus:outline-none py-2 bg-transparent"
+                       placeholder="O que está acontecendo?">
+                
+                <div class="flex justify-between items-center mt-3">
+                    <div class="flex space-x-4 text-blue-500">
+                        <button type="button" class="hover:bg-blue-50 p-2 rounded-full transition"><i class="far fa-image"></i></button>
+                        <button type="button" class="hover:bg-blue-50 p-2 rounded-full transition"><i class="fas fa-video"></i></button>
+                    </div>
+                    <button type="submit" class="bg-blue-500 text-white font-bold px-5 py-1.5 rounded-full hover:bg-blue-600 transition disabled:opacity-50 text-sm">
+                        Postar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

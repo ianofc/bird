@@ -1,4 +1,3 @@
-# Arquivo: bird/social/views/general.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -7,125 +6,124 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-# Importação segura dos models para evitar quebras
+# Importação dos Modelos Reais
 try:
-    from ..models import Post, Notification
+    from ..models import Bird, Notification, Profile
 except ImportError:
-    Post = Notification = None
+    Bird = Notification = Profile = None
 
 # ========================================================
-# 🧭 EXPLORAR & REELS
-# ========================================================
-
-@login_required
-def explore_view(request):
-    """
-    Grid de Mídia (Masonry) - Mostra posts com imagens/vídeos.
-    """
-    media_posts = []
-    if Post:
-        media_posts = Post.objects.exclude(imagem='', video='').order_by('-created_at')[:50]
-        
-    return render(request, 'social/search/explore.html', {'media_posts': media_posts})
-
-@login_required
-def reels_view(request):
-    """
-    Visualização estilo TikTok.
-    """
-    # Aqui você carregaria os Reels do banco
-    return render(request, 'social/reels/index.html')
-
-# ========================================================
-# 🔍 BUSCA & HASHTAGS
+# 🔍 BUSCA GLOBAL & HASHTAGS
 # ========================================================
 
 @login_required
 def search_view(request):
     """
-    Busca global: Usuários e Posts.
+    Central de Busca: Procura por Pessoas e Posts.
     """
-    query = request.GET.get('q', '')
+    query = request.GET.get('q', '').strip()
     users = []
     posts = []
 
     if query:
-        # Busca usuários
-        users = User.objects.filter(
-            Q(username__icontains=query) | 
-            Q(first_name__icontains=query)
-        ).distinct()[:10]
+        # 1. Busca Usuários (Pelo Username ou Nome no Perfil)
+        if Profile:
+            users = Profile.objects.filter(
+                Q(user__username__icontains=query) | 
+                Q(full_name__icontains=query) |
+                Q(bio__icontains=query)
+            ).select_related('user')[:5] # Top 5 usuários
 
-        # Busca posts (apenas se models estiverem carregados)
-        if Post:
-            posts = Post.objects.filter(
-                Q(conteudo__icontains=query) & Q(visibilidade='publico')
-            ).order_by('-created_at')[:20]
+        # 2. Busca Conteúdo (Birds de texto, imagem ou vídeo)
+        if Bird:
+            posts = Bird.objects.filter(
+                Q(content__icontains=query)
+            ).exclude(post_type='story').order_by('-created_at')[:20]
 
     context = {
         'query': query,
         'users': users,
-        'posts': posts
+        'posts': posts,
+        'is_search': True
     }
-    return render(request, 'social/search/explore.html', context)
+    # Reutilizamos o layout do Explore, mas com os resultados da busca
+    return render(request, 'pages/explore.html', context)
+
 
 @login_required
 def hashtag_detail(request, tag_slug):
     """
-    Exibe posts contendo uma hashtag específica (simulação simples via texto).
+    Filtra posts por hashtag.
     """
     posts = []
-    if Post:
-        # Procura posts que contenham #tag no texto
-        posts = Post.objects.filter(
-            conteudo__icontains=f"#{tag_slug}",
-            visibilidade='publico'
-        ).order_by('-created_at')
+    tag = tag_slug.replace('#', '') # Remove # se vier na URL
 
-    return render(request, 'social/search/explore.html', {'posts': posts, 'hashtag': tag_slug})
+    if Bird:
+        # Busca simples por texto (Idealmente seria um modelo ManyToMany de Tags)
+        posts = Bird.objects.filter(
+            content__icontains=f"#{tag}"
+        ).exclude(post_type='story').order_by('-created_at')
+
+    context = {
+        'posts': posts,
+        'query': f"#{tag}", # Simula uma busca para a UI
+        'is_hashtag': True
+    }
+    return render(request, 'pages/explore.html', context)
+
 
 # ========================================================
-# 🔔 NOTIFICAÇÕES
+# 🔔 CENTRAL DE NOTIFICAÇÕES (PÁGINA COMPLETA)
 # ========================================================
 
 @login_required
 def notifications_view(request):
     """
-    Lista as notificações do usuário.
+    Página dedicada para ver histórico de notificações.
     """
     notifs = []
+    
     if Notification:
+        # Pega todas as notificações
         notifs = Notification.objects.filter(recipient=request.user).order_by('-created_at')[:50]
         
-        # Marca todas como lidas ao abrir a página (opcional)
-        # notifs.update(is_read=True)
+        # Opcional: Marcar todas como lidas ao abrir a página dedicada
+        # notifs.filter(is_read=False).update(is_read=True)
 
-    return render(request, 'social/notifications/list.html', {'notifications': notifs})
+    return render(request, 'pages/notifications.html', {'notifications': notifs})
+
 
 @login_required
 def mark_notification_read(request, notif_id):
     """
-    Marca uma notificação específica como lida via AJAX/HTMX.
+    Ação para marcar uma notificação específica como lida e redirecionar.
     """
     if Notification:
         notif = get_object_or_404(Notification, id=notif_id, recipient=request.user)
         notif.is_read = True
         notif.save()
+        
+        # Se tiver link, vai para o link. Se não, volta para a lista.
+        if notif.link:
+            return redirect(notif.link)
     
-    return redirect('bird_social:notifications')
+    return redirect('notifications')
+
 
 # ========================================================
-# ⚙️ CONFIGURAÇÕES E PÁGINAS ESTÁTICAS
+# ⚙️ PÁGINAS ESTÁTICAS / AUXILIARES
 # ========================================================
 
 @login_required
-def settings_view(request):
-    return render(request, 'social/pages/settings.html')
+def settings_landing(request):
+    """
+    Redireciona para a view principal de settings em extras.py
+    """
+    return redirect('settings')
 
 @login_required
-def support_view(request):
-    return render(request, 'social/pages/support.html')
-
-@login_required
-def theme_view(request):
-    return render(request, 'social/pages/themes.html')
+def support_landing(request):
+    """
+    Redireciona para a view de suporte em extras.py
+    """
+    return redirect('support')

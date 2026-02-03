@@ -1,32 +1,96 @@
-{% extends 'social/layout/base_userbird.html' %}
-{% block content %}
-<div class="max-w-2xl p-8 mx-auto mt-4 bg-white rounded-lg shadow">
-    <h1 class="mb-2 text-2xl font-bold">Criar Grupo</h1>
-    <p class="mb-6 text-sm text-gray-500">Crie um espaço para sua turma, clube ou projeto.</p>
+{% extends 'layout/base_bird.html' %}
+{% load static %}
 
-    <form method="POST" class="space-y-6">
-        {% csrf_token %}
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Nome do Grupo</label>
-            <input type="text" name="nome" required class="block w-full p-2 mt-1 border border-gray-300 rounded-md shadow-sm bg-gray-50 focus:border-blue-500 focus:ring-blue-500" placeholder="Ex: Clube de Xadrez">
+{% block main_content %}
+<div class="flex-1 flex justify-center h-full overflow-y-auto no-scrollbar">
+    <div class="w-full max-w-2xl px-4 py-8 md:py-12">
+        
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-indigo-600 mb-4 shadow-lg shadow-indigo-200">
+                <i class="fas fa-layer-group text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Criar Nova Comunidade</h1>
+            <p class="text-slate-500 font-medium mt-2 max-w-md mx-auto">Junte pessoas em torno de um interesse comum. Crie um espaço seguro e engajado.</p>
         </div>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Privacidade</label>
-            <select name="privacidade" class="block w-full p-2 mt-1 border border-gray-300 rounded-md shadow-sm bg-gray-50">
-                <option value="publico">Público (Qualquer um pode ver)</option>
-                <option value="privado">Privado (Apenas membros)</option>
-            </select>
-        </div>
+        <div class="bg-white/80 backdrop-blur-xl border border-white/60 rounded-[2.5rem] shadow-xl p-6 md:p-10 relative overflow-hidden">
+            
+            <div class="absolute -top-20 -right-20 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Descrição</label>
-            <textarea name="descricao" rows="4" class="block w-full p-2 mt-1 border border-gray-300 rounded-md shadow-sm bg-gray-50" placeholder="Qual o objetivo deste grupo?"></textarea>
-        </div>
+            <form method="POST" enctype="multipart/form-data" class="space-y-8 relative z-10" x-data="coverPreview()">
+                {% csrf_token %}
 
-        <div class="pt-4">
-            <button type="submit" class="w-full py-3 font-bold text-white transition bg-blue-600 rounded-lg hover:bg-blue-700">Criar Grupo</button>
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Capa da Comunidade</label>
+                    
+                    <div class="relative w-full h-48 rounded-3xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden group hover:border-indigo-400 transition cursor-pointer">
+                        
+                        <template x-if="preview">
+                            <img :src="preview" class="w-full h-full object-cover">
+                        </template>
+                        
+                        <div x-show="!preview" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 group-hover:text-indigo-500 transition">
+                            <i class="fas fa-cloud-upload-alt text-4xl mb-2"></i>
+                            <span class="text-sm font-bold">Clique para enviar uma imagem</span>
+                            <span class="text-xs opacity-70">(Recomendado: 1200x400px)</span>
+                        </div>
+
+                        <input type="file" name="cover" accept="image/*" @change="handleFile($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2">Nome do Grupo</label>
+                        <input type="text" name="name" required 
+                               class="w-full px-5 py-4 bg-slate-50 border-transparent rounded-2xl text-lg font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-0 transition" 
+                               placeholder="Ex: Desenvolvedores Python Brasil">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2">Descrição</label>
+                        <textarea name="description" rows="4" 
+                                  class="w-full px-5 py-4 bg-slate-50 border-transparent rounded-2xl text-base text-slate-700 placeholder-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-0 transition resize-none" 
+                                  placeholder="Qual o propósito deste grupo? Quem deve participar?"></textarea>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100 flex items-start gap-4">
+                    <div class="flex h-6 items-center">
+                        <input type="checkbox" name="is_private" id="is_private" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                    </div>
+                    <div class="text-sm leading-6">
+                        <label for="is_private" class="font-bold text-slate-900 cursor-pointer">Grupo Privado</label>
+                        <p class="text-slate-500">Se marcado, apenas membros aprovados poderão ver o conteúdo e participar das discussões.</p>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex gap-4">
+                    <a href="{% url 'groups' %}" class="flex-1 py-4 text-center font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-2xl transition">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="flex-[2] py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-xl shadow-indigo-200 transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <span>Criar Comunidade</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+
         </div>
-    </form>
+    </div>
 </div>
+
+<script>
+    function coverPreview() {
+        return {
+            preview: null,
+            handleFile(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.preview = URL.createObjectURL(file);
+                }
+            }
+        }
+    }
+</script>
 {% endblock %}

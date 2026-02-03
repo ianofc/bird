@@ -1,157 +1,205 @@
-import uuid
 from django.db import models
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.utils.timesince import timesince
 from django.utils import timezone
-from datetime import timedelta
+import json
 
-# ==========================================
-# 1. PROFILE (Perfil Híbrido: Pessoal + Profissional)
-# ==========================================
+# ========================================================
+# 📂 UTILITÁRIOS DE UPLOAD
+# ========================================================
+def upload_avatar(instance, filename):
+    return f'avatars/{instance.user.username}/{filename}'
+
+def upload_cover(instance, filename):
+    return f'covers/{instance.user.username}/{filename}'
+
+def upload_post_media(instance, filename):
+    return f'posts/{instance.author.username}/{filename}'
+
+def upload_group_cover(instance, filename):
+    return f'groups/{instance.slug}/{filename}'
+
+# ========================================================
+# 👤 PERFIL COMPLETO (PROFILE)
+# ========================================================
 class Profile(models.Model):
+    GENDER_CHOICES = (
+        ('M', 'Masculino'),
+        ('F', 'Feminino'),
+        ('O', 'Outro'),
+    )
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     
     # Identidade
-    display_name = models.CharField(max_length=50, blank=True)
-    bio = models.TextField(max_length=500, blank=True) # Aumentado para estilo LinkedIn
+    full_name = models.CharField("Nome Completo", max_length=255, blank=True)
+    cpf_document = models.CharField("CPF/Documento", max_length=20, blank=True)
+    gender = models.CharField("Gênero", max_length=1, choices=GENDER_CHOICES, default='M')
     
-    # Mídia
-    avatar = models.ImageField(upload_to='avatars/', default='defaults/avatar.png')
-    cover_image = models.ImageField(upload_to='covers/', blank=True, null=True)
+    # Datas
+    birth_date = models.DateField("Data de Nascimento", null=True, blank=True)
+    show_birth_year = models.BooleanField("Mostrar Ano?", default=False)
+
+    # Localização
+    current_city = models.CharField("Cidade Atual", max_length=100, blank=True)
+    hometown = models.CharField("Cidade Natal", max_length=100, blank=True)
+    visited_places = models.JSONField("Lugares Visitados", default=list, blank=True)
+
+    # Contato
+    phone = models.CharField("Telefone/WhatsApp", max_length=20, blank=True)
+    public_email = models.EmailField("Email Público", blank=True)
     
-    # Profissional (LinkedIn)
-    job_title = models.CharField(max_length=100, blank=True, help_text="Ex: CEO at Bird")
-    company = models.CharField(max_length=100, blank=True)
-    skills = models.CharField(max_length=500, blank=True, help_text="Separados por vírgula")
-    
-    # Meta
+    # Visual
+    bio = models.TextField("Sobre Mim", max_length=500, blank=True)
+    avatar = models.ImageField(upload_to=upload_avatar, blank=True, null=True)
+    cover_image = models.ImageField(upload_to=upload_cover, blank=True, null=True)
+
+    # Interesses (JSON)
+    interests = models.JSONField("Interesses", default=dict, blank=True)
+
     is_verified = models.BooleanField(default=False)
-    is_private = models.BooleanField(default=False) # Cadeado estilo Instagram
-    location = models.CharField(max_length=100, blank=True)
-    website = models.URLField(max_length=200, blank=True)
-    birth_date = models.DateField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    
     def __str__(self):
-        return f"@{self.user.username}"
+        return self.user.username
 
-# ==========================================
-# 2. BIRD (O Post Universal)
-# ==========================================
-class Bird(models.Model):
-    POST_TYPES = (
-        ('text', 'Bird (Texto)'),       # X/Twitter
-        ('image', 'Photo (Insta)'),     # Instagram Feed
-        ('video', 'Clip (TikTok)'),     # TikTok/Reels
-        ('story', 'Story (Snap)'),      # Snapchat (24h)
-        ('article', 'Article (Linkd)'), # LinkedIn
+    def get_age(self):
+        if not self.birth_date: return None
+        today = timezone.now().date()
+        return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+
+# ========================================================
+# 🎓 & 💼 EXPERIÊNCIA
+# ========================================================
+class WorkExperience(models.Model):
+    profile = models.ForeignKey(Profile, related_name='work_experiences', on_delete=models.CASCADE)
+    company = models.CharField("Empresa", max_length=100)
+    position = models.CharField("Cargo", max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    is_current = models.BooleanField(default=False)
+    description = models.TextField(blank=True)
+
+class Education(models.Model):
+    profile = models.ForeignKey(Profile, related_name='education_history', on_delete=models.CASCADE)
+    institution = models.CharField("Instituição", max_length=100)
+    course = models.CharField("Curso/Grau", max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+
+# ========================================================
+# ❤️ LAÇOS SOCIAIS
+# ========================================================
+class SocialBond(models.Model):
+    TYPES = (
+        ('friend', 'Amigo'),
+        ('dating', 'Namorando'),
+        ('married', 'Casado(a)'),
+        ('father', 'Pai'),
+        ('mother', 'Mãe'),
+        ('sibling', 'Irmão/Irmã'),
     )
+    STATUS = (('pending', 'Pendente'), ('active', 'Aceito'), ('blocked', 'Bloqueado'))
 
-    VISIBILITY_CHOICES = (
-        ('public', 'Público'),
-        ('connections', 'Conexões'),
-        ('close_friends', 'Melhores Amigos'),
-        ('private', 'Apenas Eu'),
-    )
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='birds')
-    
-    # Classificação
-    post_type = models.CharField(max_length=20, choices=POST_TYPES, default='text')
-    visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='public')
-    
-    # Conteúdo
-    content = models.TextField(blank=True) # TextField para aceitar artigos longos
-    image = models.ImageField(upload_to='posts/images/', blank=True, null=True)
-    video = models.FileField(upload_to='posts/videos/', blank=True, null=True)
-    
-    # Stories e Expiração
-    expires_at = models.DateTimeField(null=True, blank=True) # Para Stories
-    
-    # Metadados de Engajamento
-    likes = models.ManyToManyField(User, related_name='liked_birds', blank=True)
-    views_count = models.PositiveIntegerField(default=0)
-    saved_by = models.ManyToManyField(User, related_name='saved_birds', blank=True) # "Salvar" do Insta
-    
-    # Estrutura de Thread/Share
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
-    original_bird = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='rebirds')
-    
+    requester = models.ForeignKey(User, related_name='bonds_requested', on_delete=models.CASCADE)
+    target = models.ForeignKey(User, related_name='bonds_received', on_delete=models.CASCADE)
+    type = models.CharField(max_length=20, choices=TYPES)
+    status = models.CharField(max_length=10, choices=STATUS, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['post_type', 'created_at']),
-        ]
+        unique_together = ('requester', 'target', 'type')
 
-    def save(self, *args, **kwargs):
-        # Lógica automática para Stories (expira em 24h)
-        if self.post_type == 'story' and not self.expires_at:
-            self.expires_at = timezone.now() + timedelta(hours=24)
-        super().save(*args, **kwargs)
-
-    @property
-    def is_active(self):
-        if self.expires_at and timezone.now() > self.expires_at:
-            return False
-        return True
-
-# ==========================================
-# 3. CONEXÕES (Seguir + Amigos)
-# ==========================================
+# ========================================================
+# 📡 CONEXÕES (FOLLOW)
+# ========================================================
 class Connection(models.Model):
-    # Usaremos um modelo assimétrico para "Seguir" (Twitter/Insta)
-    # Mas podemos inferir "Amizade" (Facebook) se ambos se seguem.
-    
     follower = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE)
     target = models.ForeignKey(User, related_name='followers', on_delete=models.CASCADE)
-    
-    status = models.CharField(max_length=20, choices=[('active', 'Ativo'), ('muted', 'Silenciado')], default='active')
-    is_close_friend = models.BooleanField(default=False) # "Close Friends" do Insta
-    
+    connection_type = models.CharField(max_length=20, default='follow')
+    status = models.CharField(max_length=10, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('follower', 'target')
 
-# ==========================================
-# 4. SIGNALS
-# ==========================================
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
+# ========================================================
+# 🦅 POSTAGENS (BIRDS)
+# ========================================================
+class Bird(models.Model):
+    POST_TYPES = (('text', 'Texto'), ('image', 'Imagem'), ('video', 'Vídeo'))
 
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
-    
-    # ... (Mantenha o código anterior de Profile, Bird, Connection)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='birds')
+    content = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to=upload_post_media, blank=True, null=True)
+    video = models.FileField(upload_to=upload_post_media, blank=True, null=True)
+    thumbnail = models.ImageField(upload_to='thumbnails/', blank=True, null=True)
+    post_type = models.CharField(max_length=10, choices=POST_TYPES, default='text')
+    is_processing = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    likes = models.ManyToManyField(User, related_name='liked_birds', blank=True)
 
-# ==========================================
-# 6. COMMUNITIES (Grupos)
-# ==========================================
+    def save(self, *args, **kwargs):
+        if self.video and not self.post_type:
+            self.post_type = 'video'
+            self.is_processing = True
+        elif self.image and not self.post_type:
+            self.post_type = 'image'
+        elif not self.post_type:
+            self.post_type = 'text'
+        super().save(*args, **kwargs)
+
+# ========================================================
+# 👥 COMUNIDADES (Correção Aqui)
+# ========================================================
 class Community(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
-    cover_image = models.ImageField(upload_to='communities/covers/', blank=True, null=True)
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_communities')
+    capa = models.ImageField(upload_to=upload_group_cover, blank=True, null=True)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)
     members = models.ManyToManyField(User, through='CommunityMember', related_name='communities')
+    is_private = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
 
 class CommunityMember(models.Model):
+    ROLES = (('member', 'Membro'), ('moderator', 'Moderador'), ('admin', 'Admin'))
     community = models.ForeignKey(Community, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=20, choices=[('admin', 'Admin'), ('member', 'Membro')], default='member')
+    role = models.CharField(max_length=20, choices=ROLES, default='member')
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('community', 'user')
+
+# ========================================================
+# 🔔 & 💬 OUTROS
+# ========================================================
+class Notification(models.Model):
+    recipient = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=20)
+    message = models.CharField(max_length=255)
+    link = models.CharField(max_length=255, blank=True, null=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class Evento(models.Model):
+    titulo = models.CharField(max_length=200)
+    descricao = models.TextField()
+    local = models.CharField(max_length=200)
+    data_inicio = models.DateTimeField()
+    participantes = models.ManyToManyField(User, related_name='eventos_participando', blank=True)
+    criador = models.ForeignKey(User, on_delete=models.CASCADE)
+
+class Room(models.Model):
+    participants = models.ManyToManyField(User, related_name='chat_rooms')
+    updated_at = models.DateTimeField(auto_now=True)
+
+class Message(models.Model):
+    room = models.ForeignKey(Room, related_name='messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)

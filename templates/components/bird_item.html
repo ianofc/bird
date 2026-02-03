@@ -1,61 +1,121 @@
-<div class="mb-4 border-b border-gray-100 pb-4">
+<div id="bird-{{ bird.id }}" class="bg-white/90 backdrop-blur-xl border border-white/60 rounded-3xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 mb-6 relative group">
     
-    <div class="flex items-center justify-between px-4 py-3">
-        <div class="flex items-center space-x-2">
-            <div class="h-8 w-8 rounded-full bg-gray-200 overflow-hidden ring-1 ring-gray-100">
-                <img src="{{ bird.author.profile.avatar.url }}" class="h-full w-full object-cover">
-            </div>
-            <div class="leading-tight">
-                <div class="flex items-center space-x-1">
-                    <span class="font-bold text-sm text-gray-900">{{ bird.author.username }}</span>
-                    {% if bird.author.profile.is_verified %}
-                        <i class="fas fa-certificate text-blue-500 text-[10px]"></i>
+    <div class="flex items-center justify-between px-5 py-4">
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'profile_detail' bird.author.username %}" class="block">
+                <div class="h-10 w-10 rounded-full bg-indigo-50 ring-2 ring-white cursor-pointer overflow-hidden transition hover:scale-105">
+                    {% if bird.author.profile.avatar %}
+                        <img src="{{ bird.author.profile.avatar.url }}" class="h-full w-full object-cover">
+                    {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ bird.author.username }}&background=random" class="h-full w-full object-cover">
                     {% endif %}
-                    <span class="text-gray-400 text-xs">• {{ bird.created_at|timesince }}</span>
                 </div>
-                <div class="text-xs text-gray-500 flex items-center">
-                    <i class="fas fa-music text-[10px] mr-1"></i> 
-                    <span>Som Original - {{ bird.author.username }}</span>
+            </a>
+            
+            <div class="leading-tight">
+                <div class="flex items-center gap-1.5">
+                    <a href="{% url 'profile_detail' bird.author.username %}" class="font-bold text-sm text-slate-800 hover:text-indigo-600 transition">
+                        {{ bird.author.full_name|default:bird.author.username }}
+                    </a>
+                    {% if bird.author.profile.is_verified %}
+                        <i class="fas fa-certificate text-blue-500 text-[10px]" title="Verificado"></i>
+                    {% endif %}
                 </div>
+                <a href="{% url 'bird_detail' bird.id %}" class="text-[11px] text-slate-400 font-medium hover:underline">
+                    {{ bird.created_at|timesince }} atrás
+                </a>
             </div>
         </div>
-        <button class="text-gray-500 hover:text-gray-900"><i class="fas fa-ellipsis-h"></i></button>
-    </div>
 
-    <div class="px-4 mb-2">
-        {% if bird.content %}
-            <p class="text-gray-900 text-sm mb-2 leading-relaxed">{{ bird.content }}</p>
+        {% if request.user == bird.author %}
+        <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" class="text-slate-300 hover:text-slate-600 transition p-2">
+                <i class="fas fa-ellipsis-h"></i>
+            </button>
+            
+            <div x-show="open" @click.away="open = false" 
+                 class="absolute right-0 top-8 w-32 bg-white rounded-xl shadow-xl border border-slate-100 z-10 py-1"
+                 style="display: none;">
+                <button hx-delete="{% url 'delete_bird' bird.id %}"
+                        hx-target="#bird-{{ bird.id }}"
+                        hx-swap="outerHTML"
+                        hx-confirm="Tem certeza que deseja apagar este post?"
+                        class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2">
+                    <i class="fas fa-trash-alt"></i> Apagar
+                </button>
+            </div>
+        </div>
         {% endif %}
     </div>
 
-    {% if bird.image %}
-    <div class="w-full bg-gray-100 border-y border-gray-100">
-        <img src="{{ bird.image.url }}" class="w-full max-h-[600px] object-cover">
-    </div>
+    {% if bird.is_processing %}
+        <div class="w-full aspect-video bg-slate-100 flex flex-col items-center justify-center text-slate-400 animate-pulse border-y border-slate-100">
+            <i class="fas fa-cog fa-spin text-3xl mb-2 text-indigo-400"></i>
+            <span class="text-sm font-medium">Processando vídeo...</span>
+            <span class="text-xs">Isso pode levar alguns segundos.</span>
+        </div>
+
+    {% elif bird.video %}
+        <div class="w-full bg-black flex justify-center relative">
+            <video controls preload="metadata" 
+                   class="w-full max-h-[600px] object-contain" 
+                   {% if bird.thumbnail %}poster="{{ bird.thumbnail.url }}"{% endif %}>
+                <source src="{{ bird.video.url }}" type="video/mp4">
+                Seu navegador não suporta vídeos.
+            </video>
+        </div>
+
+    {% elif bird.image %}
+        <a href="{% url 'bird_detail' bird.id %}" class="block w-full bg-slate-50 flex justify-center relative group overflow-hidden cursor-pointer">
+            <div class="relative w-full max-h-[650px]"> 
+                <img src="{{ bird.image.url }}" class="w-full h-full object-cover object-center max-h-[600px]">
+            </div>
+            <div class="absolute bottom-0 w-full h-24 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
+        </a>
     {% endif %}
 
-    <div class="px-4 py-3 flex justify-between items-center">
-        <div class="flex space-x-4">
-            <button class="text-2xl hover:text-red-500 hover:scale-110 transition text-gray-800">
-                <i class="far fa-heart"></i>
-            </button>
-            <button class="text-2xl hover:text-blue-500 hover:scale-110 transition text-gray-800">
-                <i class="far fa-comment"></i>
-            </button>
-            <button class="text-2xl hover:text-green-500 hover:scale-110 transition text-gray-800">
-                <i class="far fa-paper-plane"></i>
+
+    <div class="px-5 pb-4 pt-3">
+        
+        <div class="flex items-center justify-between mb-3" id="action-buttons-{{ bird.id }}">
+            <div class="flex items-center gap-6">
+                <button hx-post="{% url 'toggle_like' bird.id %}" 
+                        hx-target="#action-buttons-{{ bird.id }}"
+                        hx-swap="innerHTML"
+                        class="group flex items-center gap-2 transition focus:outline-none">
+                    {% if user in bird.likes.all %}
+                        <i class="fas fa-heart text-xl text-rose-500 transition-transform group-active:scale-75"></i>
+                        <span class="text-sm font-bold text-rose-500">{{ bird.likes.count }}</span>
+                    {% else %}
+                        <i class="far fa-heart text-xl text-slate-500 group-hover:text-rose-500 transition-transform group-active:scale-75"></i>
+                        <span class="text-sm font-medium text-slate-500 group-hover:text-rose-500">{{ bird.likes.count|default:"" }}</span>
+                    {% endif %}
+                </button>
+
+                <a href="{% url 'bird_detail' bird.id %}" class="group flex items-center gap-2 transition hover:text-indigo-500 text-slate-500">
+                    <i class="far fa-comment text-xl group-active:scale-90 transition"></i>
+                </a>
+
+                <button class="group flex items-center gap-2 transition hover:text-emerald-500 text-slate-500">
+                    <i class="far fa-paper-plane text-xl group-active:scale-90 transition"></i>
+                </button>
+            </div>
+
+            <button hx-post="{% url 'toggle_save' bird.id %}" class="text-slate-400 hover:text-slate-800 transition">
+                <i class="far fa-bookmark text-xl"></i>
             </button>
         </div>
-        <button class="text-2xl hover:text-yellow-500 hover:scale-110 transition text-gray-800">
-            <i class="far fa-bookmark"></i>
-        </button>
-    </div>
 
-    <div class="px-4 text-sm font-bold text-gray-900 mb-1">
-        {{ bird.like_count }} curtidas
-    </div>
-
-    <div class="px-4 text-gray-500 text-sm cursor-pointer hover:text-gray-700">
-        Ver todos os 12 comentários
+        {% if bird.content %}
+            <div class="relative">
+                <p class="text-[15px] text-slate-800 leading-relaxed whitespace-pre-wrap">
+                    {% if bird.post_type != 'text' %}
+                        <a href="{% url 'profile_detail' bird.author.username %}" class="font-bold mr-1 hover:underline text-slate-900">{{ bird.author.username }}</a>
+                    {% endif %}
+                    {{ bird.content|urlize }}
+                </p>
+            </div>
+        {% endif %}
+        
     </div>
 </div>

@@ -1,55 +1,111 @@
-{% extends 'social/layout/base_userbird.html' %}
-{% block content %}
-<div class="max-w-5xl pt-4 mx-auto">
-    
-    <div class="flex items-center justify-between px-2 mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Grupos</h1>
-        <a href="{% url 'bird_social:group_create' %}" class="px-4 py-2 font-bold text-blue-600 transition bg-blue-100 rounded-lg hover:bg-blue-200">
-            <i class="mr-1 fa-solid fa-plus"></i> Criar Novo Grupo
-        </a>
-    </div>
+{% extends 'layout/base_bird.html' %}
+{% load static %}
 
-    <h2 class="px-2 mb-3 text-lg font-bold text-gray-600">Grupos que você gerencia/participa</h2>
-    <div class="grid grid-cols-1 gap-4 mb-8 md:grid-cols-2 lg:grid-cols-3">
-        {% for grupo in meus_grupos %}
-        <a href="{% url 'bird_social:group_detail' group_id=grupo.id %}" class="flex flex-col overflow-hidden transition bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-md">
-            <div class="relative h-24 bg-gray-300">
-                {% if grupo.capa %}
-                    <img src="{{ grupo.capa.url }}" class="object-cover w-full h-full">
-                {% else %}
-                    <div class="w-full h-full bg-gradient-to-r from-green-400 to-blue-500"></div>
-                {% endif %}
+{% block main_content %}
+<div class="flex-1 flex justify-center h-full overflow-y-auto no-scrollbar">
+    <section class="w-full max-w-[1000px] px-4 md:px-8 py-8 space-y-10">
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">Comunidades</h1>
+                <p class="text-slate-500 font-medium mt-1">Conecte-se com pessoas que amam o que você ama.</p>
             </div>
-            <div class="flex-1 p-4">
-                <h3 class="text-lg font-bold text-gray-900 truncate">{{ grupo.nome }}</h3>
-                <p class="mb-3 text-sm text-gray-500 line-clamp-2">{{ grupo.descricao }}</p>
-                <div class="flex items-center mt-auto text-xs text-gray-400">
-                    <span class="mr-2">{{ grupo.membros.count }} membros</span>
-                    {% if grupo.privado %}<i class="fa-solid fa-lock" title="Privado"></i>{% else %}<i class="fa-solid fa-globe" title="Público"></i>{% endif %}
-                </div>
-            </div>
-        </a>
-        {% empty %}
-        <div class="col-span-3 py-8 text-center text-gray-500 bg-white border border-dashed rounded-lg">
-            Você ainda não participa de nenhum grupo.
+            
+            <a href="{% url 'create_group' %}" class="group relative overflow-hidden rounded-2xl bg-slate-900 px-6 py-3 font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 hover:bg-indigo-600 hover:shadow-indigo-500/40 active:scale-95 text-sm inline-flex items-center justify-center gap-2">
+                <i class="fas fa-plus bg-white/20 p-1 rounded-md text-[10px]"></i>
+                <span>Criar Grupo</span>
+            </a>
         </div>
-        {% endfor %}
-    </div>
 
-    <h2 class="px-2 mb-3 text-lg font-bold text-gray-600">Sugestões para você</h2>
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {% for grupo in sugestoes %}
-            <div class="flex items-center gap-3 p-4 bg-white border border-gray-100 shadow-sm rounded-xl">
-                <div class="flex-shrink-0 w-12 h-12 overflow-hidden bg-gray-200 rounded-lg">
-                    {% if grupo.capa %}<img src="{{ grupo.capa.url }}" class="object-cover w-full h-full">{% endif %}
+        <div class="space-y-4">
+            <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+                <i class="fas fa-layer-group text-indigo-500"></i> Seus Grupos
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for group in meus_grupos %}
+                <a href="{% url 'group_detail' group.slug %}" class="group relative flex flex-col overflow-hidden rounded-[2rem] border border-white/50 bg-white/60 backdrop-blur-xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 hover:bg-white/80">
+                    
+                    <div class="relative h-28 overflow-hidden bg-slate-100">
+                        {% if group.capa %}
+                            <img src="{{ group.capa.url }}" class="object-cover w-full h-full transform group-hover:scale-110 transition duration-700">
+                        {% else %}
+                            <div class="w-full h-full bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 group-hover:hue-rotate-15 transition duration-500"></div>
+                        {% endif %}
+                        
+                        <div class="absolute top-3 right-3 bg-black/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg border border-white/20">
+                            {% if group.is_private %}
+                                <i class="fas fa-lock mr-1"></i> Privado
+                            {% else %}
+                                <i class="fas fa-globe mr-1"></i> Público
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="flex-1 p-5 flex flex-col">
+                        <h3 class="text-lg font-bold text-slate-800 leading-tight mb-1 group-hover:text-indigo-600 transition-colors">
+                            {{ group.name }}
+                        </h3>
+                        <p class="text-sm text-slate-500 line-clamp-2 mb-4 leading-relaxed">
+                            {{ group.description|default:"Sem descrição definida." }}
+                        </p>
+                        
+                        <div class="mt-auto flex items-center justify-between border-t border-slate-100 pt-3">
+                            <span class="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+                                <i class="fas fa-users text-indigo-400"></i> {{ group.members.count }} membros
+                            </span>
+                            <span class="text-xs font-bold text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+                                Acessar <i class="fas fa-arrow-right ml-1"></i>
+                            </span>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="col-span-full py-12 px-6 text-center rounded-[2rem] border-2 border-dashed border-slate-200 bg-white/30">
+                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400 text-2xl">
+                        <i class="far fa-comments"></i>
+                    </div>
+                    <p class="font-bold text-slate-600">Você não participa de nenhum grupo.</p>
+                    <p class="text-sm text-slate-400 mt-1">Crie um novo ou explore as sugestões abaixo.</p>
                 </div>
-                <div class="flex-1 min-w-0">
-                    <h4 class="font-bold text-gray-900 truncate">{{ grupo.nome }}</h4>
-                    <p class="text-xs text-gray-500">{{ grupo.membros.count }} membros</p>
-                </div>
-                <button class="px-3 py-1 text-sm font-bold text-blue-600 rounded bg-blue-50 hover:bg-blue-100">Entrar</button>
+                {% endfor %}
             </div>
-        {% endfor %}
-    </div>
+        </div>
+
+        <div class="space-y-4 pb-12">
+            <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+                <i class="far fa-compass text-indigo-500"></i> Sugestões para você
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {% for group in sugestoes %}
+                <div class="relative flex items-center gap-4 p-4 rounded-3xl border border-white/50 bg-white/40 backdrop-blur-md shadow-sm transition-all hover:bg-white/70 hover:shadow-md">
+                    
+                    <div class="flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden shadow-inner ring-1 ring-white/60 bg-slate-100">
+                        {% if group.capa %}
+                            <img src="{{ group.capa.url }}" class="object-cover w-full h-full">
+                        {% else %}
+                            <div class="w-full h-full bg-gradient-to-tr from-blue-300 to-indigo-300 flex items-center justify-center text-white text-lg font-bold">
+                                {{ group.name|slice:":1" }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-slate-800 truncate text-sm">{{ group.name }}</h4>
+                        <p class="text-xs text-slate-500 mt-0.5">{{ group.members.count }} membros</p>
+                    </div>
+
+                    <a href="{% url 'group_detail' group.slug %}" class="shrink-0 px-4 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-600 hover:text-white transition-colors">
+                        Ver
+                    </a>
+                </div>
+                {% empty %}
+                    <p class="text-slate-400 text-sm col-span-full italic">Nenhuma sugestão no momento.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </section>
 </div>
 {% endblock %}
