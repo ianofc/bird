@@ -1,94 +1,138 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
-from django.views.decorators.http import require_POST
+from django.conf import settings
 
 # ========================================================
-# ⚙️ CONFIGURAÇÕES (SETTINGS)
+# ⚙️ CONFIGURAÇÕES (SETTINGS CONTROLLER)
 # ========================================================
 
 @login_required
 def settings_view(request):
     """
-    Painel de controle do usuário.
-    Gerencia: Perfil, Segurança, Preferências e Notificações.
+    Controlador mestre das configurações.
+    Gerencia abas: Conta, Segurança, Privacidade e Aparência.
     """
+    user = request.user
+    profile = user.profile
+    
+    # Formulário de senha (instanciado vazios ou com dados POST)
+    password_form = PasswordChangeForm(user)
+
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
 
-        # 1. Atualização de Perfil Básico
-        if form_type == 'profile':
-            user = request.user
-            user.first_name = request.POST.get('first_name', user.first_name)
-            user.last_name = request.POST.get('last_name', user.last_name)
+        # --- 1. ATUALIZAÇÃO DE CONTA ---
+        if form_type == 'account':
             user.email = request.POST.get('email', user.email)
+            # Username geralmente não se muda fácil, mas se quiser permitir:
+            # user.username = request.POST.get('username', user.username)
             user.save()
-            messages.success(request, "Perfil atualizado com sucesso!")
+            messages.success(request, "Informações da conta salvas!")
+            return redirect('settings')
 
-        # 2. Atualização de Senha/Segurança (Stub)
+        # --- 2. SEGURANÇA (SENHA) ---
         elif form_type == 'security':
-            # Aqui entraria a lógica de PasswordChangeForm
-            messages.info(request, "Solicitação de alteração de senha enviada para o email.")
+            password_form = PasswordChangeForm(user, request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                # Importante: Mantém o usuário logado após mudar a senha
+                update_session_auth_hash(request, user)
+                messages.success(request, "Sua senha foi alterada com sucesso!")
+                return redirect('settings')
+            else:
+                messages.error(request, "Erro ao mudar senha. Verifique os campos.")
 
-        # 3. Preferências de Notificação (Stub)
-        elif form_type == 'notifications':
-            # Aqui salvaria no model Profile
-            messages.success(request, "Preferências de notificação salvas.")
+        # --- 3. PRIVACIDADE (JSON) ---
+        elif form_type == 'privacy':
+            # Atualiza o JSONField 'privacy_settings' do Profile
+            current_settings = profile.privacy_settings or {}
+            
+            # Checkboxes HTML não enviam nada se desmarcados, então verificamos a presença
+            new_settings = {
+                'is_private': request.POST.get('is_private') == 'on',
+                'show_activity': request.POST.get('show_activity') == 'on',
+                'allow_sharing': request.POST.get('allow_sharing') == 'on'
+            }
+            
+            current_settings.update(new_settings)
+            profile.privacy_settings = current_settings
+            profile.save()
+            messages.success(request, "Preferências de privacidade atualizadas.")
+            return redirect('settings')
 
-        return redirect('settings')
-        
-    return render(request, 'pages/settings.html')
+    # Contexto para renderizar a página (com dados atuais)
+    context = {
+        'password_form': password_form,
+        'privacy': profile.privacy_settings or {},
+        'active_tab': request.GET.get('tab', 'account') # Para manter a aba ativa após refresh
+    }
+    
+    return render(request, 'pages/settings.html', context)
 
 
 # ========================================================
-# 🎨 TEMAS E APARÊNCIA
+# 🎨 TEMA & APARÊNCIA
 # ========================================================
 
 @login_required
 def set_theme(request, theme_name):
     """
-    Alterna o tema visual e salva na sessão do usuário.
-    Opções: 'light', 'dark', 'aurora'
+    Define o tema visual (Light, Dark, Aurora).
+    Salva em Cookie (persistência navegador) e Sessão.
     """
-    valid_themes = ['light', 'dark', 'aurora']
+    valid_themes = ['light', 'dark', 'aurora', 'midnight']
     
-    if theme_name in valid_themes:
-        # Salva na sessão (persistência temporária)
-        # O ideal é salvar no Profile do banco de dados também
-        request.session['theme'] = theme_name
-        messages.success(request, f"Tema alterado para {theme_name.title()}!")
+    if theme_name not in valid_themes:
+        theme_name = 'aurora' # Default
+
+    # Define onde o usuário estava
+    next_url = request.META.get('HTTP_REFERER', 'home')
+    response = redirect(next_url)
     
-    # Redireciona para a página de onde o usuário veio
-    return redirect(request.META.get('HTTP_REFERER', 'home'))
+    # 1. Salva na sessão (Backend)
+    request.session['theme'] = theme_name
+    
+    # 2. Salva no Cookie (Frontend/CSS) - Duração de 1 ano
+    response.set_cookie('theme', theme_name, max_age=31536000)
+    
+    messages.success(request, f"Tema alterado para {theme_name.title()}")
+    return response
 
 
 # ========================================================
-# 🆘 SUPORTE E AJUDA
+# ⚠️ ZONA DE PERIGO (DELETAR CONTA)
+# ========================================================
+
+@login_required
+def delete_account(request):
+    """
+    Desativa a conta do usuário (Soft Delete).
+    Não apagamos dados do banco para segurança/auditoria.
+    """
+    if request.method == 'POST':
+        user = request.user
+        user.is_active = False
+        user.save()
+        messages.warning(request, "Sua conta foi desativada. Sentiremos sua falta!")
+        return redirect('login')
+    
+    # Se tentar acessar via GET, manda de volta pras configs
+    return redirect('settings')
+
+
+# ========================================================
+# 🆘 SUPORTE
 # ========================================================
 
 @login_required
 def support_view(request):
-    """
-    Central de ajuda com FAQs e contato.
-    """
-    # Dados Mockados de FAQ para a UI
+    """Exibe FAQ e Contato"""
     faqs = [
-        {
-            'question': 'Como criar um novo Grupo?',
-            'answer': 'Vá até a aba "Comunidades" no menu lateral e clique no botão "Criar Grupo".'
-        },
-        {
-            'question': 'Como funciona o upload de vídeos?',
-            'answer': 'Clique no ícone de vídeo na caixa de criação. Seu vídeo será processado em segundo plano e aparecerá no feed em breve.'
-        },
-        {
-            'question': 'O que é o NioCortex?',
-            'answer': 'É a inteligência artificial integrada ao Bird que ajuda a organizar seu conteúdo e sugerir conexões.'
-        },
-        {
-            'question': 'Como mudar meu tema para Aurora?',
-            'answer': 'Acesse Configurações > Aparência e selecione o tema "Aurora Glass".'
-        }
+        {'q': 'Como ganho o selo verificado?', 'a': 'O selo é concedido a perfis autênticos e notáveis.'},
+        {'q': 'Como criar uma comunidade?', 'a': 'Vá em "Comunidades" > "Nova".'},
+        {'q': 'O que é o modo Aurora?', 'a': 'É nosso design exclusivo focado em fluidez visual.'},
     ]
-
     return render(request, 'pages/support.html', {'faqs': faqs})

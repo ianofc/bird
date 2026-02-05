@@ -1,99 +1,206 @@
-{% extends 'social/layout/base_userbird.html' %}
+{% extends 'layout/base_bird.html' %}
 {% load static %}
 
-{% block content %}
-<div class="container max-w-5xl mx-auto mt-8 px-4">
-    <div class="flex flex-col gap-8 md:flex-row">
-        
-        <div class="w-full md:w-72 space-y-2">
-            <h1 class="mb-6 text-3xl font-black text-[var(--text-main)] font-display tracking-tight">Configurações</h1>
-            
-            <nav class="space-y-1">
-                <a href="#" class="flex items-center gap-3 px-5 py-3.5 font-bold rounded-2xl bg-[var(--primary)] text-white shadow-lg shadow-primary/20 transition-all">
-                    <i class="fas fa-cog w-5 text-center"></i> Geral
-                </a>
-                
-                <a href="{% url 'bird_social:profile_edit' %}" class="flex items-center gap-3 px-5 py-3.5 font-bold rounded-2xl text-[var(--text-muted)] hover:bg-[var(--primary)]/10 hover:text-[var(--primary)] transition-all">
-                    <i class="fas fa-user-edit w-5 text-center"></i> Editar Perfil
-                </a>
-                
-                <a href="#" class="flex items-center gap-3 px-5 py-3.5 font-bold rounded-2xl text-[var(--text-muted)] hover:bg-[var(--primary)]/10 hover:text-[var(--primary)] transition-all">
-                    <i class="fas fa-bell w-5 text-center"></i> Notificações
-                </a>
+{% block main_content %}
+<div class="relative min-h-full w-full overflow-y-auto no-scrollbar font-sans text-slate-800" x-data="{ currentTab: 'account' }">
 
-                <div class="h-px bg-[var(--border-color)] my-4 opacity-50"></div>
+    <div class="fixed inset-0 -z-10 bg-[#F5F7FA]">
+        <div class="absolute top-[10%] right-[10%] w-[400px] h-[400px] bg-emerald-300/20 rounded-full blur-[100px] animate-pulse"></div>
+        <div class="absolute bottom-[10%] left-[5%] w-[500px] h-[500px] bg-blue-300/20 rounded-full blur-[120px] animate-pulse delay-1000"></div>
+    </div>
 
-                <a href="{% url 'bird_social:support_page' %}" class="flex items-center gap-3 px-5 py-3.5 font-bold rounded-2xl text-[var(--text-muted)] hover:bg-[var(--primary)]/10 hover:text-[var(--primary)] transition-all">
-                    <i class="fas fa-question-circle w-5 text-center"></i> Ajuda e Suporte
-                </a>
-            </nav>
+    <div class="max-w-5xl mx-auto px-4 py-8 pb-32">
+
+        <div class="flex items-center gap-4 mb-8">
+            <a href="{% url 'profile_detail' user.username %}" class="w-10 h-10 rounded-full bg-white/60 backdrop-blur-md border border-white/60 flex items-center justify-center text-slate-600 hover:bg-white transition shadow-sm">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Ajustes & Privacidade</h1>
         </div>
 
-        <div class="flex-1 p-1 md:p-8 glass-panel rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-card)]/50 backdrop-blur-xl shadow-2xl">
-            <div class="p-6 md:p-0">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-[var(--text-main)]">Preferências do Sistema</h2>
-                    <p class="text-sm text-[var(--text-muted)] mt-1">Gerencie como o NioCortex se comporta para você.</p>
-                </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-                <form method="POST" class="space-y-10">
-                    {% csrf_token %}
+            <div class="lg:col-span-3">
+                <div class="bg-white/60 backdrop-blur-xl border border-white/60 rounded-[2rem] p-4 shadow-sm sticky top-24 space-y-1">
                     
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-2 text-[var(--primary)] font-bold uppercase text-xs tracking-widest">
-                            <i class="fas fa-language"></i> Localização
-                        </div>
-                        <div>
-                            <label class="block mb-2 text-sm font-bold text-[var(--text-main)]">Idioma do Sistema</label>
-                            <select name="language" class="w-full p-4 border rounded-2xl bg-[var(--bg-body)]/50 border-[var(--border-color)] focus:ring-2 focus:ring-[var(--primary)] text-[var(--text-main)] outline-none transition-all appearance-none cursor-pointer">
-                                <option value="pt-br" selected>🇧🇷 Português (Brasil)</option>
-                                <option value="en-us">🇺🇸 English (United States)</option>
-                                <option value="es">🇪🇸 Español</option>
-                            </select>
-                            <p class="text-[10px] text-[var(--text-muted)] mt-2 ml-1">Isso afetará menus, botões e notificações automáticas.</p>
-                        </div>
-                    </div>
+                    <button @click="currentTab = 'account'" 
+                            class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 transition"
+                            :class="currentTab === 'account' ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-white/50'">
+                        <i class="fas fa-user-circle text-lg w-6"></i> Conta
+                    </button>
 
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-2 text-[var(--primary)] font-bold uppercase text-xs tracking-widest">
-                            <i class="fas fa-eye"></i> Filtros de Conteúdo
-                        </div>
-                        
-                        <div class="grid gap-4">
-                            <div class="flex items-center justify-between p-5 border rounded-2xl bg-[var(--bg-body)]/30 border-[var(--border-color)] hover:bg-[var(--bg-body)]/50 transition-colors">
-                                <div class="pr-4">
-                                    <p class="font-bold text-[var(--text-main)]">Conteúdo Político</p>
-                                    <p class="text-xs text-[var(--text-muted)]">Permitir que publicações sobre política apareçam na sua timeline principal.</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="allow_politics" class="sr-only peer">
-                                    <div class="w-12 h-6 bg-gray-300/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
-                                </label>
-                            </div>
+                    <button @click="currentTab = 'security'" 
+                            class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 transition"
+                            :class="currentTab === 'security' ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-white/50'">
+                        <i class="fas fa-shield-alt text-lg w-6"></i> Segurança
+                    </button>
 
-                            <div class="flex items-center justify-between p-5 border rounded-2xl bg-[var(--bg-body)]/30 border-[var(--border-color)] hover:bg-[var(--bg-body)]/50 transition-colors">
-                                <div class="pr-4">
-                                    <p class="font-bold text-[var(--text-main)]">Modo Seguro (Conteúdo Sensível)</p>
-                                    <p class="text-xs text-[var(--text-muted)]">Desfocar automaticamente fotos ou vídeos que possam conter material sensível ou violento.</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="safe_mode" checked class="sr-only peer">
-                                    <div class="w-12 h-6 bg-gray-300/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
+                    <button @click="currentTab = 'privacy'" 
+                            class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 transition"
+                            :class="currentTab === 'privacy' ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-white/50'">
+                        <i class="fas fa-lock text-lg w-6"></i> Privacidade
+                    </button>
 
-                    <div class="pt-8 border-t border-[var(--border-color)] flex flex-col md:flex-row items-center justify-between gap-4">
-                        <p class="text-xs text-[var(--text-muted)] italic text-center md:text-left">
-                            <i class="fas fa-info-circle mr-1"></i> Algumas alterações podem levar alguns instantes para serem aplicadas globalmente.
-                        </p>
-                        <button type="submit" class="w-full md:w-auto px-10 py-4 font-black text-white shadow-xl shadow-primary/30 bg-[var(--primary)] rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all">
-                            SALVAR ALTERAÇÕES
-                        </button>
-                    </div>
-                </form>
+                    <button @click="currentTab = 'display'" 
+                            class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 transition"
+                            :class="currentTab === 'display' ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-white/50'">
+                        <i class="fas fa-paint-brush text-lg w-6"></i> Aparência
+                    </button>
+
+                    <div class="h-px bg-slate-200/60 my-2"></div>
+
+                    <a href="{% url 'logout' %}" class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 text-red-500 hover:bg-red-50 transition">
+                        <i class="fas fa-sign-out-alt text-lg w-6"></i> Sair
+                    </a>
+
+                </div>
             </div>
+
+            <div class="lg:col-span-9">
+                <div class="bg-white/70 backdrop-blur-xl border border-white/80 rounded-[2.5rem] p-8 shadow-[0_8px_40px_rgb(0,0,0,0.04)] min-h-[500px]">
+
+                    <div x-show="currentTab === 'account'" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
+                        <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+                            <i class="fas fa-user-circle text-indigo-500"></i> Informações da Conta
+                        </h2>
+
+                        <form class="space-y-6 max-w-xl">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nome de Usuário</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 font-bold">@</span>
+                                    <input type="text" value="{{ user.username }}" disabled class="w-full pl-8 pr-4 py-3 rounded-xl bg-slate-100 border-transparent text-slate-500 font-bold cursor-not-allowed">
+                                </div>
+                                <p class="text-xs text-slate-400 mt-1">O nome de usuário é sua identidade única e não pode ser alterado frequentemente.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Email Principal</label>
+                                <input type="email" value="{{ user.email }}" class="w-full px-4 py-3 rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 bg-white/50">
+                            </div>
+
+                            <div class="pt-6 border-t border-slate-200">
+                                <h3 class="text-sm font-bold text-red-500 mb-2">Zona de Perigo</h3>
+                                <button type="button" class="text-red-600 text-sm font-bold hover:underline">Desativar minha conta temporariamente</button>
+                                <br>
+                                <button type="button" class="text-red-600 text-sm font-bold hover:underline mt-2">Excluir conta permanentemente</button>
+                            </div>
+
+                            <div class="pt-4 flex justify-end">
+                                <button type="button" class="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold shadow-lg shadow-slate-900/20 hover:scale-105 transition">Salvar Alterações</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div x-show="currentTab === 'security'" style="display: none;" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
+                        <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+                            <i class="fas fa-shield-alt text-emerald-500"></i> Segurança & Login
+                        </h2>
+
+                        <form class="space-y-6 max-w-xl">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Senha Atual</label>
+                                <input type="password" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 bg-white/50">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nova Senha</label>
+                                    <input type="password" class="w-full px-4 py-3 rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 bg-white/50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Confirmar Senha</label>
+                                    <input type="password" class="w-full px-4 py-3 rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 bg-white/50">
+                                </div>
+                            </div>
+
+                            <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
+                                <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+                                <div>
+                                    <h4 class="text-sm font-bold text-blue-800">Autenticação de Dois Fatores (2FA)</h4>
+                                    <p class="text-xs text-blue-600 mt-1">Adicione uma camada extra de segurança à sua conta.</p>
+                                    <button type="button" class="mt-2 text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">Configurar 2FA</button>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 flex justify-end">
+                                <button type="button" class="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold shadow-lg shadow-slate-900/20 hover:scale-105 transition">Atualizar Senha</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div x-show="currentTab === 'privacy'" style="display: none;" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
+                        <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+                            <i class="fas fa-lock text-purple-500"></i> Privacidade de Dados
+                        </h2>
+
+                        <div class="space-y-6 max-w-xl">
+                            
+                            <div class="flex items-center justify-between p-4 bg-white/50 border border-slate-100 rounded-2xl">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm">Conta Privada</h4>
+                                    <p class="text-xs text-slate-500 mt-1">Apenas pessoas que você aprovar poderão ver suas fotos e vídeos.</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center justify-between p-4 bg-white/50 border border-slate-100 rounded-2xl">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm">Status de Atividade</h4>
+                                    <p class="text-xs text-slate-500 mt-1">Permitir que contas que você segue vejam quando você esteve online pela última vez.</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center justify-between p-4 bg-white/50 border border-slate-100 rounded-2xl">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm">Permitir Compartilhamento</h4>
+                                    <p class="text-xs text-slate-500 mt-1">Deixar que outras pessoas compartilhem seus posts nos stories delas.</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div x-show="currentTab === 'display'" style="display: none;" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
+                        <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+                            <i class="fas fa-paint-brush text-pink-500"></i> Tema e Cores
+                        </h2>
+
+                        <div class="grid grid-cols-3 gap-4 mb-8">
+                            <div class="border-2 border-indigo-500 rounded-2xl p-4 bg-slate-50 cursor-pointer relative overflow-hidden">
+                                <div class="absolute top-2 right-2 text-indigo-600"><i class="fas fa-check-circle"></i></div>
+                                <div class="h-16 w-full bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200 rounded-xl mb-3"></div>
+                                <h4 class="font-bold text-slate-800 text-sm text-center">Aurora Light</h4>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50 cursor-pointer opacity-60 hover:opacity-100 transition">
+                                <div class="h-16 w-full bg-slate-800 rounded-xl mb-3"></div>
+                                <h4 class="font-bold text-slate-800 text-sm text-center">Midnight</h4>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50 cursor-pointer opacity-60 hover:opacity-100 transition">
+                                <div class="h-16 w-full bg-white border-2 border-black rounded-xl mb-3"></div>
+                                <h4 class="font-bold text-slate-800 text-sm text-center">Minimal</h4>
+                            </div>
+                        </div>
+
+                        <p class="text-sm text-slate-500 text-center italic">Mais temas serão adicionados em breve.</p>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
     </div>
 </div>

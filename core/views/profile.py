@@ -5,39 +5,41 @@ from django.db.models import Q
 from django.contrib import messages
 import json
 
-User = get_user_model()
-
-# Importação Segura dos Modelos
+# Tenta importar models, evitando erro circular se o projeto estiver iniciando
 try:
     from ..models import Bird, Connection, Profile, WorkExperience, Education, SocialBond
 except ImportError:
+    # Fallback seguro (apenas para evitar crash na importação, em runtime vai precisar dos models)
     Bird = Connection = Profile = WorkExperience = Education = SocialBond = None
 
+User = get_user_model()
+
 # ========================================================
-# 👤 VISUALIZAÇÃO DE PERFIL (DASHBOARD PESSOAL)
+# 👤 VISUALIZAÇÃO DE PERFIL
 # ========================================================
 
+@login_required
 def profile_view(request, username):
     """
-    Exibe o perfil completo com Timeline, Sobre, Fotos e Relacionamentos.
+    Exibe o perfil completo do usuário.
+    Suporta visualização própria ('me') ou de terceiros.
     """
-    # 1. Resolver o Usuário
-    if username == 'me':
-        if not request.user.is_authenticated:
-            return redirect('login')
+    # 1. Resolver quem é o usuário do perfil
+    if username == 'me' or username == request.user.username:
         profile_user = request.user
     else:
         profile_user = get_object_or_404(User, username=username)
 
-    # Garante que o perfil existe (devido aos Signals, deve existir, mas segurança nunca é demais)
+    # Garante que o perfil existe (Signals devem ter criado, mas safety first)
     try:
         profile = profile_user.profile
-    except:
-        profile = None
+    except AttributeError:
+        # Se não tiver perfil, cria um on-the-fly (fallback de segurança)
+        profile = Profile.objects.create(user=profile_user)
 
     is_own_profile = (request.user == profile_user)
     
-    # 2. Estatísticas
+    # 2. Estatísticas Sociais
     stats = {
         'followers': 0,
         'following': 0,
@@ -51,59 +53,64 @@ def profile_view(request, username):
         stats['posts_count'] = Bird.objects.filter(author=profile_user).count()
         
     if SocialBond:
-        # Conta amigos aceitos (requisitante ou alvo)
+        # Conta amigos (Conexões recíprocas do tipo 'friend')
+        # Lógica simplificada: Conta SocialBond ativos onde o usuário participa
         stats['friends_count'] = SocialBond.objects.filter(
-            (Q(requester=profile_user) | Q(target=profile_user)) & Q(type='friend', status='active')
+            (Q(requester=profile_user) | Q(target=profile_user)),
+            status='active',
+            type='friend'
         ).count()
 
-    # 3. Estado do Relacionamento (Visitante -> Dono do Perfil)
-    relationship_state = {
+    # 3. Estado do Relacionamento (Visitante -> Dono)
+    relationship = {
         'is_following': False,
-        'bond_type': None,   # ex: 'friend', 'father'
-        'bond_status': None, # ex: 'pending', 'active'
+        'is_mutual': False, # Se os dois se seguem
+        'bond_type': None,
+        'bond_status': None,
     }
 
-    if request.user.is_authenticated and not is_own_profile:
-        # Checa Follow
-        if Connection:
-            relationship_state['is_following'] = Connection.objects.filter(
-                follower=request.user, target=profile_user, status='active'
-            ).exists()
+    if not is_own_profile and Connection:
+        # Verifica Follow
+        relationship['is_following'] = Connection.objects.filter(
+            follower=request.user, target=profile_user, status='active'
+        ).exists()
         
-        # Checa Laços (Família/Amigos/Namoro)
+        # Verifica se é mútuo (Ambos se seguem)
+        is_followed_back = Connection.objects.filter(
+            follower=profile_user, target=request.user, status='active'
+        ).exists()
+        relationship['is_mutual'] = relationship['is_following'] and is_followed_back
+
+        # Verifica Laços Sociais
         if SocialBond:
             bond = SocialBond.objects.filter(
                 (Q(requester=request.user, target=profile_user) | 
                  Q(requester=profile_user, target=request.user))
             ).first()
-            
             if bond:
-                relationship_state['bond_type'] = bond.type
-                relationship_state['bond_status'] = bond.status
+                relationship['bond_type'] = bond.type
+                relationship['bond_status'] = bond.status
 
-    # 4. Dados Detalhados (Currículo)
-    work_history = []
-    education_history = []
+    # 4. Dados Complementares (Currículo e Família)
+    work_history = profile.work_experiences.all().order_by('-start_date') if hasattr(profile, 'work_experiences') else []
+    education_history = profile.education_history.all().order_by('-start_date') if hasattr(profile, 'education_history') else []
+    
     family_members = []
-    
-    if profile:
-        work_history = profile.work_experiences.all().order_by('-start_date')
-        education_history = profile.education_history.all().order_by('-start_date')
-    
     if SocialBond:
-        # Busca família (Qualquer laço exceto 'friend' e 'dating' que seja ativo)
-        family_bonds = SocialBond.objects.filter(
+        # Busca conexões que NÃO sejam apenas 'friend' ou 'dating' (consideramos família o resto)
+        # Ou podemos listar todos os amigos aqui. Vamos listar TODOS os SocialBonds ativos.
+        bonds = SocialBond.objects.filter(
             (Q(requester=profile_user) | Q(target=profile_user)),
             status='active'
-        ).exclude(type__in=['friend', 'dating', 'hookup'])
-        
-        # Processa para pegar o objeto User do parente
-        for bond in family_bonds:
-            relative = bond.target if bond.requester == profile_user else bond.requester
-            role = bond.get_type_display()
-            family_members.append({'user': relative, 'role': role})
+        )
+        for bond in bonds:
+            other_user = bond.target if bond.requester == profile_user else bond.requester
+            family_members.append({
+                'user': other_user,
+                'role': bond.get_type_display() # Ex: "Amigo", "Pai", "Namorado"
+            })
 
-    # 5. Feed do Perfil
+    # 5. Feed do Perfil (Apenas posts do usuário)
     posts = []
     if Bird:
         posts = Bird.objects.filter(author=profile_user)\
@@ -116,8 +123,7 @@ def profile_view(request, username):
         'stats': stats,
         'posts': posts,
         'is_own_profile': is_own_profile,
-        'relationship': relationship_state,
-        # Dados Extras
+        'relationship': relationship,
         'work_history': work_history,
         'education_history': education_history,
         'family_members': family_members,
@@ -127,60 +133,62 @@ def profile_view(request, username):
 
 
 # ========================================================
-# ✏️ EDIÇÃO DE PERFIL (COMPLETA)
+# ✏️ PROCESSADOR DE EDIÇÃO (BACKEND)
 # ========================================================
 
 @login_required
 def edit_profile(request):
     """
-    Processa a edição de perfil, incluindo JSON de interesses e arquivos.
+    Controlador central para edições de perfil.
+    Gerencia uploads rápidos (AJAX/Form) e edição completa.
     """
     if request.method == 'POST':
         user = request.user
-        profile = user.profile # Garantido pelos Signals
+        profile = user.profile
+        action_type = request.POST.get('action_type')
 
-        # --- 1. Dados Básicos (User) ---
-        user.first_name = request.POST.get('first_name', user.first_name)
-        user.last_name = request.POST.get('last_name', user.last_name)
-        user.save()
+        # --- CASO 1: Upload Rápido de Capa ---
+        if action_type == 'update_cover':
+            if 'cover_image' in request.FILES:
+                profile.cover_image = request.FILES['cover_image']
+                profile.save()
+                messages.success(request, 'Nova capa definida!')
+            return redirect('profile_detail', username=user.username)
 
-        # --- 2. Dados do Perfil (Profile) ---
-        profile.full_name = request.POST.get('full_name', profile.full_name)
-        profile.bio = request.POST.get('bio', profile.bio)
-        profile.current_city = request.POST.get('current_city', profile.current_city)
-        profile.hometown = request.POST.get('hometown', profile.hometown)
-        profile.phone = request.POST.get('phone', profile.phone)
-        profile.public_email = request.POST.get('public_email', profile.public_email)
-        profile.gender = request.POST.get('gender', profile.gender)
-        
-        # Datas
-        birth_date = request.POST.get('birth_date')
-        if birth_date:
-            profile.birth_date = birth_date
+        # --- CASO 2: Upload Rápido de Avatar ---
+        elif action_type == 'update_avatar':
+            if 'avatar' in request.FILES:
+                profile.avatar = request.FILES['avatar']
+                profile.save()
+                messages.success(request, 'Foto de perfil atualizada!')
+            return redirect('profile_detail', username=user.username)
 
-        # --- 3. Uploads ---
-        if request.FILES.get('avatar'):
-            profile.avatar = request.FILES.get('avatar')
-        if request.FILES.get('cover'):
-            profile.cover_image = request.FILES.get('cover')
+        # --- CASO 3: Edição de Informações (Modal/Formulário) ---
+        else:
+            # Dados do Usuário (Auth)
+            if 'first_name' in request.POST: user.first_name = request.POST['first_name']
+            if 'last_name' in request.POST: user.last_name = request.POST['last_name']
+            user.save()
 
-        # --- 4. Interesses (JSON Packing) ---
-        # Captura campos específicos do form e salva no JSONField
-        new_interests = {
-            'music': request.POST.get('interest_music', ''),
-            'movies': request.POST.get('interest_movies', ''),
-            'sports': request.POST.get('interest_sports', ''),
-            'games': request.POST.get('interest_games', '')
-        }
-        # Mescla ou sobrescreve (aqui optamos por sobrescrever as chaves enviadas)
-        current_interests = profile.interests or {}
-        current_interests.update(new_interests)
-        profile.interests = current_interests
+            # Dados do Perfil
+            profile.full_name = request.POST.get('full_name', profile.full_name)
+            profile.bio = request.POST.get('bio', profile.bio)
+            profile.current_city = request.POST.get('current_city', profile.current_city)
+            profile.hometown = request.POST.get('hometown', profile.hometown)
+            
+            # Atualiza JSON de Interesses (Preservando dados antigos)
+            current_interests = profile.interests or {}
+            
+            # Captura campos específicos se existirem no POST
+            if 'music' in request.POST: current_interests['music'] = request.POST['music']
+            if 'movies' in request.POST: current_interests['movies'] = request.POST['movies']
+            if 'games' in request.POST: current_interests['games'] = request.POST['games']
+            
+            profile.interests = current_interests
+            profile.save()
 
-        profile.save()
-        
-        messages.success(request, "Perfil atualizado com sucesso!")
-        return redirect('profile_detail', username='me')
+            messages.success(request, 'Perfil atualizado com sucesso.')
+            return redirect('profile_detail', username=user.username)
 
-    # Se for GET, redireciona para o perfil onde o modal de edição geralmente reside
-    return redirect('profile_detail', username='me')
+    # Se acessar via GET, redireciona para o próprio perfil
+    return redirect('profile_detail', username=request.user.username)

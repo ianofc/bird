@@ -2,72 +2,117 @@
 {% load static %}
 
 {% block main_content %}
-<div class="flex-1 h-full overflow-y-auto no-scrollbar">
-    <div class="w-full max-w-5xl mx-auto pb-20">
-        
-        <div class="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-100 p-4">
-            <form method="get" action="{% url 'search' %}" class="relative max-w-2xl mx-auto">
-                <i class="fas fa-search absolute left-5 top-3.5 text-slate-400"></i>
-                <input type="text" name="q" value="{{ request.GET.q|default:'' }}" 
-                       class="w-full bg-slate-100 border-transparent focus:bg-white rounded-full py-3 pl-12 pr-4 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm"
-                       placeholder="Buscar pessoas, fotos ou vídeos...">
+<div class="relative min-h-full w-full overflow-y-auto no-scrollbar font-sans text-slate-800">
+
+    <div class="fixed inset-0 -z-10 bg-[#F5F7FA]">
+        <div class="absolute top-0 left-[20%] w-[600px] h-[600px] bg-indigo-300/20 rounded-full blur-[120px] animate-pulse"></div>
+        <div class="absolute bottom-0 right-[10%] w-[500px] h-[500px] bg-pink-300/20 rounded-full blur-[120px] animate-pulse delay-1000"></div>
+    </div>
+
+    <div class="sticky top-0 z-40 px-4 pt-4 pb-2 backdrop-blur-xl bg-white/70 border-b border-white/50 shadow-sm transition-all duration-300">
+        <div class="max-w-6xl mx-auto space-y-3">
+            
+            <form action="{% url 'search' %}" method="GET" class="relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-slate-400 group-focus-within:text-indigo-500 transition"></i>
+                </div>
+                <input type="text" name="q" placeholder="Buscar pessoas, inspirações ou tags..." 
+                       class="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-100/80 border-transparent focus:bg-white focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 transition shadow-inner text-sm font-medium">
             </form>
+
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                <button class="px-5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold whitespace-nowrap shadow-md shadow-slate-900/20 transition hover:scale-105">
+                    🔥 Para Você
+                </button>
+                <button class="px-5 py-2 rounded-xl bg-white border border-white/60 text-slate-600 text-xs font-bold whitespace-nowrap hover:bg-indigo-50 hover:text-indigo-600 transition shadow-sm">
+                    🎨 Arte & Design
+                </button>
+                <button class="px-5 py-2 rounded-xl bg-white border border-white/60 text-slate-600 text-xs font-bold whitespace-nowrap hover:bg-indigo-50 hover:text-indigo-600 transition shadow-sm">
+                    🎮 Games
+                </button>
+                <button class="px-5 py-2 rounded-xl bg-white border border-white/60 text-slate-600 text-xs font-bold whitespace-nowrap hover:bg-indigo-50 hover:text-indigo-600 transition shadow-sm">
+                    🎵 Música
+                </button>
+                <button class="px-5 py-2 rounded-xl bg-white border border-white/60 text-slate-600 text-xs font-bold whitespace-nowrap hover:bg-indigo-50 hover:text-indigo-600 transition shadow-sm">
+                    💻 Tech
+                </button>
+            </div>
         </div>
+    </div>
 
-        <div class="grid grid-cols-3 gap-0.5 md:gap-4 p-0.5 md:p-4">
-            {% for bird in posts %}
-                <a href="{% url 'bird_detail' bird.id %}" class="relative group aspect-square bg-slate-100 overflow-hidden cursor-pointer md:rounded-2xl block">
+    <div class="max-w-7xl mx-auto px-1 md:px-4 py-4 pb-24">
+        
+        <div class="grid grid-cols-3 md:grid-cols-4 gap-1 md:gap-4 auto-rows-[120px] md:auto-rows-[280px]">
+            
+            {% for bird in birds %}
+                <a href="{% url 'bird_detail' bird.id %}" class="relative group aspect-square md:rounded-2xl overflow-hidden bg-slate-200 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-500 hover:z-10">
                     
-                    {% if bird.post_type == 'image' and bird.image %}
+                    {% if bird.image %}
                         <img src="{{ bird.image.url }}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
-                    
-                    {% elif bird.post_type == 'video' %}
-                        {% if bird.is_processing %}
-                            <div class="w-full h-full bg-slate-800 flex flex-col items-center justify-center text-slate-500">
-                                <i class="fas fa-cog fa-spin text-2xl mb-2"></i>
-                                <span class="text-[10px] font-bold uppercase tracking-wider">Processando</span>
-                            </div>
-                        {% elif bird.thumbnail %}
-                            <img src="{{ bird.thumbnail.url }}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110 opacity-90">
-                            <div class="absolute top-2 right-2 text-white drop-shadow-md">
-                                <i class="fas fa-video"></i>
-                            </div>
-                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white border border-white/40">
-                                    <i class="fas fa-play text-xs ml-1"></i>
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="w-full h-full bg-gray-900 flex items-center justify-center">
-                                <i class="fas fa-film text-white/20 text-4xl"></i>
-                            </div>
-                        {% endif %}
-
+                    {% elif bird.video %}
+                        <video src="{{ bird.video.url }}" class="w-full h-full object-cover opacity-90"></video>
+                        <div class="absolute top-2 right-2 bg-black/20 backdrop-blur-md rounded-full p-1.5 md:p-2">
+                            <i class="fas fa-play text-white text-[10px] md:text-sm pl-0.5"></i>
+                        </div>
                     {% else %}
-                        <div class="w-full h-full p-4 flex items-center justify-center text-center bg-gradient-to-br from-indigo-400 to-purple-500 group-hover:hue-rotate-15 transition duration-500">
-                            <p class="text-white font-bold text-xs md:text-sm line-clamp-4 leading-relaxed">
-                                "{{ bird.content|truncatechars:100 }}"
-                            </p>
+                        <div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 p-4 flex items-center justify-center text-center">
+                            <p class="text-white text-xs md:text-sm font-bold line-clamp-4">{{ bird.content }}</p>
                         </div>
                     {% endif %}
 
-                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-6 text-white font-bold">
-                        <span class="flex items-center gap-2"><i class="fas fa-heart"></i> {{ bird.likes.count }}</span>
+                    <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition duration-300 flex flex-col items-center justify-center gap-4 text-white">
+                        
+                        <div class="flex items-center gap-6 font-bold text-sm md:text-lg transform translate-y-4 group-hover:translate-y-0 transition duration-500">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-heart"></i>
+                                <span>{{ bird.likes.count }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-comment"></i>
+                                <span>{{ bird.comments.count|default:"0" }}</span>
+                            </div>
                         </div>
 
-                </a>
+                        <div class="absolute bottom-4 left-4 flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition duration-500 delay-75">
+                            <img src="{{ bird.author.profile.avatar.url|default:'https://ui-avatars.com/api/?background=random' }}" class="w-6 h-6 rounded-full border border-white/50">
+                            <span class="text-xs font-medium truncate max-w-[100px]">{{ bird.author.username }}</span>
+                        </div>
 
-            {% empty %}
-                <div class="col-span-3 py-32 text-center">
-                    <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 text-3xl">
-                        <i class="far fa-images"></i>
                     </div>
-                    <h3 class="font-bold text-slate-700 text-lg">Explorar</h3>
-                    <p class="text-slate-400">Nenhum conteúdo encontrado.</p>
+                </a>
+            {% empty %}
+                <div class="col-span-full py-20 flex flex-col items-center justify-center text-center">
+                    <div class="w-24 h-24 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center mb-4 shadow-lg animate-bounce-slow">
+                        <i class="fas fa-compass text-4xl text-indigo-300"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-slate-800">Nada para explorar ainda</h3>
+                    <p class="text-slate-500 mt-2 max-w-md">Seja o primeiro a postar algo incrível na comunidade Bird!</p>
+                    <a href="{% url 'create_bird' %}" class="mt-6 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition">
+                        Criar Publicação
+                    </a>
                 </div>
             {% endfor %}
+
         </div>
 
+        {% if birds %}
+        <div class="py-12 flex justify-center">
+            <div class="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        </div>
+        {% endif %}
+
     </div>
+
 </div>
+
+<style>
+    /* Ajuste fino para a animação do loader vazio */
+    @keyframes bounce-slow {
+        0%, 100% { transform: translateY(-5%); }
+        50% { transform: translateY(5%); }
+    }
+    .animate-bounce-slow {
+        animation: bounce-slow 3s infinite ease-in-out;
+    }
+</style>
 {% endblock %}

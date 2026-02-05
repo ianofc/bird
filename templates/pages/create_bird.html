@@ -1,0 +1,130 @@
+{% extends 'layout/base_bird.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="flex-1 h-full overflow-y-auto no-scrollbar bg-slate-100/50 flex justify-center pt-10">
+    
+    <div class="w-full max-w-[600px] px-4">
+        
+        <div class="flex items-center gap-4 mb-6">
+            <a href="{% url 'home' %}" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-600 hover:bg-slate-200 transition shadow-sm">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-2xl font-black text-slate-800">Criar Publicação</h1>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden" 
+             x-data="postCreator()">
+            
+            <form action="." method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="flex items-center gap-3 p-4">
+                    <div class="w-12 h-12 rounded-full bg-slate-200 overflow-hidden">
+                        {% if user.profile.avatar %}
+                            <img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <img src="https://ui-avatars.com/api/?name={{ user.username }}" class="w-full h-full object-cover">
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900">{{ user.profile.full_name|default:user.username }}</h3>
+                        <div class="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 rounded text-xs font-bold text-slate-600">
+                            <i class="fas fa-globe-americas"></i> Público
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-4">
+                    <textarea name="content" 
+                              rows="4" 
+                              class="w-full border-none focus:ring-0 text-xl placeholder-slate-400 resize-none p-0" 
+                              placeholder="No que você está pensando, {{ user.first_name }}?"></textarea>
+                </div>
+
+                <div class="px-4 pb-2" x-show="mediaPreview">
+                    <div class="relative rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                        <button type="button" @click="clearMedia()" class="absolute top-2 right-2 z-10 w-8 h-8 bg-white rounded-full shadow flex items-center justify-center text-slate-600 hover:text-red-500 hover:bg-red-50 transition">
+                            <i class="fas fa-times"></i>
+                        </button>
+
+                        <template x-if="mediaType === 'image'">
+                            <img :src="mediaPreview" class="w-full h-auto max-h-[400px] object-cover">
+                        </template>
+
+                        <template x-if="mediaType === 'video'">
+                            <video :src="mediaPreview" controls class="w-full h-auto max-h-[400px] bg-black"></video>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="mx-4 mb-4 p-3 border border-slate-200 rounded-xl flex items-center justify-between shadow-sm">
+                    <span class="text-sm font-bold text-slate-700 ml-2">Adicionar ao post</span>
+                    
+                    <div class="flex gap-2">
+                        <div class="relative group cursor-pointer">
+                            <div class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-green-500 text-xl" title="Foto">
+                                <i class="fas fa-images"></i>
+                            </div>
+                            <input type="file" name="image" accept="image/*" 
+                                   class="absolute inset-0 opacity-0 cursor-pointer"
+                                   @change="handleFile($event, 'image')">
+                        </div>
+
+                        <div class="relative group cursor-pointer">
+                            <div class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-rose-500 text-xl" title="Vídeo">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <input type="file" name="video" accept="video/*" 
+                                   class="absolute inset-0 opacity-0 cursor-pointer"
+                                   @change="handleFile($event, 'video')">
+                        </div>
+
+                        <div class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition text-red-500 text-xl cursor-not-allowed opacity-50">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 pt-0">
+                    <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-200 active:scale-95">
+                        Publicar
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function postCreator() {
+        return {
+            mediaPreview: null,
+            mediaType: null,
+
+            handleFile(event, type) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                if (type === 'image') {
+                    document.querySelector('input[name="video"]').value = '';
+                } else {
+                    document.querySelector('input[name="image"]').value = '';
+                }
+
+                this.mediaType = type;
+                this.mediaPreview = URL.createObjectURL(file);
+            },
+
+            clearMedia() {
+                this.mediaPreview = null;
+                this.mediaType = null;
+                document.querySelector('input[name="image"]').value = '';
+                document.querySelector('input[name="video"]').value = '';
+            }
+        }
+    }
+</script>
+{% endblock %}
