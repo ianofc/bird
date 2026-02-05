@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.contrib import messages
 from datetime import timedelta
 
-# Importação segura dos models (Permite rodar sem o app Events criado)
+# Importação Segura (Tenta importar, se falhar, define como None)
 try:
     from ..models import Evento
 except ImportError:
@@ -35,7 +35,8 @@ def events_list_view(request):
 
     context = {
         'events': events,
-        'using_mock': using_mock
+        'using_mock': using_mock,
+        'section': 'events'
     }
     return render(request, 'events/list.html', context)
 
@@ -100,33 +101,26 @@ def event_attend(request, event_id):
 
 
 # ========================================================
-# 🗓️ CALENDÁRIO (VIEW)
-# ========================================================
-
-@login_required
-def calendar_view(request):
-    """
-    Visualização de calendário (Pode ser integrado com FullCalendar.js).
-    """
-    return render(request, 'events/calendar.html')
-
-
-# ========================================================
-# 🛠️ MOCK DATA GENERATOR
+# 🛠️ MOCK DATA GENERATOR (DADOS FICTÍCIOS)
 # ========================================================
 
 def get_mock_events():
-    """Gera eventos falsos para popular a UI"""
+    """Gera eventos falsos para popular a UI quando não há banco"""
     now = timezone.now()
-    return [
+    
+    class MockImage:
+        def __init__(self, url): self.url = url
+
+    # Simula objetos com atributos (dot notation) para o template
+    events_data = [
         {
             'id': 1,
             'titulo': 'Bird Tech Summit 2026',
             'descricao': 'O maior evento de tecnologia e inovação do ecossistema Bird. Palestras sobre IA, Django e Design System.',
             'local': 'Auditório NioCortex, Bahia',
             'data_inicio': now + timedelta(days=5),
-            'imagem': {'url': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80'},
-            'participantes': {'count': 142}
+            'capa': MockImage('https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80'),
+            'participantes_count': 142
         },
         {
             'id': 2,
@@ -134,16 +128,17 @@ def get_mock_events():
             'descricao': 'Aprenda a criar aplicações modernas com Django e HTMX em um final de semana.',
             'local': 'Online (Google Meet)',
             'data_inicio': now + timedelta(days=12),
-            'imagem': {'url': 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80'},
-            'participantes': {'count': 56}
+            'capa': MockImage('https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80'),
+            'participantes_count': 56
         },
         {
             'id': 3,
             'titulo': 'Meetup: Design System Aurora',
-            'descricao': 'Dissecando os princípios visuais do Glassmorphism e como aplicá-los.',
+            'descricao': 'Dissecando os princípios visuais do Glassmorphism e como aplicá-los na prática.',
             'local': 'Coworking Central',
             'data_inicio': now + timedelta(days=20),
-            'imagem': {'url': 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80'},
-            'participantes': {'count': 89}
+            'capa': MockImage('https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80'),
+            'participantes_count': 89
         }
     ]
+    return events_data

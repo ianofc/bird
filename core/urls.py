@@ -1,46 +1,39 @@
-from django.contrib import admin
 from django.urls import path
-from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 
-# Importando TODOS os módulos de visualização
-from core.views import (
-    home,           # Feed e Registro
+# Importando TODAS as Views do App Core
+from .views import (
+    feed,           # Feed Principal
+    auth,           # Registro Customizado
     posts,          # CRUD de Posts
     profile,        # Perfil e Edição
-    network,        # Rede, Sugestões e Solicitações
+    network,        # Rede (Amigos, Requests)
     discovery,      # Explorar e Reels
-    extras,         # Configurações e Temas
-    interactions,   # Likes, Comentários, Share (Arquivo Existente)
-    groups,         # Comunidades (Arquivo Existente)
-    events,         # Eventos (Arquivo Existente)
-    chat,           # Mensagens (Arquivo Existente)
-    general         # Notificações e Busca Geral (Arquivo Existente)
+    extras,         # Configurações
+    interactions,   # Likes, Comentários, Share
+    groups,         # Comunidades
+    events,         # Eventos
+    chat,           # Mensagens
+    general         # Notificações (Assumindo que general.py existe)
 )
 
 urlpatterns = [
     # ==============================
-    # 👮 ADMINISTRAÇÃO
-    # ==============================
-    path('admin/', admin.site.urls),
-
-    # ==============================
     # 🏠 FEED & AUTH
     # ==============================
-    path('', home.home_view, name='home'),
+    path('', feed.home_view, name='home'),
     
     # Autenticação
-    path('login/', auth_views.LoginView.as_view(template_name='pages/auth/login.html'), name='login'),
+    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
-    path('register/', home.register_view, name='register'),
+    path('register/', auth.register_view, name='register'),
 
     # ==============================
     # 🦅 POSTS (BIRDS)
     # ==============================
     path('bird/create/', posts.create_bird, name='create_bird'),
     path('bird/<int:bird_id>/', posts.bird_detail, name='bird_detail'),
-    path('bird/delete/<int:bird_id>/', posts.delete_bird, name='delete_bird'),
+    path('bird/<int:bird_id>/delete/', posts.delete_bird, name='delete_bird'),
 
     # ==============================
     # ❤️ INTERAÇÕES
@@ -57,7 +50,7 @@ urlpatterns = [
     path('profile/edit/', profile.edit_profile, name='edit_profile'),
     path('profile/<str:username>/', profile.profile_view, name='profile_detail'),
     
-    # Ações de Bloqueio/Follow rápido
+    # Ações de Bloqueio/Follow
     path('follow/<str:username>/', interactions.toggle_follow, name='toggle_follow'),
     path('block/<str:username>/', interactions.block_user, name='block_user'),
 
@@ -68,7 +61,7 @@ urlpatterns = [
     path('network/suggestions/', network.suggestions_view, name='network_suggestions'),
     path('network/requests/', network.requests_view, name='network_requests'),
     
-    # Gestão de Laços (Família, Namoro, Amigos)
+    # Gestão de Laços
     path('network/connect/<str:username>/<str:bond_type>/', network.request_bond, name='request_bond'),
     path('network/manage/<int:bond_id>/<str:action>/', network.manage_bond, name='manage_bond'),
 
@@ -77,9 +70,9 @@ urlpatterns = [
     # ==============================
     path('explore/', discovery.explore_view, name='explore'),
     path('reels/', discovery.reels_view, name='reels'),
+    path('search/', discovery.search_view, name='search'), # Usa discovery.search_view (ou explore_view)
     
-    # Busca e Notificações (Usando seu arquivo general.py existente)
-    path('search/', general.search_view, name='search'), 
+    # Notificações (Requer general.py)
     path('notifications/', general.notifications_view, name='notifications'),
     path('notifications/read/<int:notif_id>/', general.mark_notification_read, name='mark_notification_read'),
 
@@ -107,15 +100,10 @@ urlpatterns = [
     path('chat/start/<str:username>/', chat.start_chat, name='start_chat'),
 
     # ==============================
-    # ⚙️ EXTRAS & CONFIGURAÇÕES
+    # ⚙️ EXTRAS
     # ==============================
     path('settings/', extras.settings_view, name='settings'),
     path('settings/delete/', extras.delete_account, name='delete_account'),
     path('support/', extras.support_view, name='support'),
     path('theme/<str:theme_name>/', extras.set_theme, name='set_theme'),
 ]
-
-# Configuração para servir mídia durante o desenvolvimento
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

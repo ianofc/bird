@@ -9,14 +9,14 @@ User = get_user_model()
 
 # Importação Segura dos Modelos (Adaptado para o novo models.py)
 try:
-    from ..models import Bird, Connection, Notification, Profile
+    from ..models import Bird, Connection, Notification, Profile, Comment
     # Tenta importar modelos secundários ou define como None
     try:
-        from ..models import Comment, SavedPost
+        from ..models import SavedPost
     except ImportError:
-        Comment = SavedPost = None
+        SavedPost = None
 except ImportError:
-    Bird = Connection = Notification = Profile = None
+    Bird = Connection = Notification = Profile = Comment = None
 
 # ========================================================
 # ❤️ LIKES (COM HTMX E NOTIFICAÇÃO)
@@ -26,7 +26,7 @@ except ImportError:
 def toggle_like(request, bird_id):
     """
     Alterna o like em um Bird (Post).
-    Retorna o fragmento do botão atualizado para o HTMX.
+    Suporta HTMX para atualização sem refresh.
     """
     if not Bird:
         return HttpResponse("Erro: Modelos não carregados.", status=500)
@@ -44,20 +44,31 @@ def toggle_like(request, bird_id):
         
         # 🔔 Gera Notificação (apenas se não for o próprio autor)
         if bird.author != user and Notification:
-            Notification.objects.create(
-                recipient=bird.author,
-                sender=user,
-                tipo='like',
-                message=f"curtiu sua publicação: {bird.content[:30]}...",
-                link=f"/bird/{bird.id}/" # Link direto pro post
-            )
+            # Evita spam de notificações (verifica se já notificou recentemente)
+            already_notified = Notification.objects.filter(
+                recipient=bird.author, sender=user, tipo='like', link=f"/bird/{bird.id}/"
+            ).exists()
+            
+            if not already_notified:
+                Notification.objects.create(
+                    recipient=bird.author,
+                    sender=user,
+                    tipo='like',
+                    message=f"curtiu sua publicação: {bird.content[:30]}...",
+                    link=f"/bird/{bird.id}/" # Link direto pro post
+                )
 
-    # Retorna HTML Parcial para o HTMX atualizar apenas o botão
-    context = {
-        'bird': bird,
-        'user_liked': user_liked
-    }
-    return render(request, 'components/partials/like_button.html', context)
+    # Se for uma requisição HTMX (AJAX), retorna apenas o botão atualizado
+    if request.headers.get('HX-Request'):
+        context = {
+            'bird': bird,
+            'user_liked': user_liked
+        }
+        # Precisamos ter este template parcial criado
+        return render(request, 'components/partials/like_button.html', context)
+    
+    # Se for normal, recarrega a página
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 
 # ========================================================
@@ -67,33 +78,25 @@ def toggle_like(request, bird_id):
 @login_required
 def add_comment(request, bird_id):
     """
-    Adiciona um comentário. 
-    Nota: Na arquitetura Bird, um comentário idealmente é outro 'Bird' (Reply).
-    Aqui mantemos a lógica clássica se existir o modelo Comment, ou adaptamos.
+    Adiciona um comentário usando o modelo Comment.
     """
     if request.method == 'POST':
         bird = get_object_or_404(Bird, id=bird_id)
         content = request.POST.get('content')
         
-        if content:
-            # Se tivermos um modelo de Comment separado:
-            if Comment:
-                Comment.objects.create(user=request.user, post=bird, content=content)
-                
-                # 🔔 Notificação
-                if bird.author != request.user and Notification:
-                    Notification.objects.create(
-                        recipient=bird.author,
-                        sender=request.user,
-                        tipo='comment',
-                        message=f"comentou: {content[:40]}...",
-                        link=f"/bird/{bird.id}/"
-                    )
+        if content and Comment:
+            Comment.objects.create(author=request.user, post=bird, content=content)
             
-            # Se não tiver Comment, poderíamos criar um Bird tipo 'reply' (Futuro)
-            # else:
-            #    Bird.objects.create(author=request.user, content=content, parent=bird, post_type='reply')
-
+            # 🔔 Notificação
+            if bird.author != request.user and Notification:
+                Notification.objects.create(
+                    recipient=bird.author,
+                    sender=request.user,
+                    tipo='comment',
+                    message=f"comentou: {content[:40]}...",
+                    link=f"/bird/{bird.id}/"
+                )
+        
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 @login_required
@@ -101,7 +104,7 @@ def delete_comment(request, comment_id):
     if Comment:
         comment = get_object_or_404(Comment, id=comment_id)
         # Permissão: Dono do comentário OU Dono do post original
-        if request.user == comment.user or request.user == comment.post.author:
+        if request.user == comment.author or request.user == comment.post.author:
             comment.delete()
             messages.success(request, "Comentário removido.")
             
@@ -120,7 +123,7 @@ def toggle_follow(request, username):
     target_user = get_object_or_404(User, username=username)
     
     if target_user == request.user:
-        return HttpResponse(status=400) # Erro
+        return redirect('profile_detail', username=username)
 
     if Connection:
         # Busca conexão existente
@@ -135,7 +138,6 @@ def toggle_follow(request, username):
             Connection.objects.create(
                 follower=request.user, 
                 target=target_user, 
-                connection_type='follow',
                 status='active'
             )
             
@@ -177,23 +179,15 @@ def block_user(request, username):
         else:
             # 3. Se não, aplica o bloqueio
             block_conn.status = 'blocked'
-            block_conn.connection_type = 'follow' # Mantém tipo genérico
             block_conn.save()
             
             # 4. Força o "Unfollow" da outra parte (Destrói a conexão inversa se existir)
+            # Assim, quem foi bloqueado deixa de seguir quem bloqueou
             Connection.objects.filter(follower=target_user, target=request.user).delete()
             
             messages.warning(request, f"Você bloqueou @{username}.")
             
     return redirect('home')
-
-@login_required
-def report_content(request, bird_id):
-    """
-    Placeholder para sistema de denúncia.
-    """
-    messages.info(request, "Conteúdo denunciado. Obrigado por ajudar a manter a comunidade segura.")
-    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 
 # ========================================================
@@ -217,5 +211,5 @@ def toggle_save(request, bird_id):
 @login_required
 def share_post(request, bird_id):
     # Futuramente: Criar um Bird tipo 'repost'
-    messages.success(request, "Compartilhado no seu feed!")
+    messages.success(request, "Link copiado para a área de transferência! (Simulado)")
     return redirect(request.META.get('HTTP_REFERER', 'home'))

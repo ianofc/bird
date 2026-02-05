@@ -1,121 +1,158 @@
-from django.contrib import admin
-from django.urls import path
-from django.conf import settings
-from django.conf.urls.static import static
-from django.contrib.auth import views as auth_views
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.utils.text import slugify
+from django.db.models import Q
+from ..models import Community, CommunityMember
 
-# Importando TODOS os módulos de visualização
-from core.views import (
-    home,           # Feed e Registro
-    posts,          # CRUD de Posts
-    profile,        # Perfil e Edição
-    network,        # Rede, Sugestões e Solicitações
-    discovery,      # Explorar e Reels
-    extras,         # Configurações e Temas
-    interactions,   # Likes, Comentários, Share (Arquivo Existente)
-    groups,         # Comunidades (Arquivo Existente)
-    events,         # Eventos (Arquivo Existente)
-    chat,           # Mensagens (Arquivo Existente)
-    general         # Notificações e Busca Geral (Arquivo Existente)
-)
+# ========================================================
+# 👥 LISTAGEM DE COMUNIDADES
+# ========================================================
 
-urlpatterns = [
-    # ==============================
-    # 👮 ADMINISTRAÇÃO
-    # ==============================
-    path('admin/', admin.site.urls),
-
-    # ==============================
-    # 🏠 FEED & AUTH
-    # ==============================
-    path('', home.home_view, name='home'),
+@login_required
+def list_groups(request):
+    """
+    Lista as comunidades do usuário e sugestões de novas.
+    """
+    user = request.user
     
-    # Autenticação
-    path('login/', auth_views.LoginView.as_view(template_name='pages/auth/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
-    path('register/', home.register_view, name='register'),
-
-    # ==============================
-    # 🦅 POSTS (BIRDS)
-    # ==============================
-    path('bird/create/', posts.create_bird, name='create_bird'),
-    path('bird/<int:bird_id>/', posts.bird_detail, name='bird_detail'),
-    path('bird/delete/<int:bird_id>/', posts.delete_bird, name='delete_bird'),
-
-    # ==============================
-    # ❤️ INTERAÇÕES
-    # ==============================
-    path('like/<int:bird_id>/', interactions.toggle_like, name='toggle_like'),
-    path('comment/<int:bird_id>/', interactions.add_comment, name='add_comment'),
-    path('delete-comment/<int:comment_id>/', interactions.delete_comment, name='delete_comment'),
-    path('save/<int:bird_id>/', interactions.toggle_save, name='toggle_save'),
-    path('share/<int:bird_id>/', interactions.share_post, name='share_post'),
-
-    # ==============================
-    # 👤 PERFIL & IDENTIDADE
-    # ==============================
-    path('profile/edit/', profile.edit_profile, name='edit_profile'),
-    path('profile/<str:username>/', profile.profile_view, name='profile_detail'),
+    # 1. Meus Grupos (onde sou membro)
+    my_communities = Community.objects.filter(members=user)
     
-    # Ações de Bloqueio/Follow rápido
-    path('follow/<str:username>/', interactions.toggle_follow, name='toggle_follow'),
-    path('block/<str:username>/', interactions.block_user, name='block_user'),
+    # 2. Sugestões (Grupos onde NÃO sou membro)
+    # Exclui os que já participo
+    suggestions = Community.objects.exclude(members=user).order_by('-created_at')[:10]
 
-    # ==============================
-    # 🌐 REDE (NETWORK)
-    # ==============================
-    path('network/', network.network_view, name='network_dashboard'),
-    path('network/suggestions/', network.suggestions_view, name='network_suggestions'),
-    path('network/requests/', network.requests_view, name='network_requests'),
+    context = {
+        'my_groups': my_communities,
+        'suggestions': suggestions,
+        'section': 'groups'
+    }
+    return render(request, 'groups/list.html', context)
+
+
+# ========================================================
+# ➕ CRIAR COMUNIDADE
+# ========================================================
+
+@login_required
+def create_group(request):
+    """
+    Cria uma nova comunidade.
+    Gera o slug automaticamente baseado no nome.
+    """
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        is_private = request.POST.get('is_private') == 'on'
+        capa = request.FILES.get('capa')
+
+        if not name:
+            messages.error(request, "O grupo precisa de um nome.")
+            return redirect('create_group')
+
+        # Gera Slug único
+        original_slug = slugify(name)
+        slug = original_slug
+        counter = 1
+        while Community.objects.filter(slug=slug).exists():
+            slug = f"{original_slug}-{counter}"
+            counter += 1
+
+        # Cria a Comunidade
+        community = Community.objects.create(
+            name=name,
+            slug=slug,
+            description=description,
+            is_private=is_private,
+            creator=request.user,
+            capa=capa
+        )
+
+        # Adiciona o criador como ADMIN
+        CommunityMember.objects.create(
+            community=community,
+            user=request.user,
+            role='admin'
+        )
+
+        messages.success(request, f"Comunidade '{name}' criada com sucesso!")
+        return redirect('group_detail', slug=slug)
+
+    return render(request, 'groups/create.html')
+
+
+# ========================================================
+# 👁️ DETALHE DA COMUNIDADE (FEED DO GRUPO)
+# ========================================================
+
+@login_required
+def group_detail(request, slug):
+    """
+    Página principal do grupo.
+    Mostra informações, membros e futuramente posts do grupo.
+    """
+    community = get_object_or_404(Community, slug=slug)
+    user = request.user
+
+    # Verifica se usuário é membro
+    membership = CommunityMember.objects.filter(community=community, user=user).first()
+    is_member = membership is not None
+    is_admin = membership.role == 'admin' if membership else False
+
+    # Verifica privacidade
+    if community.is_private and not is_member:
+        can_view_content = False
+    else:
+        can_view_content = True
+
+    # Busca membros (limitado a 12 para preview)
+    members_preview = community.members.all()[:12]
+
+    context = {
+        'group': community,
+        'is_member': is_member,
+        'is_admin': is_admin,
+        'can_view': can_view_content,
+        'members': members_preview,
+        'member_count': community.members.count()
+    }
     
-    # Gestão de Laços (Família, Namoro, Amigos)
-    path('network/connect/<str:username>/<str:bond_type>/', network.request_bond, name='request_bond'),
-    path('network/manage/<int:bond_id>/<str:action>/', network.manage_bond, name='manage_bond'),
+    return render(request, 'groups/detail.html', context)
 
-    # ==============================
-    # 🧭 DESCOBERTA & GERAL
-    # ==============================
-    path('explore/', discovery.explore_view, name='explore'),
-    path('reels/', discovery.reels_view, name='reels'),
+
+# ========================================================
+# 🚀 AÇÕES: ENTRAR E SAIR
+# ========================================================
+
+@login_required
+def join_group(request, slug):
+    community = get_object_or_404(Community, slug=slug)
     
-    # Busca e Notificações (Usando seu arquivo general.py existente)
-    path('search/', general.search_view, name='search'), 
-    path('notifications/', general.notifications_view, name='notifications'),
-    path('notifications/read/<int:notif_id>/', general.mark_notification_read, name='mark_notification_read'),
+    # Verifica se já é membro
+    if CommunityMember.objects.filter(community=community, user=request.user).exists():
+        messages.warning(request, "Você já faz parte deste grupo.")
+    else:
+        CommunityMember.objects.create(community=community, user=request.user, role='member')
+        messages.success(request, f"Bem-vindo(a) ao grupo {community.name}!")
+        
+    return redirect('group_detail', slug=slug)
 
-    # ==============================
-    # 👥 GRUPOS (COMUNIDADES)
-    # ==============================
-    path('groups/', groups.list_groups, name='groups'),
-    path('groups/create/', groups.create_group, name='create_group'),
-    path('groups/<slug:slug>/', groups.group_detail, name='group_detail'),
-    path('groups/<slug:slug>/join/', groups.join_group, name='join_group'),
-    path('groups/<slug:slug>/leave/', groups.leave_group, name='leave_group'),
 
-    # ==============================
-    # 📅 EVENTOS
-    # ==============================
-    path('events/', events.events_list_view, name='events_list'),
-    path('events/<int:event_id>/', events.event_detail_view, name='event_detail'),
-    path('events/<int:event_id>/attend/', events.event_attend, name='event_attend'),
+@login_required
+def leave_group(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    
+    # Verifica se é o criador (não pode sair, teria que deletar ou passar a bola)
+    if community.creator == request.user:
+        messages.error(request, "O criador não pode sair do grupo. Você deve excluí-lo ou transferir a posse.")
+        return redirect('group_detail', slug=slug)
 
-    # ==============================
-    # 💬 CHAT
-    # ==============================
-    path('chat/', chat.chat_index, name='chat_index'),
-    path('chat/<int:room_id>/', chat.chat_index, name='chat_room'),
-    path('chat/start/<str:username>/', chat.start_chat, name='start_chat'),
-
-    # ==============================
-    # ⚙️ EXTRAS & CONFIGURAÇÕES
-    # ==============================
-    path('settings/', extras.settings_view, name='settings'),
-    path('settings/delete/', extras.delete_account, name='delete_account'),
-    path('support/', extras.support_view, name='support'),
-    path('theme/<str:theme_name>/', extras.set_theme, name='set_theme'),
-]
-
-# Configuração para servir mídia durante o desenvolvimento
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    deleted_count, _ = CommunityMember.objects.filter(community=community, user=request.user).delete()
+    
+    if deleted_count > 0:
+        messages.info(request, f"Você saiu de {community.name}.")
+    else:
+        messages.warning(request, "Você não era membro deste grupo.")
+        
+    return redirect('groups')

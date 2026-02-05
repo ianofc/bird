@@ -2,59 +2,59 @@
 {% load static %}
 
 {% block main_content %}
-<div class="flex-1 flex justify-center h-full overflow-y-auto no-scrollbar" x-data="{ activeTab: 'feed' }">
-    <div class="w-full max-w-[1000px] pb-20">
+<div class="flex-1 flex justify-center h-full overflow-y-auto custom-scrollbar" x-data="{ activeTab: 'feed' }">
+    <div class="w-full max-w-5xl pb-20">
         
-        <div class="relative w-full h-64 md:h-80 bg-slate-200 group overflow-hidden md:rounded-b-[3rem] shadow-lg mb-6">
+        <div class="relative w-full h-72 md:h-96 bg-slate-200 group overflow-hidden md:rounded-b-[3rem] shadow-xl mb-6">
             
             {% if group.capa %}
-                <img src="{{ group.capa.url }}" class="object-cover w-full h-full">
+                <img src="{{ group.capa.url }}" class="object-cover w-full h-full transition duration-700 group-hover:scale-105">
             {% else %}
-                <div class="w-full h-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"></div>
+                <div class="w-full h-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 animate-gradient"></div>
             {% endif %}
 
-            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
 
-            <a href="{% url 'groups' %}" class="absolute top-4 left-4 bg-black/30 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/50 transition z-20">
+            <a href="{% url 'groups' %}" class="absolute top-4 left-4 w-10 h-10 bg-white/20 backdrop-blur-md border border-white/20 text-white flex items-center justify-center rounded-full hover:bg-white/40 transition z-20">
                 <i class="fas fa-arrow-left"></i>
             </a>
 
-            <div class="absolute bottom-0 left-0 w-full p-6 md:p-10 flex flex-col md:flex-row md:items-end justify-between gap-4 z-10">
-                <div>
-                    <div class="flex items-center gap-2 mb-2">
+            <div class="absolute bottom-0 left-0 w-full p-6 md:p-12 flex flex-col md:flex-row md:items-end justify-between gap-6 z-10">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-3">
                         {% if group.is_private %}
-                            <span class="px-2 py-1 rounded-lg bg-black/40 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider">
-                                <i class="fas fa-lock mr-1"></i> Privado
+                            <span class="px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                <i class="fas fa-lock text-xs"></i> Privado
                             </span>
                         {% else %}
-                            <span class="px-2 py-1 rounded-lg bg-emerald-500/80 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider">
-                                <i class="fas fa-globe mr-1"></i> Público
+                            <span class="px-3 py-1 rounded-full bg-emerald-500/80 backdrop-blur-md border border-white/10 text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                <i class="fas fa-globe text-xs"></i> Público
                             </span>
                         {% endif %}
-                        <span class="px-2 py-1 rounded-lg bg-white/20 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold">
-                            {{ group.members.count }} Membros
+                        <span class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/10 text-white text-[10px] font-bold">
+                            {{ member_count }} Membros
                         </span>
                     </div>
 
-                    <h1 class="text-3xl md:text-5xl font-black text-white tracking-tight leading-none drop-shadow-md">
+                    <h1 class="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-lg break-words">
                         {{ group.name }}
                     </h1>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3 shrink-0">
                     {% if is_admin %}
-                        <button class="px-5 py-2.5 bg-white/20 backdrop-blur-md border border-white/30 text-white font-bold rounded-xl hover:bg-white/30 transition">
-                            <i class="fas fa-cog"></i> <span class="hidden md:inline ml-2">Gerenciar</span>
+                        <button class="px-5 py-3 bg-white/10 backdrop-blur-md border border-white/30 text-white font-bold rounded-xl hover:bg-white/20 transition flex items-center gap-2">
+                            <i class="fas fa-cog"></i> <span class="hidden md:inline">Admin</span>
                         </button>
                     {% endif %}
 
                     {% if is_member %}
                         <div class="relative" x-data="{ open: false }">
-                            <button @click="open = !open" class="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 flex items-center gap-2">
-                                <i class="fas fa-check"></i> Membro <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            <button @click="open = !open" class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-900/50 flex items-center gap-2 hover:bg-indigo-500 transition">
+                                <i class="fas fa-check-circle"></i> Membro <i class="fas fa-chevron-down text-xs ml-1 opacity-70"></i>
                             </button>
-                            <div x-show="open" @click.away="open = false" class="absolute bottom-full right-0 mb-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden" style="display: none;">
-                                <a href="{% url 'leave_group' group.slug %}" class="block px-4 py-3 text-red-500 hover:bg-red-50 font-bold text-sm">
+                            <div x-show="open" @click.away="open = false" x-transition class="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-30" style="display: none;">
+                                <a href="{% url 'leave_group' group.slug %}" class="block px-4 py-3 text-red-600 hover:bg-red-50 font-bold text-sm transition">
                                     <i class="fas fa-sign-out-alt mr-2"></i> Sair do Grupo
                                 </a>
                             </div>
@@ -68,100 +68,143 @@
             </div>
         </div>
 
-        <div class="px-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="px-4 md:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <div class="hidden lg:block lg:col-span-1 space-y-6">
+            <div class="hidden lg:block lg:col-span-4 space-y-6">
                 <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
                     <h3 class="font-bold text-slate-800 text-lg mb-3">Sobre</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed mb-4">
-                        {{ group.description|default:"Sem descrição definida." }}
+                    <p class="text-slate-500 text-sm leading-relaxed mb-6">
+                        {{ group.description|default:"Sem descrição definida."|linebreaksbr }}
                     </p>
                     
                     <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
-                        <div class="h-10 w-10 rounded-full bg-slate-200 overflow-hidden">
+                        <div class="h-10 w-10 rounded-full bg-slate-200 overflow-hidden shrink-0">
                             {% if group.creator.profile.avatar %}
                                 <img src="{{ group.creator.profile.avatar.url }}" class="w-full h-full object-cover">
                             {% else %}
                                 <img src="https://ui-avatars.com/api/?name={{ group.creator.username }}" class="w-full h-full object-cover">
                             {% endif %}
                         </div>
-                        <div>
-                            <p class="text-xs text-slate-400 font-bold uppercase">Criado por</p>
-                            <a href="{% url 'profile_detail' group.creator.username %}" class="text-sm font-bold text-slate-800 hover:text-indigo-600">
+                        <div class="min-w-0">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Criado por</p>
+                            <a href="{% url 'profile_detail' group.creator.username %}" class="text-sm font-bold text-slate-800 hover:text-indigo-600 truncate block">
                                 {{ group.creator.profile.full_name|default:group.creator.username }}
                             </a>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-indigo-50 rounded-3xl p-6 border border-indigo-100">
-                    <h3 class="font-bold text-indigo-900 text-sm mb-2"><i class="fas fa-shield-alt mr-2"></i> Regras Básicas</h3>
-                    <ul class="text-xs text-indigo-800/80 space-y-2 list-disc pl-4">
-                        <li>Seja gentil e cortês.</li>
-                        <li>Não faça spam.</li>
-                        <li>Respeite a privacidade de todos.</li>
+                <div class="bg-indigo-50/50 rounded-3xl p-6 border border-indigo-100/50">
+                    <h3 class="font-bold text-indigo-900 text-sm mb-3 flex items-center gap-2">
+                        <i class="fas fa-shield-alt"></i> Regras da Comunidade
+                    </h3>
+                    <ul class="text-xs text-indigo-800/70 space-y-2.5">
+                        <li class="flex gap-2"><span class="text-indigo-400">•</span> Seja gentil e cortês.</li>
+                        <li class="flex gap-2"><span class="text-indigo-400">•</span> Não faça spam ou autopromoção excessiva.</li>
+                        <li class="flex gap-2"><span class="text-indigo-400">•</span> Respeite a privacidade de todos.</li>
                     </ul>
                 </div>
             </div>
 
-            <div class="lg:col-span-2">
+            <div class="lg:col-span-8">
                 
-                <div class="flex lg:hidden gap-6 border-b border-slate-200 mb-6 overflow-x-auto">
-                    <button @click="activeTab = 'feed'" class="pb-3 font-bold text-sm border-b-2 transition" :class="activeTab === 'feed' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400'">
+                <div class="flex lg:hidden gap-2 border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar">
+                    <button @click="activeTab = 'feed'" class="px-4 py-2 font-bold text-sm border-b-2 transition whitespace-nowrap" :class="activeTab === 'feed' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400'">
                         Discussão
                     </button>
-                    <button @click="activeTab = 'about'" class="pb-3 font-bold text-sm border-b-2 transition" :class="activeTab === 'about' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400'">
+                    <button @click="activeTab = 'members'" class="px-4 py-2 font-bold text-sm border-b-2 transition whitespace-nowrap" :class="activeTab === 'members' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400'">
+                        Membros ({{ member_count }})
+                    </button>
+                    <button @click="activeTab = 'about'" class="px-4 py-2 font-bold text-sm border-b-2 transition whitespace-nowrap" :class="activeTab === 'about' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400'">
                         Sobre
                     </button>
-                    <button @click="activeTab = 'members'" class="pb-3 font-bold text-sm border-b-2 transition" :class="activeTab === 'members' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400'">
+                </div>
+
+                <div class="hidden lg:flex gap-4 mb-6">
+                    <button @click="activeTab = 'feed'" class="px-4 py-2 rounded-full font-bold text-sm transition" :class="activeTab === 'feed' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-500 hover:bg-slate-50'">
+                        Discussão
+                    </button>
+                    <button @click="activeTab = 'members'" class="px-4 py-2 rounded-full font-bold text-sm transition" :class="activeTab === 'members' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-500 hover:bg-slate-50'">
                         Membros
                     </button>
                 </div>
 
-                <div x-show="activeTab === 'feed'">
+                <div x-show="activeTab === 'feed'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
                     
-                    {% if is_member %}
-                    <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 mb-6 flex gap-4 items-center cursor-pointer hover:shadow-md transition"
-                         onclick="alert('Funcionalidade de postar no grupo em desenvolvimento! Use o feed principal por enquanto.')">
-                        <div class="h-10 w-10 rounded-full bg-slate-200 overflow-hidden shrink-0">
-                            {% if user.profile.avatar %}
-                                <img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover">
-                            {% else %}
-                                <div class="w-full h-full bg-indigo-500"></div>
-                            {% endif %}
-                        </div>
-                        <div class="flex-1 bg-slate-100 h-10 rounded-full flex items-center px-4 text-slate-400 text-sm">
-                            Escreva algo para o grupo...
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <div class="space-y-6">
-                        {% for bird in posts %}
-                            {% include 'components/bird_item.html' %}
-                        {% empty %}
-                            <div class="text-center py-12 px-6 bg-white/60 backdrop-blur-xl rounded-[2rem] border border-white/50">
-                                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 text-2xl">
-                                    <i class="fas fa-wind"></i>
-                                </div>
-                                <h3 class="font-bold text-slate-700">Nenhuma publicação ainda.</h3>
-                                <p class="text-slate-500 text-sm">Seja o primeiro a compartilhar algo neste grupo!</p>
+                    {% if can_view %}
+                        {% if is_member %}
+                        <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 mb-6 flex gap-4 items-center cursor-pointer hover:shadow-md transition group"
+                             onclick="alert('Funcionalidade de postar no grupo em desenvolvimento!')">
+                            <div class="h-11 w-11 rounded-full bg-slate-200 overflow-hidden shrink-0 border-2 border-transparent group-hover:border-indigo-200 transition">
+                                <img src="{{ user.profile.avatar.url|default:'https://ui-avatars.com/api/?background=random' }}" class="w-full h-full object-cover">
                             </div>
-                        {% endfor %}
+                            <div class="flex-1 bg-slate-50 h-11 rounded-2xl flex items-center px-5 text-slate-400 text-sm group-hover:bg-white group-hover:ring-1 group-hover:ring-indigo-200 transition">
+                                Inicie uma discussão...
+                            </div>
+                            <button class="h-11 w-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 transition">
+                                <i class="fas fa-image"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+
+                        <div class="space-y-6">
+                            {% for bird in posts %}
+                                {% include 'components/bird_item.html' %}
+                            {% empty %}
+                                <div class="text-center py-16 px-6 bg-white/60 backdrop-blur-xl rounded-[2.5rem] border border-white/50 border-dashed">
+                                    <div class="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-300 text-3xl animate-bounce-slow">
+                                        <i class="fas fa-feather-alt"></i>
+                                    </div>
+                                    <h3 class="font-bold text-slate-700 text-lg">Ainda está silencioso por aqui.</h3>
+                                    <p class="text-slate-500 text-sm mt-1 max-w-xs mx-auto">Seja a primeira pessoa a compartilhar algo interessante com o grupo!</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                            <i class="fas fa-lock text-4xl text-slate-300 mb-4"></i>
+                            <h3 class="font-bold text-slate-800 text-lg">Este grupo é privado.</h3>
+                            <p class="text-slate-500 text-sm mt-2">Entre no grupo para ver e participar das discussões.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div x-show="activeTab === 'members'" style="display: none;" x-transition:enter="transition ease-out duration-300">
+                    <div class="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <i class="fas fa-users text-indigo-500"></i> Participantes ({{ member_count }})
+                        </h3>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {% for member in members %}
+                            <a href="{% url 'profile_detail' member.username %}" class="flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 transition group border border-transparent hover:border-slate-100">
+                                <div class="relative shrink-0">
+                                    <img src="{{ member.profile.avatar.url|default:'https://ui-avatars.com/api/?background=random' }}" class="w-10 h-10 rounded-full object-cover">
+                                    {% if member == group.creator %}
+                                        <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-[8px] text-white border border-white" title="Admin">
+                                            <i class="fas fa-crown"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-slate-800 truncate group-hover:text-indigo-600 transition">{{ member.profile.full_name|default:member.username }}</p>
+                                    <p class="text-[10px] text-slate-400 truncate">@{{ member.username }}</p>
+                                </div>
+                            </a>
+                            {% empty %}
+                                <p class="text-slate-400 col-span-full text-center py-4">Nenhum membro encontrado.</p>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
 
-                <div x-show="activeTab === 'about'" class="lg:hidden">
+                <div x-show="activeTab === 'about'" class="lg:hidden" style="display: none;">
                     <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
                         <h3 class="font-bold text-slate-800 text-lg mb-3">Sobre</h3>
-                        <p class="text-slate-500 text-sm leading-relaxed mb-4">
+                        <p class="text-slate-500 text-sm leading-relaxed">
                             {{ group.description|default:"Sem descrição definida." }}
                         </p>
                     </div>
-                </div>
-
-                <div x-show="activeTab === 'members'" class="bg-white rounded-3xl p-6 border border-slate-100 text-center text-slate-500">
-                    <p>Lista de membros em breve.</p>
                 </div>
 
             </div>
