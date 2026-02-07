@@ -1,7 +1,7 @@
 """
 Django settings for bird project.
 Generated for 'Project Bird' - The Social Operating System.
-Version: Definitive Aurora 2.0
+Version: Definitive Aurora 2.0 - Master Integrated
 """
 
 import os
@@ -19,63 +19,74 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # 1. CORE SECURITY SETTINGS
 # ==========================================
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
-
-# DEBUG deve ser False em produção. Pega do .env ou assume True localmente.
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
-
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,*').split(',')
-
 CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1,http://localhost').split(',')
 
 # ==========================================
-# 2. INSTALLED APPS
+# 2. INSTALLED APPS (Social Login & Payment Integrated)
 # ==========================================
 INSTALLED_APPS = [
-    # [ASGI] Daphne deve ser o PRIMEIRO para gerenciar WebSockets
-    'daphne',
+    'daphne', # [ASGI] Primeiro para gerenciar WebSockets
 
-    # Django Apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites', # Necessário para Allauth
 
     # Third-Party Apps
-    'rest_framework',           # API
-    'django_htmx',              # Interatividade Frontend
-    'channels',                 # WebSockets / Chat
-    'compressor',               # Otimização de Assets Estáticos
+    'rest_framework',
+    'django_htmx',
+    'channels',
+    'compressor',
+    'django_celery_results',
 
-    # Local Apps (Seu Projeto)
+    # [OAUTH2] Social Login
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.apple',
+
+    # Local Apps
     'core',
 ]
 
+SITE_ID = 1
+
 # ==========================================
-# 3. MIDDLEWARE
+# 3. MIDDLEWARE & AUTH BACKENDS
 # ==========================================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # Assets em Produção
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_htmx.middleware.HtmxMiddleware',      # HTMX Middleware
+    'django_htmx.middleware.HtmxMiddleware',
+    'allauth.account.middleware.AccountMiddleware', # Allauth Middleware
+]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 ROOT_URLCONF = 'bird.urls'
 
 # ==========================================
-# 4. TEMPLATES
+# 4. TEMPLATES & LOGOUT
 # ==========================================
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # Aponta para a pasta global de templates
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -88,14 +99,12 @@ TEMPLATES = [
     },
 ]
 
-# Configurações de Servidor
 WSGI_APPLICATION = 'bird.wsgi.application'
 ASGI_APPLICATION = 'bird.asgi.application'
 
 # ==========================================
-# 5. DATABASE
+# 5. DATABASE (Sovereignty Ready)
 # ==========================================
-# Usa SQLite localmente, mas aceita Postgres via DATABASE_URL no .env
 DATABASES = {
     'default': dj_database_url.config(
         default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
@@ -105,129 +114,121 @@ DATABASES = {
 }
 
 # ==========================================
-# 6. AUTHENTICATION & PASSWORD
+# 6. LOGGING (Audit & JSON Integrated)
 # ==========================================
-AUTH_PASSWORD_VALIDATORS = [
-    { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
-]
+# Cria pasta de logs se não existir
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
 
-# Redirecionamentos de Login
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'login'
-
-# ==========================================
-# 7. INTERNATIONALIZATION
-# ==========================================
-LANGUAGE_CODE = 'pt-br'
-TIME_ZONE = 'America/Sao_Paulo'
-USE_I18N = True
-USE_TZ = True
-
-# ==========================================
-# 8. STATIC & MEDIA FILES (Whitenoise Config)
-# ==========================================
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Pasta onde você coloca seus CSS/JS manuais durante o desenvolvimento
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-# Configuração de Armazenamento (Django 4.2+)
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {
+            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s %(user_id)s %(ip)s',
+        },
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
     },
-    "staticfiles": {
-        # Em produção, usa WhiteNoise com compressão. Localmente, usa padrão.
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'audit_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': LOG_DIR / 'audit_bird.json',
+            'formatter': 'json',
+        },
+    },
+    'loggers': {
+        'audit': {
+            'handlers': ['audit_file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
     },
 }
 
-# Compressor Settings
+# ==========================================
+# 7. AUTHENTICATION CONFIG (Allauth & Social)
+# ==========================================
+LOGIN_URL = 'account_login'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'account_login'
+
+# Allauth Tweaks
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'optional'
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
+
+# ==========================================
+# 8. MERCADO PAGO (Payment)
+# ==========================================
+MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN', '')
+
+# ==========================================
+# 9. STATIC, MEDIA & COMPRESSOR
+# ==========================================
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'compressor.finders.CompressorFinder',
 )
-COMPRESS_ENABLED = not DEBUG # Só comprime em produção
+COMPRESS_ENABLED = not DEBUG
 COMPRESS_OFFLINE = not DEBUG
 
 # ==========================================
-# 9. CHANNEL LAYER (REDIS / MEMORY)
+# 10. CHANNEL LAYER & CELERY
 # ==========================================
-# Se houver REDIS_URL no .env, usa Redis. Senão, usa Memória (Dev).
-if os.getenv('REDIS_URL'):
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                "hosts": [os.getenv('REDIS_URL')],
-            },
-        },
-    }
-else:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels.layers.InMemoryChannelLayer"
-        }
-    }
+REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6380/0')
 
-# ==========================================
-# 10. DRF (API)
-# ==========================================
-REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [REDIS_URL]},
+    }
+} if os.getenv('REDIS_URL') else {
+    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
 }
 
-# ==========================================
-# 11. LOGGING & MISC
-# ==========================================
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Email Backend (Console para Dev)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# Logs para Debugar TemplateDoesNotExist
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-}
-
-
-# ==========================================
-# 12. CELERY & REDIS CONFIG
-# ==========================================
-CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6380/0')
+CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = 'django-db'
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
 
 # ==========================================
-# 13. UPLOAD LIMITS
+# 11. MISC & LIMITS
 # ==========================================
+LANGUAGE_CODE = 'pt-br'
+TIME_ZONE = 'America/Sao_Paulo'
+USE_I18N = True
+USE_TZ = True
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
-

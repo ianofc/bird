@@ -1,7 +1,8 @@
 from django.contrib import admin
 from .models import (
     Profile, WorkExperience, Education, SocialBond, Connection,
-    Bird, Notification, Community, CommunityMember, Evento, Room, Message
+    Bird, Notification, Community, CommunityMember, Evento, 
+    Room, Message, SavedPost, Comment
 )
 
 # ==========================================
@@ -20,6 +21,7 @@ class EducationInline(admin.TabularInline):
 # ==========================================
 # 👤 PERFIL AVANÇADO
 # ==========================================
+@admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'full_name', 'gender', 'current_city', 'is_verified', 'get_age')
     list_filter = ('gender', 'is_verified', 'show_birth_year')
@@ -42,51 +44,54 @@ class ProfileAdmin(admin.ModelAdmin):
         ('Visual', {
             'fields': ('bio', 'avatar', 'cover_image')
         }),
-        ('Dados JSON (Interesses)', {
+        ('Configurações (JSON)', {
             'classes': ('collapse',),
-            'fields': ('interests',)
+            'fields': ('interests', 'privacy_settings')
         }),
     )
     
     inlines = [WorkExperienceInline, EducationInline]
 
-admin.site.register(Profile, ProfileAdmin)
-
 # ==========================================
 # ❤️ RELACIONAMENTOS (LAÇOS SOCIAIS)
 # ==========================================
+@admin.register(SocialBond)
 class SocialBondAdmin(admin.ModelAdmin):
     list_display = ('requester', 'target', 'type', 'status', 'created_at')
     list_filter = ('type', 'status')
     search_fields = ('requester__username', 'target__username')
-    
-    # Agrupa tipos visualmente (ex: Pendente/Ativo/Bloqueado)
     radio_fields = {"status": admin.HORIZONTAL}
 
-admin.site.register(SocialBond, SocialBondAdmin)
-
 # ==========================================
-# 📡 CONEXÕES (SEGUIR)
+# 📡 CONEXÕES (SEGUIR) - CORRIGIDO
 # ==========================================
+@admin.register(Connection)
 class ConnectionAdmin(admin.ModelAdmin):
-    list_display = ('follower', 'target', 'connection_type', 'status')
-    list_filter = ('connection_type', 'status')
+    # Removido 'connection_type' pois não existe mais no model
+    list_display = ('follower', 'target', 'status', 'created_at')
+    list_filter = ('status', 'created_at')
     search_fields = ('follower__username', 'target__username')
 
-admin.site.register(Connection, ConnectionAdmin)
-
 # ==========================================
-# 🦅 CONTEÚDO (BIRDS)
+# 🦅 CONTEÚDO (BIRDS & COMENTÁRIOS)
 # ==========================================
+@admin.register(Bird)
 class BirdAdmin(admin.ModelAdmin):
-    list_display = ('id', 'author', 'content_preview', 'post_type', 'is_processing', 'created_at')
-    list_filter = ('post_type', 'is_processing', 'created_at')
+    list_display = ('id', 'author', 'content_preview', 'post_type', 'visibility', 'created_at')
+    list_filter = ('post_type', 'visibility', 'is_processing', 'created_at')
     search_fields = ('content', 'author__username')
     
     def content_preview(self, obj):
         return obj.content[:50] + '...' if obj.content else '[Mídia]'
 
-admin.site.register(Bird, BirdAdmin)
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('author', 'post', 'created_at')
+    search_fields = ('content', 'author__username')
+
+@admin.register(SavedPost)
+class SavedPostAdmin(admin.ModelAdmin):
+    list_display = ('user', 'post', 'created_at')
 
 # ==========================================
 # 👥 COMUNIDADES
@@ -95,18 +100,36 @@ class CommunityMemberInline(admin.TabularInline):
     model = CommunityMember
     extra = 1
 
+@admin.register(Community)
 class CommunityAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug', 'creator', 'is_private', 'created_at')
     prepopulated_fields = {'slug': ('name',)}
     inlines = [CommunityMemberInline]
     search_fields = ('name',)
 
-admin.site.register(Community, CommunityAdmin)
+# ==========================================
+# 💬 CHAT
+# ==========================================
+@admin.register(Room)
+class RoomAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'is_group', 'updated_at')
+    list_filter = ('is_group',)
+    filter_horizontal = ('participants',) # Interface melhor para ManyToMany
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('sender', 'room', 'content', 'created_at')
+    search_fields = ('content', 'sender__username')
 
 # ==========================================
-# 🔔 & 💬 OUTROS MODELOS
+# 🔔 & 📅 OUTROS
 # ==========================================
-admin.site.register(Notification)
-admin.site.register(Evento)
-admin.site.register(Room)
-admin.site.register(Message)
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('recipient', 'tipo', 'is_read', 'created_at')
+    list_filter = ('tipo', 'is_read')
+
+@admin.register(Evento)
+class EventoAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'data_inicio', 'local')
+    search_fields = ('titulo', 'local')
