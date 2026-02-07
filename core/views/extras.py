@@ -1,66 +1,83 @@
+# core/views/extras.py
 import logging
 import mercadopago
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404  
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.conf import settings
-from django.http import JsonResponse
+from django.utils import timezone
 
-# Configuração do Logger de Auditoria (Ponto 5 da sua lista)
+# Configuração do Logger de Auditoria via Thalamus
 audit_logger = logging.getLogger('audit')
 
 # ========================================================
-# 💳 INTEGRAÇÃO DE PAGAMENTOS (Ponto 4)
+# 💳 MOTOR DE PAGAMENTOS (MERCADO PAGO)
 # ========================================================
 
 @login_required
 def create_subscription_payment(request):
     """
-    Inicia o fluxo de pagamento para assinaturas premium ou impulsionamento.
-    Ativa o Mercado Pago já presente nos requisitos.
+    Inicia o checkout para Bird Premium.
+    Implementa o Ponto 4 (Integração de Pagamentos).
     """
     if not settings.MERCADOPAGO_ACCESS_TOKEN:
-        messages.error(request, "Serviço de pagamento não configurado.")
+        audit_logger.error(f"Payment failure: Token missing for user {request.user.id}", 
+                          extra={'user_id': request.user.id, 'ip': request.META.get('REMOTE_ADDR')})
+        messages.error(request, "O sistema de pagamentos está temporariamente indisponível.")
         return redirect('settings')
 
     sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
     
-    # Exemplo de preferência para "Plano Aurora Premium"
+    # Preferência estruturada para o Plano Aurora
     preference_data = {
         "items": [
             {
-                "title": "Bird Premium - Soberania Digital",
+                "title": "Bird Premium - Soberania Digital Ativa",
                 "quantity": 1,
                 "unit_price": 29.90,
-                "currency_id": "BRL"
+                "currency_id": "BRL",
+                "category_id": "subscriptions"
             }
         ],
         "payer": {
-            "email": request.user.email
+            "email": request.user.email,
+            "first_name": request.user.first_name or request.user.username
         },
         "external_reference": str(request.user.id),
         "notification_url": f"{request.scheme}://{request.get_host()}/payments/webhook/",
         "back_urls": {
-            "success": f"{request.scheme}://{request.get_host()}/settings/?tab=account",
-            "failure": f"{request.scheme}://{request.get_host()}/settings/",
+            "success": f"{request.scheme}://{request.get_host()}/settings/?tab=account&status=success",
+            "failure": f"{request.scheme}://{request.get_host()}/settings/?status=failure",
+            "pending": f"{request.scheme}://{request.get_host()}/settings/?status=pending"
         },
         "auto_return": "approved",
     }
 
-    preference_response = sdk.preference().create(preference_data)
-    preference = preference_response["response"]
-    
-    # Redireciona para o Checkout do Mercado Pago
-    return redirect(preference["init_point"])
+    try:
+        preference_response = sdk.preference().create(preference_data)
+        init_point = preference_response["response"]["init_point"]
+        
+        audit_logger.info(f"Payment initiated by user {request.user.id}", 
+                         extra={'user_id': request.user.id, 'ip': request.META.get('REMOTE_ADDR')})
+        
+        return redirect(init_point)
+    except Exception as e:
+        audit_logger.exception(f"Mercado Pago SDK Error: {str(e)}")
+        messages.error(request, "Erro ao processar checkout. Tente novamente.")
+        return redirect('settings')
 
 # ========================================================
-# ⚙️ CONFIGURAÇÕES MESTRE (Ponto 1 e 3)
+# ⚙️ GESTÃO DE SOBERANIA E CONFIGURAÇÕES
 # ========================================================
 
 @login_required
 def settings_view(request):
+    """
+    Módulo central de controle do usuário.
+    Garante a soberania pregada pelo Thalamus (Ponto 1 e 3).
+    """
     user = request.user
     profile = user.profile
     password_form = PasswordChangeForm(user)
@@ -68,14 +85,15 @@ def settings_view(request):
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
 
-        # Auditoria via Thalamus (Ponto 5)
-        audit_logger.info(f"User {user.id} accessed {form_type} settings update", 
+        # Log de Auditoria JSON (Ponto 5)
+        audit_logger.info(f"Settings update: {form_type} for user {user.username}", 
                          extra={'user_id': user.id, 'ip': request.META.get('REMOTE_ADDR')})
 
         if form_type == 'account':
             user.email = request.POST.get('email', user.email)
+            user.first_name = request.POST.get('first_name', user.first_name)
             user.save()
-            messages.success(request, "Informações da conta salvas!")
+            messages.success(request, "Dados da conta atualizados com sucesso.")
             return redirect('settings')
 
         elif form_type == 'security':
@@ -83,78 +101,80 @@ def settings_view(request):
             if password_form.is_valid():
                 user = password_form.save()
                 update_session_auth_hash(request, user)
-                messages.success(request, "Senha alterada com sucesso!")
+                messages.success(request, "Sua senha foi fortalecida.")
                 return redirect('settings')
+            messages.error(request, "Erro na validação da senha. Tente novamente.")
 
         elif form_type == 'privacy':
-            # Implementação da Soberania de Dados (Ponto 3)
-            current_settings = profile.privacy_settings or {}
-            new_settings = {
+            # Implementação técnica da Soberania de Dados (Toggle do Thalamus)
+            current = profile.privacy_settings or {}
+            current.update({
                 'is_private': request.POST.get('is_private') == 'on',
-                'data_sovereignty': request.POST.get('data_sovereignty') == 'on', # Thalamus Toggle
-                'allow_ai_training': request.POST.get('allow_ai_training') == 'on'
-            }
-            current_settings.update(new_settings)
-            profile.privacy_settings = current_settings
+                'thalamus_protection': request.POST.get('thalamus_protection') == 'on',
+                'sara_indexing': request.POST.get('sara_indexing') == 'on',
+                'data_sovereignty_active': True,
+                'last_updated': str(timezone.now())
+            })
+            profile.privacy_settings = current
             profile.save()
-            messages.success(request, "Preferências de soberania e privacidade atualizadas.")
+            messages.success(request, "Suas chaves de soberania foram atualizadas.")
             return redirect('settings')
 
     context = {
         'password_form': password_form,
         'privacy': profile.privacy_settings or {},
         'active_tab': request.GET.get('tab', 'account'),
-        'mp_enabled': bool(settings.MERCADOPAGO_ACCESS_TOKEN)
+        'mp_ready': bool(settings.MERCADOPAGO_ACCESS_TOKEN)
     }
     return render(request, 'pages/settings.html', context)
 
 # ========================================================
-# 🎨 TEMA & APARÊNCIA
+# 🎨 TEMAS E ZONA DE SEGURANÇA
 # ========================================================
 
 @login_required
 def set_theme(request, theme_name):
-    valid_themes = ['light', 'dark', 'aurora', 'midnight']
-    theme_name = theme_name if theme_name in valid_themes else 'aurora'
+    """Ajusta o ambiente visual e loga preferências para o Accumbens."""
+    valid = ['light', 'dark', 'aurora', 'midnight']
+    theme = theme_name if theme_name in valid else 'aurora'
     
-    next_url = request.META.get('HTTP_REFERER', 'home')
-    response = redirect(next_url)
-    request.session['theme'] = theme_name
-    response.set_cookie('theme', theme_name, max_age=31536000)
+    response = redirect(request.META.get('HTTP_REFERER', 'home'))
+    request.session['theme'] = theme
+    response.set_cookie('theme', theme, max_age=31536000) # Persistência de 1 ano
     
-    # Log de preferência estética para o motor Accumbens
-    audit_logger.info(f"User {request.user.id} changed theme to {theme_name}", 
+    audit_logger.info(f"Interface change: {theme} for user {request.user.id}", 
                      extra={'user_id': request.user.id, 'ip': request.META.get('REMOTE_ADDR')})
-    
     return response
-
-# ========================================================
-# ⚠️ ZONA DE PERIGO (SOFT DELETE)
-# ========================================================
 
 @login_required
 def delete_account(request):
+    """Soft Delete com log de auditoria crítica."""
     if request.method == 'POST':
         user = request.user
-        # Log Crítico de Auditoria (Ponto 5)
-        audit_logger.warning(f"CRITICAL: User {user.id} requested account deactivation", 
+        audit_logger.warning(f"DEACTIVATION REQUEST: User {user.id}", 
                             extra={'user_id': user.id, 'ip': request.META.get('REMOTE_ADDR')})
         
         user.is_active = False
         user.save()
-        messages.warning(request, "Sua conta Bird foi desativada.")
+        messages.warning(request, "Sua conta foi desativada e seus dados preservados sob sua soberania.")
         return redirect('account_login')
     return redirect('settings')
 
-# ========================================================
-# 🆘 SUPORTE (Ponto 3 - Transparência Thalamus)
-# ========================================================
-
 @login_required
 def support_view(request):
+    """FAQ focado na transparência do sistema."""
     faqs = [
-        {'q': 'O que é a Soberania Thalamus?', 'a': 'É o seu controle total. Você decide se a IA processa seus dados ou não.'},
-        {'q': 'Meus dados são vendidos?', 'a': 'Não. O Bird lucra com assinaturas e impulsionamentos éticos, não com seus dados.'},
-        {'q': 'Como funciona o Mercado Pago no Bird?', 'a': 'Usamos para transações seguras de assinaturas e suporte a criadores.'},
+        {
+            'q': 'Como o Thalamus protege meus dados?', 
+            'a': 'O Thalamus atua como um firewall de privacidade, impedindo que algoritmos processem seus dados sem seu consentimento explícito.'
+        },
+        {
+            'q': 'O que é a Busca Vibe do SARA?', 
+            'a': 'É uma busca semântica que entende o contexto e sentimento, não apenas palavras-chave.'
+        },
+        {
+            'q': 'Posso exportar meus dados?', 
+            'a': 'Sim. No painel de soberania, você pode solicitar um dump completo de seus Birds e interações.'
+        }
     ]
     return render(request, 'pages/support.html', {'faqs': faqs})
