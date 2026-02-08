@@ -1,50 +1,49 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-import uuid
+from django.utils.translation import gettext_lazy as _
 
 # ========================================================
 # 📂 UTILITÁRIOS DE UPLOAD
 # ========================================================
-def upload_avatar(instance, filename):
+def generate_filename(instance, filename, folder):
     ext = filename.split('.')[-1]
     filename = f'{uuid.uuid4()}.{ext}'
-    return f'avatars/{instance.user.username}/{filename}'
+    return f'{folder}/{filename}'
+
+def upload_avatar(instance, filename):
+    return generate_filename(instance, filename, f'avatars/{instance.user.username}')
 
 def upload_cover(instance, filename):
-    ext = filename.split('.')[-1]
-    filename = f'{uuid.uuid4()}.{ext}'
-    return f'covers/{instance.user.username}/{filename}'
+    return generate_filename(instance, filename, f'covers/{instance.user.username}')
 
 def upload_post_media(instance, filename):
-    ext = filename.split('.')[-1]
-    filename = f'{uuid.uuid4()}.{ext}'
-    return f'posts/{instance.author.username}/{filename}'
+    return generate_filename(instance, filename, f'posts/{instance.author.username}')
 
 def upload_group_cover(instance, filename):
-    ext = filename.split('.')[-1]
-    filename = f'{uuid.uuid4()}.{ext}'
-    return f'groups/{instance.slug}/{filename}'
+    return generate_filename(instance, filename, f'groups/{instance.slug}')
 
 def upload_event_cover(instance, filename):
-    ext = filename.split('.')[-1]
-    filename = f'{uuid.uuid4()}.{ext}'
-    return f'events/{filename}'
+    return generate_filename(instance, filename, 'events')
 
 # ========================================================
 # 👤 PERFIL & IDENTIDADE
 # ========================================================
 class Profile(models.Model):
-    GENDER_CHOICES = (('M', 'Masculino'), ('F', 'Feminino'), ('O', 'Outro'))
+    class Gender(models.TextChoices):
+        MALE = 'M', 'Masculino'
+        FEMALE = 'F', 'Feminino'
+        OTHER = 'O', 'Outro'
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     
     # Identidade
     full_name = models.CharField("Nome Completo", max_length=255, blank=True)
     cpf_document = models.CharField("CPF/Documento", max_length=20, blank=True)
-    gender = models.CharField("Gênero", max_length=1, choices=GENDER_CHOICES, default='M')
+    gender = models.CharField("Gênero", max_length=1, choices=Gender.choices, default=Gender.MALE)
     
     # Datas
     birth_date = models.DateField("Data de Nascimento", null=True, blank=True)
@@ -64,11 +63,15 @@ class Profile(models.Model):
     avatar = models.ImageField(upload_to=upload_avatar, blank=True, null=True)
     cover_image = models.ImageField(upload_to=upload_cover, blank=True, null=True)
 
+    # Monetização & Status (Novos Campos)
+    is_premium = models.BooleanField("Membro Premium", default=False)
+    premium_since = models.DateTimeField("Premium Desde", null=True, blank=True)
+    is_verified = models.BooleanField("Verificado", default=False)
+
     # Interesses & Configurações (JSON)
     interests = models.JSONField("Interesses", default=dict, blank=True)
     privacy_settings = models.JSONField("Configurações de Privacidade", default=dict, blank=True) 
 
-    is_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -78,6 +81,15 @@ class Profile(models.Model):
         if not self.birth_date: return None
         today = timezone.now().date()
         return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+
+    # Helpers do Thalamus (Soberania de Dados)
+    @property
+    def allows_ai_training(self):
+        return self.privacy_settings.get('allow_ai_training', False)
+
+    @property
+    def is_private_profile(self):
+        return self.privacy_settings.get('is_private', False)
 
 # ========================================================
 # 🎓 & 💼 EXPERIÊNCIA
@@ -91,6 +103,9 @@ class WorkExperience(models.Model):
     is_current = models.BooleanField(default=False)
     description = models.TextField(blank=True)
 
+    def __str__(self):
+        return f"{self.position} at {self.company}"
+
 class Education(models.Model):
     profile = models.ForeignKey(Profile, related_name='education_history', on_delete=models.CASCADE)
     institution = models.CharField("Instituição", max_length=100)
@@ -98,26 +113,42 @@ class Education(models.Model):
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
 
+    def __str__(self):
+        return f"{self.course} at {self.institution}"
+
 # ========================================================
 # ❤️ LAÇOS SOCIAIS & CONEXÕES
 # ========================================================
 class SocialBond(models.Model):
     """Laços profundos (Amigos, Família, Namoro). Requer aceite."""
-    TYPES = (
-        ('friend', 'Amigo'), ('bestie', 'Melhor Amigo'), ('dating', 'Namorando'),
-        ('married', 'Casado(a)'), ('father', 'Pai'), ('mother', 'Mãe'),
-        ('son', 'Filho(a)'), ('sibling', 'Irmão/Irmã'), ('colleague', 'Colega'),
-    )
-    STATUS = (('pending', 'Pendente'), ('active', 'Aceito'), ('blocked', 'Bloqueado'))
+    class Type(models.TextChoices):
+        FRIEND = 'friend', 'Amigo'
+        BESTIE = 'bestie', 'Melhor Amigo'
+        DATING = 'dating', 'Namorando'
+        MARRIED = 'married', 'Casado(a)'
+        FATHER = 'father', 'Pai'
+        MOTHER = 'mother', 'Mãe'
+        SON = 'son', 'Filho(a)'
+        SIBLING = 'sibling', 'Irmão/Irmã'
+        COLLEAGUE = 'colleague', 'Colega'
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pendente'
+        ACTIVE = 'active', 'Aceito'
+        BLOCKED = 'blocked', 'Bloqueado'
 
     requester = models.ForeignKey(User, related_name='bonds_requested', on_delete=models.CASCADE)
     target = models.ForeignKey(User, related_name='bonds_received', on_delete=models.CASCADE)
-    type = models.CharField(max_length=20, choices=TYPES, default='friend')
-    status = models.CharField(max_length=10, choices=STATUS, default='pending')
+    type = models.CharField(max_length=20, choices=Type.choices, default=Type.FRIEND)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('requester', 'target', 'type')
+        indexes = [
+            models.Index(fields=['requester', 'target']),
+            models.Index(fields=['status']),
+        ]
 
 class Connection(models.Model):
     """Seguir simples (Follow Unilateral)."""
@@ -133,8 +164,16 @@ class Connection(models.Model):
 # 🦅 POSTAGENS (BIRDS)
 # ========================================================
 class Bird(models.Model):
-    POST_TYPES = (('text', 'Texto'), ('image', 'Imagem'), ('video', 'Vídeo'), ('story', 'Story'))
-    VISIBILITY = (('public', 'Público'), ('friends', 'Amigos'), ('private', 'Privado'))
+    class PostType(models.TextChoices):
+        TEXT = 'text', 'Texto'
+        IMAGE = 'image', 'Imagem'
+        VIDEO = 'video', 'Vídeo'
+        STORY = 'story', 'Story'
+
+    class Visibility(models.TextChoices):
+        PUBLIC = 'public', 'Público'
+        FRIENDS = 'friends', 'Amigos'
+        PRIVATE = 'private', 'Privado'
 
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='birds')
     content = models.TextField(blank=True, null=True)
@@ -145,8 +184,8 @@ class Bird(models.Model):
     thumbnail = models.ImageField(upload_to='thumbnails/', blank=True, null=True)
     
     # Meta
-    post_type = models.CharField(max_length=15, choices=POST_TYPES, default='text')
-    visibility = models.CharField(max_length=10, choices=VISIBILITY, default='public')
+    post_type = models.CharField(max_length=15, choices=PostType.choices, default=PostType.TEXT)
+    visibility = models.CharField(max_length=10, choices=Visibility.choices, default=Visibility.PUBLIC)
     location = models.CharField(max_length=100, blank=True, null=True)
     
     is_processing = models.BooleanField(default=False)
@@ -155,16 +194,25 @@ class Bird(models.Model):
     
     likes = models.ManyToManyField(User, related_name='liked_birds', blank=True)
 
+    class Meta:
+        ordering = ['-created_at']
+
     def save(self, *args, **kwargs):
         # Auto-detecta tipo de post
-        if self.post_type == 'story' and not self.expires_at:
+        if self.post_type == self.PostType.STORY and not self.expires_at:
             self.expires_at = timezone.now() + timezone.timedelta(hours=24)
-        elif self.video and self.post_type == 'text':
-            self.post_type = 'video'
+        elif self.video and self.post_type == self.PostType.TEXT:
+            self.post_type = self.PostType.VIDEO
             self.is_processing = True
-        elif self.image and self.post_type == 'text':
-            self.post_type = 'image'
+        elif self.image and self.post_type == self.PostType.TEXT:
+            self.post_type = self.PostType.IMAGE
         super().save(*args, **kwargs)
+
+    @property
+    def is_active_story(self):
+        if self.post_type != self.PostType.STORY:
+            return False
+        return self.expires_at > timezone.now()
 
 class Comment(models.Model):
     post = models.ForeignKey(Bird, on_delete=models.CASCADE, related_name='comments')
@@ -172,6 +220,9 @@ class Comment(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')
+
+    class Meta:
+        ordering = ['created_at']
 
 class SavedPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_items')
@@ -197,10 +248,14 @@ class Community(models.Model):
     def __str__(self): return self.name
 
 class CommunityMember(models.Model):
-    ROLES = (('member', 'Membro'), ('moderator', 'Moderador'), ('admin', 'Admin'))
+    class Role(models.TextChoices):
+        MEMBER = 'member', 'Membro'
+        MODERATOR = 'moderator', 'Moderador'
+        ADMIN = 'admin', 'Admin'
+
     community = models.ForeignKey(Community, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=20, choices=ROLES, default='member')
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.MEMBER)
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -215,6 +270,9 @@ class Room(models.Model):
     is_group = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.name if self.name else f"Chat {self.id}"
+
 class Message(models.Model):
     room = models.ForeignKey(Room, related_name='messages', on_delete=models.CASCADE)
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -222,6 +280,9 @@ class Message(models.Model):
     media = models.FileField(upload_to='chat_media/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['created_at']
 
 # ========================================================
 # 📅 EVENTOS
@@ -242,16 +303,27 @@ class Evento(models.Model):
 # 🔔 NOTIFICAÇÕES
 # ========================================================
 class Notification(models.Model):
+    class Type(models.TextChoices):
+        LIKE = 'like', 'Curtiu'
+        COMMENT = 'comment', 'Comentou'
+        FOLLOW = 'follow', 'Seguiu'
+        BOND = 'bond', 'Laço Social'
+        SYSTEM = 'system', 'Sistema'
+        MODERATION = 'moderation', 'Moderação'
+
     recipient = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
     sender = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE)
-    tipo = models.CharField(max_length=20) # like, comment, follow, bond
+    tipo = models.CharField(max_length=20, choices=Type.choices, default=Type.SYSTEM)
     message = models.CharField(max_length=255)
     link = models.CharField(max_length=255, blank=True, null=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-created_at']
+
 # ========================================================
-# ⚡ SIGNALS
+# ⚡ SIGNALS (PERFIL AUTOMÁTICO)
 # ========================================================
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

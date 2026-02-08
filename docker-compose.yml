@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # 1. Banco de Dados de Cache e Mensagens
+  redis-bird:
+    image: redis:latest
+    container_name: redis-bird
+    ports:
+      - "6380:6379"
+    restart: always
+
+  # 2. Motor de IA (TAS - Thalamus, SARA, Accumbens)
+  tas-engine:
+    build: 
+      context: ./tas
+      dockerfile: Dockerfile
+    container_name: tas-engine
+    ports:
+      - "8003:8000"
+    env_file: ./tas/.env
+    depends_on:
+      - redis-bird
+
+  # 3. Aplicação Principal (Django)
+  bird-app:
+    build: .
+    container_name: bird-app
+    command: python manage.py runserver 0.0.0.0:8002
+    volumes:
+      - .:/app
+    ports:
+      - "8002:8002"
+    env_file: .env
+    depends_on:
+      - redis-bird
+      - tas-engine

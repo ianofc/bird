@@ -1,13 +1,16 @@
-# core/views/extras.py
 import logging
+import json
 import mercadopago
-from django.shortcuts import render, redirect, get_object_or_404  
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.conf import settings
 from django.utils import timezone
+from core.models import Profile
 
 # Configuração do Logger de Auditoria via Thalamus
 audit_logger = logging.getLogger('audit')
@@ -67,6 +70,49 @@ def create_subscription_payment(request):
         audit_logger.exception(f"Mercado Pago SDK Error: {str(e)}")
         messages.error(request, "Erro ao processar checkout. Tente novamente.")
         return redirect('settings')
+
+@csrf_exempt
+def mercadopago_webhook(request):
+    """
+    Escuta notificações do Mercado Pago e ativa o Premium automaticamente.
+    Crucial para a monetização funcionar sem intervenção manual.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # O MP pode enviar 'type' ou 'topic' dependendo da versão da API
+            topic = data.get('type') or data.get('topic')
+            resource_id = data.get('data', {}).get('id') or data.get('resource')
+
+            if topic == 'payment' and resource_id:
+                sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+                payment_info = sdk.payment().get(resource_id)
+                
+                if payment_info["status"] == 200:
+                    payment_data = payment_info["response"]
+
+                    # Verifica se o pagamento foi realmente aprovado
+                    if payment_data.get('status') == 'approved':
+                        user_id = payment_data.get('external_reference') # ID que enviamos no checkout
+                        
+                        try:
+                            profile = Profile.objects.get(user_id=user_id)
+                            profile.is_premium = True
+                            profile.premium_since = timezone.now()
+                            profile.save()
+                            
+                            # Log de Auditoria para o Thalamus
+                            audit_logger.info(f"PREMIUM ACTIVATED: User {user_id} via Payment {resource_id}")
+                        except Profile.DoesNotExist:
+                            audit_logger.error(f"Webhook Error: Profile not found for User ID {user_id}")
+
+            return HttpResponse(status=200) # Sempre retornar 200 para o MP parar de reenviar
+        except Exception as e:
+            audit_logger.error(f"Webhook Exception: {str(e)}")
+            return HttpResponse(status=500)
+            
+    return HttpResponse(status=405)
 
 # ========================================================
 # ⚙️ GESTÃO DE SOBERANIA E CONFIGURAÇÕES
