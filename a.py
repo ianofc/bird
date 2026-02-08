@@ -1,103 +1,179 @@
 import os
-import subprocess
-import logging
 from pathlib import Path
 
-# ==========================================
-# 1. CONFIGURAÇÃO DE AMBIENTE & AUDITORIA
-# ==========================================
 BASE_DIR = Path(__file__).resolve().parent
 
-def setup_audit_system():
-    """Garante que a estrutura de logs para o Thalamus existe"""
-    log_dir = BASE_DIR / "logs"
-    log_dir.mkdir(exist_ok=True)
-    print(f"✅ Sistema de Auditoria JSON pronto em: {log_dir}")
-
-def inject_env_vars():
-    """Garante que as chaves mestras estão no .env"""
-    env_file = BASE_DIR / ".env"
-    required_vars = [
-        "MERCADOPAGO_ACCESS_TOKEN=seu_token_aqui\n",
-        "TAS_API_URL=http://localhost:8003/api/v1\n",
-        "REDIS_URL=redis://127.0.0.1:6380/0\n"
-    ]
-    
-    if not env_file.exists():
-        with open(env_file, "w") as f:
-            f.writelines(required_vars)
-        print("✅ Arquivo .env criado com variáveis de soberania.")
+def write_file(path, content):
+    file_path = BASE_DIR / path
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content.strip())
+        print(f"✅ Atualizado: {path}")
+    except Exception as e:
+        print(f"❌ Erro em {path}: {e}")
 
 # ==========================================
-# 2. AUTOMAÇÃO DE BACKUP (Ponto 2)
+# 1. ATUALIZAR VIEW (Buscar Mensagens)
 # ==========================================
-def run_initial_backup():
-    """Executa o backup adaptado para Windows"""
-    import shutil
-    from datetime import datetime
-    
-    timestamp = datetime.now().strftime("%Y-%m-%d")
-    backup_dir = BASE_DIR / "backups" / timestamp
-    backup_dir.mkdir(parents=True, exist_ok=True)
-
-    # 1. Backup do SQLite
-    db_file = BASE_DIR / "db.sqlite3"
-    if db_file.exists():
-        shutil.copy2(db_file, backup_dir / "db_backup.sqlite3")
-        print("✅ Backup do banco de dados concluído.")
-
-    # 2. Backup de Mídias
-    media_dir = BASE_DIR / "media"
-    if media_dir.exists():
-        shutil.make_archive(str(backup_dir / "media_assets"), 'gztar', media_dir)
-        print("✅ Backup de mídias concluído.")
-
-# ==========================================
-# 3. MOTOR DE INGESTÃO TAS (SARA & ACCUMBENS)
-# ==========================================
-def create_signals_integration():
+def fix_chat_view_history():
     """
-    Injeta o código de integração para que o Django alimente o TAS automaticamente.
-    Isso conecta o core.models ao motor de IA.
+    Atualiza core/views/chat.py para carregar o histórico de mensagens.
     """
-    signals_path = BASE_DIR / "core" / "signals.py"
-    integration_code = """
-import requests
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from .models import Bird
+    content = """
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from core.models import Room
 
-@receiver(post_save, sender=Bird)
-def ingest_into_tas(sender, instance, created, **kwargs):
-    \"\"\"Envia novos Birds para o SARA gerar embeddings automaticamente\"\"\"
-    if created and instance.content:
-        payload = {
-            "content_id": instance.id,
-            "text": instance.content,
-            "metadata": {"author": instance.author.username, "type": instance.post_type}
-        }
-        try:
-            requests.post("http://localhost:8003/api/v1/events/ingest", json=payload, timeout=5)
-        except Exception:
-            pass # Thalamus: Silencia erros para não travar a experiência do usuário
+@login_required
+def chat_index(request):
+    # Garante que existe pelo menos uma sala global (ID 1)
+    room, created = Room.objects.get_or_create(id=1, defaults={'is_group': True, 'name': 'Global'})
+    
+    # Carrega as últimas 50 mensagens dessa sala
+    messages = room.messages.select_related('sender', 'sender__profile').order_by('created_at')[:50]
+    
+    return render(request, 'groups/chat.html', {
+        'room': room,
+        'messages': messages
+    })
 """
-    with open(signals_path, "a") as f:
-        f.write(integration_code)
-    print("✅ Motor SARA/TAS integrado via Signals.")
+    write_file("core/views/chat.py", content)
 
 # ==========================================
-# 4. EXECUÇÃO MESTRE
+# 2. ATUALIZAR TEMPLATE (Renderizar Histórico)
 # ==========================================
+def fix_chat_template_history():
+    """
+    Atualiza templates/groups/chat.html para mostrar o histórico
+    usando o loop do Django antes do JS entrar em ação.
+    """
+    content = """
+{% extends 'layout/base_bird.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="flex flex-col h-[calc(100vh-100px)] bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+    
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md flex justify-between items-center">
+        <h2 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <i class="fas fa-comments text-indigo-500"></i>
+            Chat Global
+        </h2>
+        <span class="text-xs text-green-500 flex items-center gap-1">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Online
+        </span>
+    </div>
+
+    <div id="chat-log" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-gray-900 scroll-smooth">
+        
+        {% for msg in messages %}
+            <div class="flex items-end gap-2 {% if msg.sender == request.user %}flex-row-reverse{% endif %} animate-fade-in">
+                <div class="w-8 h-8 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+                    {% if msg.sender.profile.avatar %}
+                        <img src="{{ msg.sender.profile.avatar.url }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <div class="w-full h-full bg-indigo-100 flex items-center justify-center text-xs">👤</div>
+                    {% endif %}
+                </div>
+                <div class="max-w-[70%]">
+                    <div class="px-4 py-2 rounded-2xl text-sm shadow-sm 
+                        {% if msg.sender == request.user %}
+                            bg-indigo-600 text-white rounded-br-none
+                        {% else %}
+                            bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none
+                        {% endif %}">
+                        {{ msg.content }}
+                    </div>
+                    <span class="text-[10px] text-gray-400 mt-1 block {% if msg.sender == request.user %}text-right{% else %}text-left{% endif %}">
+                        {{ msg.sender.username }} • {{ msg.created_at|date:"H:i" }}
+                    </span>
+                </div>
+            </div>
+        {% empty %}
+            <div class="text-center text-gray-400 text-sm mt-10" id="empty-state">
+                Nenhuma mensagem anterior. Diga olá! 👋
+            </div>
+        {% endfor %}
+
+    </div>
+
+    <div class="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+        <div class="flex gap-2 items-center bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2">
+            <input id="chat-message-input" type="text" 
+                   class="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 dark:text-white placeholder-gray-400"
+                   placeholder="Escreva uma mensagem...">
+            
+            <button id="chat-message-submit" class="bg-indigo-600 hover:bg-indigo-700 text-white w-10 h-10 rounded-full flex items-center justify-center transition-transform active:scale-95">
+                <i class="fas fa-paper-plane text-sm"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const roomName = "{{ room.id }}"; 
+    const chatLog = document.querySelector('#chat-log');
+    
+    // Auto-scroll para o fundo ao carregar
+    chatLog.scrollTop = chatLog.scrollHeight;
+
+    const chatSocket = new WebSocket(
+        (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
+        window.location.host +
+        '/ws/chat/' + roomName + '/'
+    );
+
+    const userInput = document.querySelector('#chat-message-input');
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const isMe = data.username === "{{ request.user.username }}";
+        
+        // Remove empty state se existir
+        const emptyState = document.getElementById('empty-state');
+        if(emptyState) emptyState.remove();
+
+        const msgHTML = `
+            <div class="flex items-end gap-2 ${isMe ? 'flex-row-reverse' : ''} animate-fade-in-up">
+                <div class="w-8 h-8 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+                    ${data.avatar_url ? `<img src="${data.avatar_url}" class="w-full h-full object-cover">` : '<div class="w-full h-full bg-indigo-100 flex items-center justify-center text-xs">👤</div>'}
+                </div>
+                <div class="max-w-[70%]">
+                    <div class="px-4 py-2 rounded-2xl text-sm shadow-sm ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'}">
+                        ${data.message}
+                    </div>
+                    <span class="text-[10px] text-gray-400 mt-1 block ${isMe ? 'text-right' : 'text-left'}">
+                        ${data.username} • ${data.timestamp}
+                    </span>
+                </div>
+            </div>
+        `;
+        
+        chatLog.insertAdjacentHTML('beforeend', msgHTML);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    };
+
+    chatSocket.onclose = function(e) { console.error('Chat socket fechado'); };
+
+    document.querySelector('#chat-message-submit').onclick = function(e) {
+        const message = userInput.value;
+        if(message.trim()) {
+            chatSocket.send(JSON.stringify({'message': message}));
+            userInput.value = '';
+        }
+    };
+
+    userInput.onkeyup = function(e) {
+        if (e.keyCode === 13) document.querySelector('#chat-message-submit').click();
+    };
+</script>
+{% endblock %}
+"""
+    write_file("templates/groups/chat.html", content)
+
 if __name__ == "__main__":
-    print("🦅 Iniciando Integração Mestre Bird (Aurora 2.0)...")
-    setup_audit_system()
-    inject_env_vars()
-    run_initial_backup()
-    create_signals_integration()
-    
-    # Executa Migrações Finais
-    print("⚙️ Sincronizando Base de Dados...")
-    subprocess.run(["python", "manage.py", "migrate"])
-    
-    print("\n🚀 TUDO PRONTO! O Bird agora é autônomo.")
-    print("Próximos passos: Inicie o Redis e o fastapi_service.")
+    print("🧠 Conectando Memória do Chat (Histórico)...")
+    fix_chat_view_history()
+    fix_chat_template_history()
+    print("✅ Feito! As mensagens agora persistem.")
+    print("👉 Reinicie o Django: docker-compose restart bird-app")

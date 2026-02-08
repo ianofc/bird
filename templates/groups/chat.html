@@ -2,189 +2,119 @@
 {% load static %}
 
 {% block main_content %}
-<div class="relative h-[calc(100vh-80px)] w-full overflow-hidden font-sans text-slate-800">
-
-    <div class="fixed inset-0 -z-10 bg-[#F5F7FA]">
-        <div class="absolute top-[10%] left-[30%] w-[500px] h-[500px] bg-indigo-300/20 rounded-full blur-[120px] animate-pulse"></div>
-        <div class="absolute bottom-[10%] right-[10%] w-[600px] h-[600px] bg-purple-300/20 rounded-full blur-[120px] animate-pulse delay-1000"></div>
+<div class="flex flex-col h-[calc(100vh-100px)] bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+    
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md flex justify-between items-center">
+        <h2 class="font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <i class="fas fa-comments text-indigo-500"></i>
+            Chat Global
+        </h2>
+        <span class="text-xs text-green-500 flex items-center gap-1">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Online
+        </span>
     </div>
 
-    <div class="h-full max-w-7xl mx-auto px-0 md:px-4 py-2 md:py-6">
+    <div id="chat-log" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-gray-900 scroll-smooth">
         
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 h-full">
-
-            <div class="md:col-span-4 lg:col-span-3 flex flex-col h-full {% if active_room %}hidden md:flex{% else %}flex{% endif %}">
-                
-                <div class="bg-white/60 backdrop-blur-xl border border-white/60 md:rounded-[2rem] shadow-sm flex-1 flex flex-col overflow-hidden">
-                    
-                    <div class="p-5 border-b border-white/50 flex justify-between items-center bg-white/40">
-                        <h2 class="font-black text-xl text-slate-800">Mensagens</h2>
-                        <a href="{% url 'network_dashboard' %}" class="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center hover:scale-110 transition shadow-lg" title="Nova Conversa">
-                            <i class="fas fa-plus text-xs"></i>
-                        </a>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
-                        {% for chat in chat_list %}
-                        <a href="{% url 'chat_room' chat.id %}" class="group relative flex items-center gap-3 p-3 rounded-2xl transition duration-300 {% if chat.is_active %}bg-white shadow-md ring-1 ring-black/5{% else %}hover:bg-white/50{% endif %}">
-                            
-                            <div class="relative shrink-0">
-                                <img src="{{ chat.avatar|default:'https://ui-avatars.com/api/?background=random' }}" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">
-                                </div>
-
-                            <div class="flex-1 min-w-0">
-                                <div class="flex justify-between items-center mb-0.5">
-                                    <h4 class="font-bold text-sm text-slate-900 truncate">{{ chat.name }}</h4>
-                                    <span class="text-[10px] font-medium text-slate-400">{{ chat.timestamp|date:"H:i" }}</span>
-                                </div>
-                                <p class="text-xs text-slate-500 truncate {% if chat.is_active %}font-medium text-indigo-600{% endif %}">
-                                    {% if chat.last_message.sender == user %}Você: {% endif %}{{ chat.last_message|truncatechars:30 }}
-                                </p>
-                            </div>
-                        </a>
-                        {% empty %}
-                        <div class="text-center py-10 px-4">
-                            <div class="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center mx-auto mb-3 text-indigo-300 text-2xl">
-                                <i class="far fa-comments"></i>
-                            </div>
-                            <p class="text-sm font-bold text-slate-600">Nenhuma conversa.</p>
-                            <p class="text-xs text-slate-400 mt-1">Conecte-se com amigos para começar a conversar.</p>
-                            <a href="{% url 'network_dashboard' %}" class="inline-block mt-4 text-xs font-bold text-indigo-600 hover:underline">Encontrar pessoas</a>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="md:col-span-8 lg:col-span-9 flex flex-col h-full {% if not active_room %}hidden md:flex{% endif %}">
-                
-                <div class="bg-white/70 backdrop-blur-xl border border-white/80 md:rounded-[2.5rem] shadow-xl flex-1 flex flex-col overflow-hidden relative">
-                    
-                    {% if active_room %}
-                        <div class="p-4 border-b border-white/60 bg-white/60 backdrop-blur-md flex items-center justify-between z-10">
-                            <div class="flex items-center gap-3">
-                                <a href="{% url 'chat_index' %}" class="md:hidden w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-600 shadow-sm">
-                                    <i class="fas fa-arrow-left"></i>
-                                </a>
-
-                                <div class="relative">
-                                    {% if active_room.is_group %}
-                                        <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-sm">#</div>
-                                    {% else %}
-                                        <img src="{{ other_user.profile.avatar.url|default:'https://ui-avatars.com/api/?background=random' }}" class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm">
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-slate-900 leading-tight">
-                                        {% if active_room.is_group %}
-                                            {{ active_room.name }}
-                                        {% else %}
-                                            {{ other_user.profile.full_name|default:other_user.username }}
-                                        {% endif %}
-                                    </h3>
-                                    <p class="text-[10px] font-bold text-green-600 flex items-center gap-1">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Online agora
-                                    </p>
-                                </div>
-                            </div>
-
-                            <button class="text-slate-400 hover:text-indigo-600 transition p-2">
-                                <i class="fas fa-ellipsis-v"></i>
-                            </button>
-                        </div>
-
-                        <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar bg-slate-50/30">
-                            
-                            <div class="flex justify-center">
-                                <span class="text-[10px] font-bold text-slate-400 bg-slate-200/50 px-3 py-1 rounded-full uppercase tracking-wider">Hoje</span>
-                            </div>
-
-                            {% for msg in messages %}
-                                {% if msg.sender == user %}
-                                    <div class="flex flex-col items-end animate-fade-in-up">
-                                        <div class="bg-slate-900 text-white px-5 py-3 rounded-2xl rounded-tr-sm shadow-md max-w-[80%] md:max-w-[60%] text-sm leading-relaxed">
-                                            {{ msg.content }}
-                                        </div>
-                                        <span class="text-[10px] font-bold text-slate-400 mt-1 mr-1">{{ msg.created_at|date:"H:i" }}</span>
-                                    </div>
-                                {% else %}
-                                    <div class="flex flex-col items-start animate-fade-in-up">
-                                        <div class="flex items-end gap-2 max-w-[80%] md:max-w-[60%]">
-                                            <img src="{{ msg.sender.profile.avatar.url|default:'https://ui-avatars.com/api/?background=random' }}" class="w-6 h-6 rounded-full object-cover mb-1 opacity-70">
-                                            <div class="bg-white border border-white/60 text-slate-700 px-5 py-3 rounded-2xl rounded-tl-sm shadow-sm text-sm leading-relaxed">
-                                                {{ msg.content }}
-                                            </div>
-                                        </div>
-                                        <span class="text-[10px] font-bold text-slate-400 mt-1 ml-9">{{ msg.created_at|date:"H:i" }}</span>
-                                    </div>
-                                {% endif %}
-                            {% empty %}
-                                <div class="flex flex-col items-center justify-center h-full text-center opacity-50">
-                                    <i class="fas fa-hand-sparkles text-4xl text-indigo-300 mb-2"></i>
-                                    <p class="text-sm font-bold text-slate-500">Comece a conversa dando um "Olá!"</p>
-                                </div>
-                            {% endfor %}
-                            
-                            <div id="scroll-anchor"></div>
-                        </div>
-
-                        <div class="p-4 bg-white/80 backdrop-blur-lg border-t border-white/50">
-                            <form action="" method="POST" class="flex items-end gap-2">
-                                {% csrf_token %}
-                                <button type="button" class="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                                
-                                <div class="flex-1 bg-slate-100 rounded-2xl flex items-center px-4 py-2 border border-transparent focus-within:border-indigo-300 focus-within:bg-white transition shadow-inner">
-                                    <textarea name="content" rows="1" class="w-full bg-transparent border-none focus:ring-0 text-sm text-slate-800 placeholder-slate-400 resize-none max-h-32 py-2" placeholder="Digite sua mensagem..." required oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
-                                    <button type="button" class="ml-2 text-slate-400 hover:text-yellow-500 transition"><i class="far fa-smile"></i></button>
-                                </div>
-
-                                <button type="submit" class="p-3 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 transition active:scale-95">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </form>
-                        </div>
-
+        {% for msg in messages %}
+            <div class="flex items-end gap-2 {% if msg.sender == request.user %}flex-row-reverse{% endif %} animate-fade-in">
+                <div class="w-8 h-8 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+                    {% if msg.sender.profile.avatar %}
+                        <img src="{{ msg.sender.profile.avatar.url }}" class="w-full h-full object-cover">
                     {% else %}
-                        <div class="flex-1 flex flex-col items-center justify-center text-center p-8 bg-white/40">
-                            <div class="w-32 h-32 bg-gradient-to-tr from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mb-6 shadow-inner animate-pulse-slow">
-                                <img src="{% static 'img/illustration_chat.svg' %}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'" class="w-20 opacity-80">
-                                <i class="fas fa-paper-plane text-5xl text-indigo-300/50" style="display:none"></i>
-                            </div>
-                            <h2 class="text-2xl font-black text-slate-800 mb-2">Suas Mensagens</h2>
-                            <p class="text-slate-500 max-w-xs">Escolha uma conversa na lista ou comece uma nova para conectar-se.</p>
-                        </div>
+                        <div class="w-full h-full bg-indigo-100 flex items-center justify-center text-xs">👤</div>
                     {% endif %}
-
+                </div>
+                <div class="max-w-[70%]">
+                    <div class="px-4 py-2 rounded-2xl text-sm shadow-sm 
+                        {% if msg.sender == request.user %}
+                            bg-indigo-600 text-white rounded-br-none
+                        {% else %}
+                            bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none
+                        {% endif %}">
+                        {{ msg.content }}
+                    </div>
+                    <span class="text-[10px] text-gray-400 mt-1 block {% if msg.sender == request.user %}text-right{% else %}text-left{% endif %}">
+                        {{ msg.sender.username }} • {{ msg.created_at|date:"H:i" }}
+                    </span>
                 </div>
             </div>
+        {% empty %}
+            <div class="text-center text-gray-400 text-sm mt-10" id="empty-state">
+                Nenhuma mensagem anterior. Diga olá! 👋
+            </div>
+        {% endfor %}
 
+    </div>
+
+    <div class="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+        <div class="flex gap-2 items-center bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2">
+            <input id="chat-message-input" type="text" 
+                   class="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 dark:text-white placeholder-gray-400"
+                   placeholder="Escreva uma mensagem...">
+            
+            <button id="chat-message-submit" class="bg-indigo-600 hover:bg-indigo-700 text-white w-10 h-10 rounded-full flex items-center justify-center transition-transform active:scale-95">
+                <i class="fas fa-paper-plane text-sm"></i>
+            </button>
         </div>
     </div>
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const container = document.getElementById("chat-container");
-        if (container) {
-            container.scrollTop = container.scrollHeight;
+    const roomName = "{{ room.id }}"; 
+    const chatLog = document.querySelector('#chat-log');
+    
+    // Auto-scroll para o fundo ao carregar
+    chatLog.scrollTop = chatLog.scrollHeight;
+
+    const chatSocket = new WebSocket(
+        (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
+        window.location.host +
+        '/ws/chat/' + roomName + '/'
+    );
+
+    const userInput = document.querySelector('#chat-message-input');
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const isMe = data.username === "{{ request.user.username }}";
+        
+        // Remove empty state se existir
+        const emptyState = document.getElementById('empty-state');
+        if(emptyState) emptyState.remove();
+
+        const msgHTML = `
+            <div class="flex items-end gap-2 ${isMe ? 'flex-row-reverse' : ''} animate-fade-in-up">
+                <div class="w-8 h-8 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+                    ${data.avatar_url ? `<img src="${data.avatar_url}" class="w-full h-full object-cover">` : '<div class="w-full h-full bg-indigo-100 flex items-center justify-center text-xs">👤</div>'}
+                </div>
+                <div class="max-w-[70%]">
+                    <div class="px-4 py-2 rounded-2xl text-sm shadow-sm ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'}">
+                        ${data.message}
+                    </div>
+                    <span class="text-[10px] text-gray-400 mt-1 block ${isMe ? 'text-right' : 'text-left'}">
+                        ${data.username} • ${data.timestamp}
+                    </span>
+                </div>
+            </div>
+        `;
+        
+        chatLog.insertAdjacentHTML('beforeend', msgHTML);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    };
+
+    chatSocket.onclose = function(e) { console.error('Chat socket fechado'); };
+
+    document.querySelector('#chat-message-submit').onclick = function(e) {
+        const message = userInput.value;
+        if(message.trim()) {
+            chatSocket.send(JSON.stringify({'message': message}));
+            userInput.value = '';
         }
-    });
+    };
+
+    userInput.onkeyup = function(e) {
+        if (e.keyCode === 13) document.querySelector('#chat-message-submit').click();
+    };
 </script>
-
-<style>
-    /* Animação suave para novas mensagens */
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in-up {
-        animation: fadeInUp 0.3s ease-out forwards;
-    }
-    .animate-pulse-slow {
-        animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-</style>
-
 {% endblock %}

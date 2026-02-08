@@ -1,15 +1,10 @@
-<div id="feed-list" class="pb-32">
+{% load static %}
+<div id="feed-list" class="space-y-4">
     {% for bird in birds %}
-        {% include 'components/bird_item.html' %} 
+        {% include "components/bird_item.html" %}
     {% empty %}
-        <div class="p-10 text-center text-gray-500">
-            <i class="fas fa-dove text-4xl mb-4 text-gray-300"></i>
-            <p class="text-lg">Seu feed está vazio.</p>
-            {% if not user.is_authenticated %}
-                <p class="text-sm mt-2"><a href="{% url 'login' %}" class="text-blue-500 font-bold">Faça login</a> para ver mais.</p>
-            {% else %}
-                <p class="text-sm mt-2">Siga pessoas ou escreva algo!</p>
-            {% endif %}
+        <div class="text-center py-10 text-gray-500">
+            <p>Nenhum post ainda. Seja o primeiro!</p>
         </div>
     {% endfor %}
 </div>

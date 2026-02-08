@@ -37,7 +37,14 @@
             animation-delay: 4s;
         }
     </style>
-</head>
+
+    <script>
+        document.body.addEventListener('htmx:configRequest', (event) => {
+            event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+        });
+    </script>
+    </head>
+
 <body class="overflow-hidden h-screen w-screen flex text-slate-800 relative selection:bg-indigo-100 selection:text-indigo-700">
 
     <div class="fixed inset-0 w-full h-full overflow-hidden -z-50 pointer-events-none">

@@ -1,30 +1,97 @@
-<div class="px-4 py-4 border-b border-gray-100">
-    <div class="flex space-x-3">
-        <div class="h-10 w-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-             {% if user.profile.avatar %}
-                <img src="{{ user.profile.avatar.url }}" class="h-full w-full object-cover">
-            {% endif %}
-        </div>
-        <div class="flex-1">
-            <form hx-post="{% url 'create_bird' %}" 
-                  hx-target="#feed-list" 
-                  hx-swap="afterbegin"
-                  hx-on::after-request="this.reset()">
-                {% csrf_token %}
-                <input type="text" name="content" 
-                       class="w-full text-lg placeholder-gray-500 focus:outline-none py-2 bg-transparent"
-                       placeholder="O que está acontecendo?">
-                
-                <div class="flex justify-between items-center mt-3">
-                    <div class="flex space-x-4 text-blue-500">
-                        <button type="button" class="hover:bg-blue-50 p-2 rounded-full transition"><i class="far fa-image"></i></button>
-                        <button type="button" class="hover:bg-blue-50 p-2 rounded-full transition"><i class="fas fa-video"></i></button>
+{% load static %}
+<div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm mb-6 border border-gray-100 dark:border-gray-700">
+    <form hx-post="{% url 'create_bird' %}" 
+          hx-target="#feed-list" 
+          hx-swap="afterbegin" 
+          hx-encoding="multipart/form-data"
+          enctype="multipart/form-data"
+          id="create-post-form">
+        
+        {% csrf_token %}
+        
+        <div class="flex gap-4">
+            <div class="shrink-0">
+                {% if request.user.profile.avatar %}
+                    <img src="{{ request.user.profile.avatar.url }}" class="w-11 h-11 rounded-full object-cover">
+                {% else %}
+                    <div class="w-11 h-11 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500">
+                        <i class="fas fa-user"></i>
                     </div>
-                    <button type="submit" class="bg-blue-500 text-white font-bold px-5 py-1.5 rounded-full hover:bg-blue-600 transition disabled:opacity-50 text-sm">
-                        Postar
+                {% endif %}
+            </div>
+
+            <div class="flex-1">
+                <textarea name="content" 
+                          rows="2" 
+                          class="w-full bg-transparent border-none p-2 text-lg text-gray-700 dark:text-white placeholder-gray-400 focus:ring-0 resize-none" 
+                          placeholder="No que você está pensando, {{ request.user.first_name }}?"></textarea>
+
+                <div id="preview-area" class="hidden mt-3 relative rounded-xl overflow-hidden bg-gray-100 max-h-[300px]">
+                    <img id="img-preview" class="w-full h-full object-cover hidden">
+                    <video id="video-preview" controls class="w-full h-full object-contain bg-black hidden"></video>
+                    <button type="button" onclick="clearMedia()" class="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
-            </form>
+
+                <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center gap-2">
+                        <label class="p-2 rounded-full hover:bg-indigo-50 text-indigo-500 cursor-pointer transition">
+                            <i class="far fa-image text-lg"></i>
+                            <input type="file" name="image" accept="image/*" class="hidden" onchange="previewFile(this, 'image')">
+                        </label>
+
+                        <label class="p-2 rounded-full hover:bg-rose-50 text-rose-500 cursor-pointer transition">
+                            <i class="fas fa-video text-lg"></i>
+                            <input type="file" name="video" accept="video/*" class="hidden" onchange="previewFile(this, 'video')">
+                        </label>
+                    </div>
+
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-bold shadow-md transition active:scale-95 text-sm">
+                        Publicar
+                    </button>
+                </div>
+            </div>
         </div>
-    </div>
+    </form>
+
+    <script>
+        function previewFile(input, type) {
+            const previewArea = document.getElementById('preview-area');
+            const img = document.getElementById('img-preview');
+            const vid = document.getElementById('video-preview');
+            
+            const file = input.files[0];
+            if (file) {
+                previewArea.classList.remove('hidden');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (type === 'image') {
+                        img.src = e.target.result;
+                        img.classList.remove('hidden');
+                        vid.classList.add('hidden');
+                    } else {
+                        vid.src = e.target.result;
+                        vid.classList.remove('hidden');
+                        img.classList.add('hidden');
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearMedia() {
+            document.getElementById('preview-area').classList.add('hidden');
+            document.querySelector('input[name="image"]').value = '';
+            document.querySelector('input[name="video"]').value = '';
+        }
+
+        // Limpa o form após o post (HTMX Event)
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if(evt.detail.elt.id === 'create-post-form') {
+                evt.detail.elt.reset();
+                clearMedia();
+            }
+        });
+    </script>
 </div>
