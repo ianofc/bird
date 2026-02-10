@@ -1,0 +1,121 @@
+{% extends 'layout/base_bird.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="flex flex-col h-[calc(100vh-100px)] bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+    
+    <div class="px-6 py-4 border-b border-gray-100 bg-white/80 backdrop-blur-md flex justify-between items-center z-10">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'chat_index' %}" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 mr-1">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            
+            <div class="relative">
+                {% if other_user and other_user.profile.avatar %}
+                    <img src="{{ other_user.profile.avatar.url }}" class="w-10 h-10 rounded-full object-cover shadow-sm">
+                {% else %}
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center justify-center text-white shadow-sm">
+                        <i class="fas fa-user"></i>
+                    </div>
+                {% endif %}
+                <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+            </div>
+            
+            <div>
+                <h2 class="font-bold text-gray-800 text-sm leading-tight">{{ chat_name }}</h2>
+                <span class="text-xs text-green-600 font-medium">Online agora</span>
+            </div>
+        </div>
+        
+        <button class="text-gray-400 hover:text-indigo-600 transition">
+            <i class="fas fa-ellipsis-v"></i>
+        </button>
+    </div>
+
+    <div id="chat-log" class="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50 scroll-smooth">
+        {% for msg in messages %}
+            <div class="flex {% if msg.sender == request.user %}justify-end{% else %}justify-start{% endif %} animate-fade-in-up">
+                <div class="flex gap-2 max-w-[70%] {% if msg.sender == request.user %}flex-row-reverse{% endif %}">
+                    
+                    <div class="relative px-5 py-3 text-[15px] shadow-sm 
+                        {% if msg.sender == request.user %}
+                            bg-indigo-600 text-white rounded-2xl rounded-tr-sm
+                        {% else %}
+                            bg-white text-gray-700 rounded-2xl rounded-tl-sm border border-gray-100
+                        {% endif %}">
+                        {{ msg.content }}
+                        <span class="text-[10px] block mt-1 opacity-70 {% if msg.sender == request.user %}text-indigo-100 text-right{% else %}text-gray-400{% endif %}">
+                            {{ msg.created_at|date:"H:i" }}
+                            {% if msg.sender == request.user %} <i class="fas fa-check-double ml-1"></i> {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="p-4 bg-white border-t border-gray-100">
+        <div class="flex gap-3 items-center bg-gray-50 rounded-[2rem] px-2 py-2 border border-gray-200 focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-50 transition-all">
+            <button class="w-10 h-10 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-plus"></i>
+            </button>
+            
+            <input id="chat-message-input" type="text" 
+                   class="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 placeholder-gray-400 h-10"
+                   placeholder="Digite sua mensagem...">
+            
+            <button id="chat-message-submit" class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-transform active:scale-90 flex-shrink-0">
+                <i class="fas fa-paper-plane text-sm translate-x-[-1px] translate-y-[1px]"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const roomName = "{{ room.id }}";
+    const chatLog = document.querySelector('#chat-log');
+    chatLog.scrollTop = chatLog.scrollHeight;
+
+    const chatSocket = new WebSocket(
+        (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
+        window.location.host +
+        '/ws/chat/' + roomName + '/'
+    );
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const isMe = data.username === "{{ request.user.username }}";
+        
+        const msgHTML = `
+            <div class="flex ${isMe ? 'justify-end' : 'justify-start'} animate-fade-in-up">
+                <div class="flex gap-2 max-w-[70%] ${isMe ? 'flex-row-reverse' : ''}">
+                    <div class="relative px-5 py-3 text-[15px] shadow-sm ${isMe ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white text-gray-700 rounded-2xl rounded-tl-sm border border-gray-100'}">
+                        ${data.message}
+                        <span class="text-[10px] block mt-1 opacity-70 ${isMe ? 'text-indigo-100 text-right' : 'text-gray-400'}">
+                            ${data.timestamp} ${isMe ? '<i class="fas fa-check-double ml-1"></i>' : ''}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        chatLog.insertAdjacentHTML('beforeend', msgHTML);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    };
+
+    chatSocket.onclose = function(e) { console.error('Socket fechado'); };
+
+    document.querySelector('#chat-message-submit').onclick = function(e) {
+        const messageInput = document.querySelector('#chat-message-input');
+        const message = messageInput.value;
+        if(message.trim()) {
+            chatSocket.send(JSON.stringify({'message': message}));
+            messageInput.value = '';
+        }
+    };
+
+    document.querySelector('#chat-message-input').onkeyup = function(e) {
+        if (e.keyCode === 13) document.querySelector('#chat-message-submit').click();
+    };
+</script>
+{% endblock %}

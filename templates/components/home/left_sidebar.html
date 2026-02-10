@@ -4,32 +4,29 @@
               bg-white/40 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_rgba(31,38,135,0.15)] ring-1 ring-white/40">
 
     <a href="{% url 'profile_detail' user.username %}" 
-       class="relative flex items-center justify-center transition-all duration-500 w-13 h-13 rounded-2xl group 
-              bg-white/40 border border-white/60 hover:rounded-full hover:bg-white/80 hover:scale-110 hover:shadow-lg hover:shadow-indigo-500/20 p-1
+       class="relative flex items-center justify-center transition-all duration-500 w-12 h-16 rounded-[2rem] group 
+              bg-white/40 border border-white/60 hover:bg-white/80 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/20 p-1 overflow-hidden
               {% if request.resolver_match.url_name == 'profile_detail' %}ring-2 ring-indigo-400{% endif %}"
        title="Meu Perfil">
         
         {% if user.profile.avatar %}
-            <img src="{{ user.profile.avatar.url }}" class="w-10 h-10 rounded-xl object-cover group-hover:rounded-full transition-all">
+            <img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover rounded-[1.8rem] group-hover:scale-110 transition-transform duration-700">
         {% else %}
-            <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-500 group-hover:rounded-full transition-all">
-                <i class="fas fa-user"></i>
+            <div class="w-full h-full bg-indigo-100 flex items-center justify-center text-indigo-500">
+                <i class="fas fa-user text-xl"></i>
             </div>
         {% endif %}
     </a>
 
-    <div class="w-10 h-[1px] bg-indigo-500/20 rounded-full"></div>
+    <div class="w-8 h-[2px] bg-indigo-500/20 rounded-full my-2"></div>
 
-    <div class="flex flex-col gap-5 w-full items-center">
+    <div class="flex flex-col gap-6 w-full items-center">
         
         <a href="{% url 'home' %}" 
            class="relative group flex items-center justify-center w-10 h-10 transition-all duration-300
                   {% if request.resolver_match.url_name == 'home' %}text-indigo-600 scale-110{% else %}text-slate-500 hover:text-indigo-500 hover:scale-110{% endif %}"
            title="Feed">
             <i class="fas fa-home text-xl drop-shadow-sm"></i>
-            {% if request.resolver_match.url_name == 'home' %}
-                <span class="absolute -right-3 top-1/2 -translate-y-1/2 w-1 h-1 bg-indigo-500 rounded-full"></span>
-            {% endif %}
         </a>
 
         <a href="{% url 'explore' %}" 
@@ -42,9 +39,8 @@
         <a href="{% url 'chat_index' %}" 
            class="relative group flex items-center justify-center w-10 h-10 transition-all duration-300
                   {% if request.resolver_match.url_name == 'chat_index' %}text-indigo-600 scale-110{% else %}text-slate-500 hover:text-indigo-500 hover:scale-110{% endif %}"
-           title="Mensagens">
+           title="Mensagens Privadas">
             <i class="fas fa-comment-dots text-xl drop-shadow-sm"></i>
-            <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
         </a>
 
         <a href="{% url 'network_dashboard' %}" 
@@ -53,7 +49,7 @@
            title="Minha Rede">
             <i class="fas fa-users text-xl drop-shadow-sm"></i>
         </a>
-
+        
         <a href="{% url 'groups' %}" 
            class="relative group flex items-center justify-center w-10 h-10 transition-all duration-300
                   {% if request.resolver_match.url_name == 'groups' %}text-indigo-600 scale-110{% else %}text-slate-500 hover:text-indigo-500 hover:scale-110{% endif %}"
@@ -63,7 +59,7 @@
 
     </div>
 
-    <div class="mt-auto w-10 h-[1px] bg-indigo-500/20 rounded-full"></div>
+    <div class="mt-auto w-8 h-[2px] bg-indigo-500/20 rounded-full my-2"></div>
 
     <a href="{% url 'settings' %}" 
        class="relative group flex items-center justify-center w-10 h-10 transition-all duration-300 text-slate-400 hover:text-indigo-500 hover:rotate-90"

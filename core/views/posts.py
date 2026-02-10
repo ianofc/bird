@@ -10,6 +10,7 @@ def create_bird(request):
         image = request.FILES.get('image')
         video = request.FILES.get('video')
         
+        # Validação básica: tem de ter conteúdo ou mídia
         if content or image or video:
             new_bird = Bird.objects.create(
                 author=request.user,
@@ -19,10 +20,11 @@ def create_bird(request):
                 post_type='image' if image else 'video' if video else 'text'
             )
             
-            # Se for HTMX, retorna apenas o card do novo post para inserir na feed
+            # SE FOR HTMX (Ajax): Retorna apenas o card do novo post
             if request.headers.get('HX-Request'):
                 return render(request, 'components/bird_item.html', {'bird': new_bird})
                 
+            # Fallback para navegação normal
             messages.success(request, "Bird publicado!")
         else:
             if not request.headers.get('HX-Request'):
@@ -33,15 +35,17 @@ def create_bird(request):
 @login_required
 def delete_bird(request, bird_id):
     bird = get_object_or_404(Bird, id=bird_id)
+    
     if request.user == bird.author:
         bird.delete()
+        # Se for HTMX, retorna vazio para remover o elemento da tela
         if request.headers.get('HX-Request'):
-            return render(request, 'components/partials/bird_deleted.html')
+            return render(request, 'components/partials/empty.html') 
         messages.success(request, "Post removido.")
+    
     return redirect('home')
 
 @login_required
 def bird_detail(request, bird_id):
-    """View para visualizar um único post em detalhe"""
     bird = get_object_or_404(Bird, id=bird_id)
     return render(request, 'pages/feed.html', {'birds': [bird], 'single_mode': True})
