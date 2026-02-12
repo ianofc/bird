@@ -1,96 +1,94 @@
 import os
-from pathlib import Path
+import django
+import random
 
-BASE_DIR = Path(__file__).resolve().parent
+# Configurar Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bird.settings')
+django.setup()
 
-def write_file(path, content):
-    file_path = BASE_DIR / path
+from django.contrib.auth.models import User
+from core.models import Profile, Connection, SocialBond, Room
+
+def populate():
+    print("🧪 Iniciando população de teste (Modo Seguro)...")
+
+    test_users_data = [
+        ('alice_wonder', 'Alice Wonderland', 'Explorando o país das maravilhas digital.'),
+        ('bob_builder', 'Bob Construtor', 'Sim, nós podemos codar!'),
+        ('carlos_drummond', 'Carlos D.', 'No meio do caminho tinha uma pedra.'),
+        ('diana_prince', 'Diana Prince', 'Amazonian dev fullstack.'),
+        ('elon_musketeiro', 'Elon Musketeiro', 'Foguetes e tweets polêmicos.'),
+        ('fiona_shrek', 'Fiona Ogra', 'Pântano life style.'),
+        ('goku_son', 'Goku Son', 'Em busca das esferas do código.'),
+        ('harry_potter', 'Harry P.', 'O menino que sobreviveu aos bugs.'),
+        ('indiana_jones', 'Indy Jones', 'Arqueologia de dados legados.'),
+        ('julia_roberts', 'Julia R.', 'Uma linda mulher programadora.')
+    ]
+
     try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(content.strip())
-        print(f"✅ Sidebar restaurada para estilo comprido: {path}")
-    except Exception as e:
-        print(f"❌ Erro em {path}: {e}")
+        main_user = User.objects.get(username='iansantos')
+        print(f"✅ Usuário principal: {main_user.username}")
+    except User.DoesNotExist:
+        print("⚠️ Usuário 'iansantos' não encontrado. Criando...")
+        main_user = User.objects.create_user('iansantos', 'ian@test.com', '123')
 
-# ==========================================
-# SIDEBAR RESTAURADA (ESTILO OVAL/PÍLULA)
-# ==========================================
-def restore_oval_sidebar():
-    content = """
-{% load static %}
+    all_users = [main_user]
 
-<aside class="fixed left-6 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-6 p-3 py-8 rounded-[3rem] w-[76px] hidden md:flex transition-all duration-500
-              bg-white/40 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_rgba(31,38,135,0.15)] ring-1 ring-white/40">
-
-    <a href="{% url 'profile_detail' user.username %}" 
-       class="relative flex items-center justify-center transition-all duration-500 w-12 h-16 rounded-[2rem] group 
-              bg-white/40 border border-white/60 hover:bg-white/80 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/20 p-1 overflow-hidden
-              {% if request.resolver_match.url_name == 'profile_detail' %}ring-2 ring-indigo-400{% endif %}"
-       title="Meu Perfil">
+    # 1. CRIAR USUÁRIOS
+    for username, fullname, bio in test_users_data:
+        # get_or_create retorna uma tupla (objeto, criado_agora?)
+        user, created = User.objects.get_or_create(username=username, defaults={'email': f'{username}@test.com'})
         
-        {% if user.profile.avatar %}
-            <img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover rounded-[1.8rem] group-hover:scale-110 transition-transform duration-700">
-        {% else %}
-            <div class="w-full h-full bg-indigo-100 flex items-center justify-center text-indigo-500">
-                <i class="fas fa-user text-xl"></i>
-            </div>
-        {% endif %}
-    </a>
+        if created:
+            user.set_password('123')
+            user.save()
+            print(f"   + Criado: {username}")
+        else:
+            print(f"   - Já existe: {username}")
 
-    <div class="w-8 h-[2px] bg-indigo-500/20 rounded-full my-2"></div>
-
-    <div class="flex flex-col gap-6 w-full items-center">
+        # Garante que o perfil existe e atualiza
+        profile, _ = Profile.objects.get_or_create(user=user)
+        profile.full_name = fullname
+        profile.bio = bio
+        profile.save()
         
-        <a href="{% url 'home' %}" 
-           class="relative group flex items-center justify-center w-10 h-10 transition-all duration-300
-                  {% if request.resolver_match.url_name == 'home' %}text-indigo-600 scale-110{% else %}text-slate-500 hover:text-indigo-500 hover:scale-110{% endif %}"
-           title="Feed">
-            <i class="fas fa-home text-xl drop-shadow-sm"></i>
-        </a>
+        all_users.append(user)
 
-        <a href="{% url 'explore' %}" 
-           class="relative group flex items-center justify-center w-10 h-10 transition-all duration-300
-                  {% if request.resolver_match.url_name == 'explore' %}text-indigo-600 scale-110{% else %}text-slate-500 hover:text-indigo-500 hover:scale-110{% endif %}"
-           title="Explorar">
-            <i class="fas fa-compass text-xl drop-shadow-sm"></i>
-        </a>
+    # 2. CONEXÕES
+    print("\n🔗 Sincronizando conexões...")
+    count = 0
+    for u1 in all_users:
+        for u2 in all_users:
+            if u1 == u2: continue
+            
+            # Connection
+            if not Connection.objects.filter(follower=u1, target=u2).exists():
+                Connection.objects.create(follower=u1, target=u2, status='active')
+                count += 1
+            
+            # SocialBond (Apenas 1 por par)
+            # Evita duplicatas verificando os dois lados
+            has_bond = SocialBond.objects.filter(requester=u1, target=u2).exists() or \
+                       SocialBond.objects.filter(requester=u2, target=u1).exists()
+            
+            if not has_bond:
+                SocialBond.objects.create(requester=u1, target=u2, type='friend', status='accepted')
 
-        <a href="{% url 'chat_index' %}" 
-           class="relative group flex items-center justify-center w-10 h-10 transition-all duration-300
-                  {% if request.resolver_match.url_name == 'chat_index' %}text-indigo-600 scale-110{% else %}text-slate-500 hover:text-indigo-500 hover:scale-110{% endif %}"
-           title="Mensagens Privadas">
-            <i class="fas fa-comment-dots text-xl drop-shadow-sm"></i>
-        </a>
+    print(f"   + {count} novas conexões criadas.")
 
-        <a href="{% url 'network_dashboard' %}" 
-           class="relative group flex items-center justify-center w-10 h-10 transition-all duration-300
-                  {% if request.resolver_match.url_name == 'network_dashboard' %}text-indigo-600 scale-110{% else %}text-slate-500 hover:text-indigo-500 hover:scale-110{% endif %}"
-           title="Minha Rede">
-            <i class="fas fa-users text-xl drop-shadow-sm"></i>
-        </a>
-        
-        <a href="{% url 'groups' %}" 
-           class="relative group flex items-center justify-center w-10 h-10 transition-all duration-300
-                  {% if request.resolver_match.url_name == 'groups' %}text-indigo-600 scale-110{% else %}text-slate-500 hover:text-indigo-500 hover:scale-110{% endif %}"
-           title="Comunidades">
-            <i class="fas fa-layer-group text-xl drop-shadow-sm"></i>
-        </a>
+    # 3. CHATS
+    print("\n💬 Verificando chats...")
+    # Cria chats entre iansantos e os 3 primeiros
+    for other in all_users[1:4]:
+        # Verifica se já existe sala DM
+        exists = Room.objects.filter(type='dm', participants=main_user).filter(participants=other).exists()
+        if not exists:
+            room = Room.objects.create(type='dm')
+            room.participants.add(main_user, other)
+            print(f"   + Chat DM criado: {main_user.username} <-> {other.username}")
 
-    </div>
+    print("\n🎉 Concluído com sucesso!")
 
-    <div class="mt-auto w-8 h-[2px] bg-indigo-500/20 rounded-full my-2"></div>
-
-    <a href="{% url 'settings' %}" 
-       class="relative group flex items-center justify-center w-10 h-10 transition-all duration-300 text-slate-400 hover:text-indigo-500 hover:rotate-90"
-       title="Configurações">
-        <i class="fas fa-cog text-xl"></i>
-    </a>
-
-</aside>
-"""
-    write_file("templates/components/home/left_sidebar.html", content)
-
-if __name__ == "__main__":
-    print("🚑 Revertendo Sidebar para o estilo original (Comprido)...")
-    restore_oval_sidebar()
-    print("✅ Feito. Reinicie o servidor se necessário (normalmente o template recarrega sozinho).")
+if __name__ == '__main__':
+    populate()
+    print("   docker-compose exec bird-app python a.py")
