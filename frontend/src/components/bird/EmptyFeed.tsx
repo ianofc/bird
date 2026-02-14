@@ -2,12 +2,14 @@ import { Feather } from "lucide-react";
 
 export function EmptyFeed() {
   return (
-    <div className="bird-glass rounded-2xl py-16 flex flex-col items-center justify-center text-center">
-      <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-        <Feather className="w-8 h-8 text-muted-foreground/60" />
+    <div className="flex flex-col items-center justify-center py-16 text-center animate-in fade-in zoom-in duration-700">
+      <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+        <Feather className="w-10 h-10 text-gray-300" strokeWidth={1.5} />
       </div>
-      <p className="font-semibold text-foreground mb-1">Tudo quieto por aqui</p>
-      <p className="text-sm text-muted-foreground">Seja o primeiro a publicar algo!</p>
+      <h2 className="text-xl font-bold text-gray-800 mb-2">Tudo quieto por aqui</h2>
+      <p className="text-gray-500 mb-8 max-w-xs mx-auto">
+        Parece que ninguém postou nada ainda. Seja o primeiro a publicar algo!
+      </p>
     </div>
   );
 }

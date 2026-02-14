@@ -1,7 +1,6 @@
 """
 Django settings for bird project.
-Generated for 'Project Bird' - The Social Operating System.
-Version: Definitive Aurora 2.0 - Master Integrated
+Version: Definitive Aurora 2.1 - Fix Duplicates
 """
 
 import os
@@ -24,7 +23,7 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,*').split(',')
 CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1,http://localhost').split(',')
 
 # ==========================================
-# 2. INSTALLED APPS (Social Login, API & Payment)
+# 2. INSTALLED APPS
 # ==========================================
 INSTALLED_APPS = [
     'daphne', # [ASGI] Primeiro para gerenciar WebSockets
@@ -35,12 +34,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites', # Necessário para Allauth
+    'django.contrib.sites', 
 
     # Third-Party Apps
-    'rest_framework',
-    'rest_framework.authtoken', # [API] Sistema de Token para o React
-    'corsheaders',              # [API] Gerenciamento de CORS
+    'rest_framework',             # API
+    'rest_framework.authtoken',   # Auth Token
+    'corsheaders',                # Conexão React
     'django_htmx',
     'channels',
     'compressor',
@@ -60,14 +59,14 @@ INSTALLED_APPS = [
 SITE_ID = 1
 
 # ==========================================
-# 3. MIDDLEWARE & AUTH BACKENDS
+# 3. MIDDLEWARE
 # ==========================================
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', # [API] Deve estar o mais alto possível
+    'corsheaders.middleware.CorsMiddleware', # [API] Deve estar no topo
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware', # Deve vir após o CorsMiddleware
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -84,7 +83,7 @@ AUTHENTICATION_BACKENDS = [
 ROOT_URLCONF = 'bird.urls'
 
 # ==========================================
-# 4. TEMPLATES & LOGOUT
+# 4. TEMPLATES
 # ==========================================
 TEMPLATES = [
     {
@@ -117,51 +116,7 @@ DATABASES = {
 }
 
 # ==========================================
-# 6. LOGGING (JSON Integrated)
-# ==========================================
-LOG_DIR = BASE_DIR / 'logs'
-LOG_DIR.mkdir(exist_ok=True)
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'json': {
-            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
-            'format': '%(asctime)s %(levelname)s %(name)s %(message)s %(user_id)s %(ip)s',
-        },
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-        'audit_file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': LOG_DIR / 'audit_bird.json',
-            'formatter': 'json',
-        },
-    },
-    'loggers': {
-        'audit': {
-            'handlers': ['audit_file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-    },
-}
-
-# ==========================================
-# 7. AUTHENTICATION CONFIG (Allauth & Social)
+# 6. AUTHENTICATION CONFIG
 # ==========================================
 LOGIN_URL = 'account_login'
 LOGIN_REDIRECT_URL = 'home'
@@ -180,7 +135,7 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # ==========================================
-# 8. REST FRAMEWORK & CORS
+# 7. REST FRAMEWORK & CORS
 # ==========================================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -192,16 +147,11 @@ REST_FRAMEWORK = {
     ],
 }
 
-CORS_ALLOW_ALL_ORIGINS = True # Mudar para hosts específicos em produção
+CORS_ALLOW_ALL_ORIGINS = True 
 CORS_ALLOW_CREDENTIALS = True
 
 # ==========================================
-# 9. MERCADO PAGO
-# ==========================================
-MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN', '')
-
-# ==========================================
-# 10. STATIC, MEDIA & COMPRESSOR
+# 8. STATIC & MEDIA
 # ==========================================
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -223,29 +173,30 @@ COMPRESS_ENABLED = not DEBUG
 COMPRESS_OFFLINE = not DEBUG
 
 # ==========================================
-# 11. CHANNEL LAYER & CELERY
+# 9. ASYNC & CELERY
 # ==========================================
 REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6380/0')
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [REDIS_URL]},
+if os.getenv('REDIS_URL'):
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        }
     }
-} if os.getenv('REDIS_URL') else {
-    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
-}
+else:
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
+    }
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = 'django-db'
 
 # ==========================================
-# 12. MISC & LIMITS
+# 10. MISC
 # ==========================================
 LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Sao_Paulo'
 USE_I18N = True
 USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB

@@ -1,62 +1,65 @@
 version: '3.8'
 
 services:
-  # 1. Banco de Dados para IA (TAS) - NECESSÁRIO
-  db:
-    image: pgvector/pgvector:pg16
-    container_name: tas-db
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=tas_db
+  # --- O Cérebro (Django) ---
+  backend:
+    build: ./backend
+    container_name: bird_backend
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./backend:/app
     ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  # 2. Cache e Mensagens
-  redis-bird:
-    image: redis:latest
-    container_name: redis-bird
-    ports:
-      - "6380:6379"
-
-  # 3. Motor de IA (TAS - Thalamus, SARA, Accumbens)
-  tas-engine:
-    build: ./tas
-    container_name: tas-engine
-    ports:
-      - "8003:8000"
-    env_file: ./tas/.env
+      - "8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
-      redis-bird:
-        condition: service_started
+      - db
+      - redis
     environment:
-      - POSTGRES_SERVER=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=tas_db
+      - TAS_URL=http://tas:8001
+      - ZIOS_URL=http://zios:8002
 
-  # 4. Aplicação Principal (Django)
-  bird-app:
-    build: .
-    container_name: bird-app
-    command: python manage.py runserver 0.0.0.0:8002
+  # --- A Cara (React + Vite) ---
+  frontend:
+    build: ./frontend
+    container_name: bird_frontend
     volumes:
-      - .:/app
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+
+  # --- Inteligência Artificial (TAS) ---
+  tas:
+    build: ./tas
+    container_name: bird_tas
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ./tas:/app
+    ports:
+      - "8001:8001"
+
+  # --- Sistema Operativo de Vida (ZIOS) ---
+  zios:
+    build: ./zios
+    container_name: bird_zios
+    volumes:
+      - ./zios:/app
     ports:
       - "8002:8002"
-    env_file: .env
-    depends_on:
-      - redis-bird
-      - tas-engine
+
+  # --- Infraestrutura ---
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=bird_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
 
 volumes:
   postgres_data:

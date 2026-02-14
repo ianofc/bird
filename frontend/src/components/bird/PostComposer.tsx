@@ -1,74 +1,51 @@
-import { Image, Video, Smile, Send } from "lucide-react";
-import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { ImageIcon, Video, Smile, Send } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useBird } from "@/contexts/BirdContext";
+import { useState } from "react";
 
 export function PostComposer() {
-  const [text, setText] = useState("");
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const { createPost, currentUser } = useBird();
+  const { currentUser, createPost } = useBird();
+  const [content, setContent] = useState("");
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
+  const handlePost = () => {
+    if (content.trim()) {
+      createPost(content);
+      setContent("");
     }
   };
 
-  const handlePublish = () => {
-    if (!text.trim() && !imagePreview) return;
-    createPost(text.trim(), imagePreview || undefined);
-    setText("");
-    setImagePreview(null);
-  };
-
   return (
-    <div className="bird-glass-strong rounded-2xl p-5 mb-6 shadow-sm">
-      <div className="flex items-start gap-3 mb-4">
-        <div className={`w-10 h-10 rounded-full ${currentUser.color} flex items-center justify-center font-bold text-sm shrink-0`}>
-          {currentUser.initials}
+    <div className="bg-white/70 backdrop-blur-xl rounded-[2rem] p-5 shadow-sm border border-white/50 mb-6 group transition-all hover:bg-white/80">
+      <div className="flex gap-4">
+        <Avatar className="h-11 w-11 cursor-pointer hover:opacity-90 transition-opacity">
+          <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold">
+            {currentUser?.initials || "IA"}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <textarea
+            className="w-full bg-transparent border-none focus:ring-0 resize-none text-[16px] text-gray-800 placeholder:text-gray-500 min-h-[50px] p-0 mt-2 font-medium"
+            placeholder="No que você está pensando?"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
+          
+          <div className="flex items-center justify-between mt-3 border-t border-gray-200/50 pt-3">
+            <div className="flex gap-1">
+               <Button variant="ghost" size="icon" className="rounded-full text-indigo-500 hover:bg-indigo-50"><ImageIcon className="w-5 h-5" /></Button>
+               <Button variant="ghost" size="icon" className="rounded-full text-indigo-500 hover:bg-indigo-50"><Video className="w-5 h-5" /></Button>
+               <Button variant="ghost" size="icon" className="rounded-full text-indigo-500 hover:bg-indigo-50"><Smile className="w-5 h-5" /></Button>
+            </div>
+            
+            <Button 
+                onClick={handlePost}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6 h-9 font-semibold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all"
+            >
+               Publicar
+            </Button>
+          </div>
         </div>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="No que você está pensando?"
-          className="flex-1 bg-transparent resize-none outline-none text-foreground placeholder:text-muted-foreground min-h-[40px] pt-2"
-          rows={2}
-        />
-      </div>
-      {imagePreview && (
-        <div className="relative mb-3 ml-13">
-          <img src={imagePreview} alt="Preview" className="rounded-xl max-h-48 object-cover" />
-          <button
-            onClick={() => setImagePreview(null)}
-            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-foreground/60 text-background flex items-center justify-center text-xs font-bold"
-          >
-            ×
-          </button>
-        </div>
-      )}
-      <div className="flex items-center justify-between border-t border-border pt-3">
-        <div className="flex gap-2">
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-          <button onClick={() => fileRef.current?.click()} className="w-9 h-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors text-primary">
-            <Image className="w-5 h-5" />
-          </button>
-          <button className="w-9 h-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors text-destructive">
-            <Video className="w-5 h-5" />
-          </button>
-          <button className="w-9 h-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors text-amber-500">
-            <Smile className="w-5 h-5" />
-          </button>
-        </div>
-        <button
-          onClick={handlePublish}
-          disabled={!text.trim() && !imagePreview}
-          className="bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-semibold text-sm flex items-center gap-2 hover:opacity-90 transition-opacity shadow-md disabled:opacity-50"
-        >
-          Publicar <Send className="w-4 h-4" />
-        </button>
       </div>
     </div>
   );

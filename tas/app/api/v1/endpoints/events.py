@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends
-from app.schemas.user import UserEvent
-from app.db.session import get_db
-import aioredis # Para cache rápido de comportamento (Dopamina temporária)
+from fastapi import APIRouter
+import redis.asyncio as redis # Fix: Trocado aioredis por redis.asyncio
+import json
+import os
 
 router = APIRouter()
 
-@router.post("/track")
-async def track_user_behavior(event: UserEvent):
-    # Aqui, em sistemas de alta escala, salvaríamos no Redis e depois no DB
-    # Por enquanto, vamos logar que o motor recebeu o estímulo
-    print(f"🔥 [ACCUMBENS] Estímulo recebido: {event.event_type} no conteúdo {event.content_id}")
-    return {"status": "tracked", "reward_processed": True}
+# Configuração do Redis (Cache de Dopamina)
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+
+@router.get("/ingest")
+async def ingest_event(user_id: str, action: str):
+    # Simulação de ingestão para não quebrar se o redis falhar
+    return {"status": "received", "dopamine_score": 10}

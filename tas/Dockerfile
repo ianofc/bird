@@ -1,19 +1,12 @@
-FROM python:3.10-slim
-
-# Instala netcat, dependências de compilação e gcc
-RUN apt-get update && apt-get install -y netcat-openbsd libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt* ./
+RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; else pip install fastapi uvicorn requests numpy; fi
 
 COPY . .
 
-# CORREÇÃO CRÍTICA: Converte CRLF para LF (Windows -> Linux) e dá permissão de execução
-RUN sed -i 's/\r$//' scripts/start.sh && \
-    chmod +x scripts/start.sh
-
-EXPOSE 8004
-
-CMD ["./scripts/start.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
