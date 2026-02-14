@@ -5,7 +5,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function BirdLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex justify-center bg-[#f0f2f5] overflow-hidden relative">
+    // Removido bg-[#f0f2f5], agora o body (Aurora) vai aparecer
+    <div className="min-h-screen flex justify-center overflow-hidden relative">
       
       <div className="w-full max-w-[1400px] flex h-screen gap-6 md:px-4">
         
@@ -14,7 +15,7 @@ export function BirdLayout({ children }: { children: ReactNode }) {
            <LeftSidebar />
         </aside>
 
-        {/* MAIN FEED: Sem fundo (Transparente), apenas conteúdo scrollável */}
+        {/* MAIN FEED: Transparente para mostrar a Aurora */}
         <main className="flex-1 h-full relative z-10 overflow-hidden">
            <ScrollArea className="h-full w-full pr-4">
              <div className="pb-24 pt-4 md:pb-0">

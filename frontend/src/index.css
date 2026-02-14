@@ -4,34 +4,47 @@
 
 @layer base {
   :root {
-    --background: 220 30% 96%;
+    --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
-    --primary: 243 75% 59%;
-    --primary-foreground: 210 40% 98%;
     --radius: 1rem;
   }
   
   body {
-    @apply bg-[#f0f2f5] text-foreground font-sans antialiased;
-    background-color: #f0f2f5;
+    @apply font-sans antialiased text-gray-900;
+    
+    /* AURORA CLEAN BACKGROUND */
+    background-color: #f8fafc; /* Base clara */
     background-image: 
-      radial-gradient(at 0% 0%, rgba(167, 139, 250, 0.25) 0px, transparent 50%), 
-      radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.2) 0px, transparent 50%), 
-      radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.2) 0px, transparent 50%), 
-      radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.25) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),    /* Roxo suave (Top Left) */
+      radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.10) 0px, transparent 50%),  /* Esmeralda (Top Right) */
+      radial-gradient(at 100% 100%, rgba(244, 114, 182, 0.10) 0px, transparent 50%), /* Rosa (Bottom Right) */
+      radial-gradient(at 0% 100%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);  /* Indigo (Bottom Left) */
     background-attachment: fixed;
     background-size: cover;
   }
 }
 
 @layer utilities {
+  /* Utilitários de Vidro (Glassmorphism) */
   .glass-panel {
-    @apply bg-white/65 backdrop-blur-xl border border-white/50 shadow-sm;
+    @apply bg-white/70 backdrop-blur-xl border border-white/50 shadow-sm;
   }
+  
   .glass-card {
-    @apply bg-white/70 backdrop-blur-lg border border-white/60 shadow-sm transition-all hover:bg-white/80;
+    @apply bg-white/60 backdrop-blur-lg border border-white/60 shadow-sm transition-all hover:bg-white/80;
   }
+
+  /* Botão Gradiente Aurora */
   .btn-aurora {
     @apply bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white border-none shadow-md hover:shadow-lg hover:opacity-90 transition-all;
+  }
+  
+  /* Esconder Scrollbar mas manter funcionalidade */
+  .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+  }
+  .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
   }
 }

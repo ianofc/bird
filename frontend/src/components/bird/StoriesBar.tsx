@@ -1,5 +1,6 @@
 import { Plus } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Link } from "react-router-dom";
 
 export function StoriesBar() {
   const stories = [
@@ -16,7 +17,6 @@ export function StoriesBar() {
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex w-max space-x-5 p-2 items-start">
           
-          {/* Adicionar Story */}
           <div className="flex flex-col items-center gap-1.5 cursor-pointer group">
             <div className="w-[68px] h-[68px] rounded-full border-2 border-dashed border-indigo-300 p-[3px] group-hover:scale-105 transition-transform relative">
                <div className="w-full h-full bg-white/60 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
@@ -29,9 +29,8 @@ export function StoriesBar() {
             <span className="text-xs font-medium text-gray-600">Story</span>
           </div>
 
-          {/* Outros Stories */}
           {stories.filter(s => !s.isUser).map((story) => (
-            <div key={story.id} className="flex flex-col items-center gap-1.5 cursor-pointer group">
+            <Link key={story.id} to="/profile" className="flex flex-col items-center gap-1.5 cursor-pointer group">
               <div className="w-[68px] h-[68px] rounded-full p-[3px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-indigo-600 group-hover:scale-105 transition-transform shadow-sm">
                 <div className="w-full h-full rounded-full border-[3px] border-[#f0f2f5] overflow-hidden bg-gray-200">
                     {story.img ? (
@@ -43,10 +42,10 @@ export function StoriesBar() {
                     )}
                 </div>
               </div>
-              <span className="text-xs font-medium text-gray-600 max-w-[60px] truncate text-center">
+              <span className="text-xs font-medium text-gray-600 max-w-[60px] truncate text-center group-hover:text-indigo-600 transition-colors">
                 {story.user}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
         <ScrollBar orientation="horizontal" className="invisible" />
