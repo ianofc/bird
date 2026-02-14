@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 230 30% 96%;
+    --foreground: 230 25% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 230 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 25% 12%;
+
+    --primary: 245 58% 51%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 230 25% 95%;
+    --secondary-foreground: 230 25% 12%;
+
+    --muted: 230 20% 94%;
+    --muted-foreground: 230 10% 46%;
+
+    --accent: 245 58% 51%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 230 20% 90%;
+    --input: 230 20% 90%;
+    --ring: 245 58% 51%;
+
+    --radius: 1rem;
+
+    /* Bird custom tokens */
+    --glass-bg: 0 0% 100% / 0.6;
+    --glass-border: 0 0% 100% / 0.3;
+    --glass-blur: 20px;
+    
+    --aurora-pink: 330 80% 88%;
+    --aurora-lavender: 270 60% 90%;
+    --aurora-blue: 210 70% 92%;
+    --aurora-peach: 15 80% 92%;
+
+    --sidebar-background: 0 0% 100% / 0.5;
+    --sidebar-foreground: 230 25% 30%;
+    --sidebar-primary: 245 58% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 245 58% 95%;
+    --sidebar-accent-foreground: 245 58% 40%;
+    --sidebar-border: 0 0% 100% / 0.3;
+    --sidebar-ring: 245 58% 51%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: hsla(var(--glass-bg));
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid hsla(var(--glass-border));
+  }
+
+  .glass-strong {
+    background: hsla(0, 0%, 100%, 0.8);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid hsla(0, 0%, 100%, 0.4);
+  }
+
+  .aurora-bg {
+    background: 
+      radial-gradient(ellipse at 20% 80%, hsl(var(--aurora-pink)) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(var(--aurora-lavender)) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, hsl(var(--aurora-blue)) 0%, transparent 60%),
+      hsl(var(--background));
+  }
+
+  .aurora-card {
+    background: 
+      radial-gradient(ellipse at 30% 100%, hsl(var(--aurora-pink) / 0.3) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 0%, hsl(var(--aurora-lavender) / 0.2) 0%, transparent 60%),
+      hsla(0, 0%, 100%, 0.7);
+    backdrop-filter: blur(16px);
+    border: 1px solid hsla(0, 0%, 100%, 0.5);
+  }
+
+  .gradient-cover {
+    background: linear-gradient(135deg, 
+      hsl(270 50% 75%) 0%, 
+      hsl(330 60% 80%) 50%, 
+      hsl(300 40% 82%) 100%
+    );
+  }
+}
