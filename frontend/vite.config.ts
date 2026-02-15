@@ -1,16 +1,15 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config"; // <--- Alterado de 'vite' para 'vitest/config'
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "0.0.0.0", // <--- OBRIGATÓRIO PARA DOCKER
+    host: "0.0.0.0",
     port: 5173,
     strictPort: true,
     watch: {
-      usePolling: true, // Ajuda com o sistema de arquivos do Windows
+      usePolling: true,
     },
   },
   plugins: [
@@ -22,5 +21,10 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  // --- ADICIONE ESTA SEÇÃO ABAIXO ---
+  test: {
+    globals: true,
+    environment: 'jsdom', // ou 'node', dependendo do seu projeto
   },
 }));

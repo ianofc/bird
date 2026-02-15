@@ -11,40 +11,40 @@
   
   body {
     @apply font-sans antialiased text-gray-900;
-    
-    /* AURORA CLEAN BACKGROUND */
-    background-color: #f8fafc; /* Base clara */
+    background-color: #f8fafc;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),    /* Roxo suave (Top Left) */
-      radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.10) 0px, transparent 50%),  /* Esmeralda (Top Right) */
-      radial-gradient(at 100% 100%, rgba(244, 114, 182, 0.10) 0px, transparent 50%), /* Rosa (Bottom Right) */
-      radial-gradient(at 0% 100%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);  /* Indigo (Bottom Left) */
+      radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.10) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(244, 114, 182, 0.10) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);
     background-attachment: fixed;
     background-size: cover;
   }
 }
 
 @layer utilities {
-  /* Utilitários de Vidro (Glassmorphism) */
-  .glass-panel {
-    @apply bg-white/70 backdrop-blur-xl border border-white/50 shadow-sm;
-  }
-  
-  .glass-card {
-    @apply bg-white/60 backdrop-blur-lg border border-white/60 shadow-sm transition-all hover:bg-white/80;
-  }
+  .glass-panel { @apply bg-white/70 backdrop-blur-xl border border-white/50 shadow-sm; }
+  .glass-card { @apply bg-white/60 backdrop-blur-lg border border-white/60 shadow-sm transition-all hover:bg-white/80; }
+  .btn-aurora { @apply bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white border-none shadow-md hover:shadow-lg hover:opacity-90 transition-all; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Botão Gradiente Aurora */
-  .btn-aurora {
-    @apply bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white border-none shadow-md hover:shadow-lg hover:opacity-90 transition-all;
+  /* ANIMAÇÃO "HEART EXPLOSION" (DOPAMINA) */
+  @keyframes heart-burst {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 0; }
   }
-  
-  /* Esconder Scrollbar mas manter funcionalidade */
-  .scrollbar-hide::-webkit-scrollbar {
-      display: none;
+  .animate-heart-burst {
+      animation: heart-burst 0.8s ease-out forwards;
   }
-  .scrollbar-hide {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-  }
+}
+@keyframes scan-progress {
+  0% { width: 0%; opacity: 0.8; }
+  50% { width: 70%; opacity: 1; }
+  100% { width: 100%; opacity: 0.8; }
+}
+
+.animate-scan {
+  animation: scan-progress 8s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }

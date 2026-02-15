@@ -1,64 +1,65 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { useBird } from "@/contexts/BirdContext";
-import { Feather } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Zap, ShieldCheck } from "lucide-react";
 
-const Login = () => {
-  const [handle, setHandle] = useState("");
+export default function Login() {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const { login } = useBird();
-  const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!handle.trim() || !password.trim()) {
-      setError("Preencha todos os campos.");
-      return;
-    }
-    login(handle, password);
-    navigate("/");
+    // No Bird, o Superusuário entra com autoridade
+    login(username, password);
   };
 
   return (
-    <div className="min-h-screen bird-gradient-bg flex items-center justify-center px-4">
-      <div className="bird-glass-strong rounded-2xl p-8 w-full max-w-sm shadow-xl">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <Feather className="w-8 h-8 text-primary" />
-          <span className="text-2xl font-bold text-foreground">Bird</span>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md w-full bg-white rounded-[3rem] p-10 shadow-2xl border border-gray-100">
+        <div className="text-center mb-10">
+            <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-3 shadow-lg">
+                <span className="text-white font-black text-3xl">B</span>
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tighter italic">Bem-vindo ao Bird</h1>
+            <p className="text-gray-400 font-medium text-sm mt-2 font-mono uppercase tracking-widest text-[10px]">Identidade Requerida</p>
         </div>
-        <h1 className="text-xl font-bold text-foreground text-center mb-6">Entrar na sua conta</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-foreground mb-1 block">Usuário</label>
-            <input
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              placeholder="@seu_usuario"
-              className="w-full bg-secondary rounded-xl px-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Input 
+              placeholder="Identificador (ex: iansantos)" 
+              className="h-14 rounded-2xl bg-gray-50 border-none px-6 font-bold"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
             />
           </div>
-          <div>
-            <label className="text-sm font-medium text-foreground mb-1 block">Senha</label>
-            <input
+          <div className="space-y-2">
+            <Input 
               type="password"
+              placeholder="Senha" 
+              className="h-14 rounded-2xl bg-gray-50 border-none px-6 font-bold"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-secondary rounded-xl px-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
             />
           </div>
-          {error && <p className="text-destructive text-xs">{error}</p>}
-          <button type="submit" className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity">
-            Entrar
-          </button>
+
+          {/* BOTÃO VERDE (ESTILO UX RECOMENDADO) */}
+          <Button 
+            type="submit"
+            className="w-full h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg shadow-xl shadow-emerald-100 transition-all active:scale-95 flex items-center gap-2"
+          >
+            <ShieldCheck size={20} /> Entrar no Multiverso
+          </Button>
         </form>
-        <p className="text-sm text-muted-foreground text-center mt-4">
-          Não tem conta? <Link to="/signup" className="text-primary font-semibold hover:underline">Criar conta</Link>
-        </p>
+
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+            <p className="text-gray-400 text-xs font-bold uppercase tracking-tighter flex items-center justify-center gap-2">
+                <Zap size={12} className="text-orange-400" /> Protegido por Thalamus Core
+            </p>
+        </div>
       </div>
     </div>
   );
-};
-
-export default Login;
+}
