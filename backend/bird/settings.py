@@ -1,6 +1,6 @@
 """
 Django settings for bird project.
-Version: Definitive Aurora 2.1 - Fix Duplicates
+Version: Definitive Aurora 2.2 - Login Fix (Force Cookies)
 """
 
 import os
@@ -19,14 +19,46 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ==========================================
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,*').split(',')
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1,http://localhost').split(',')
+
+# Configuração para Docker (Backend e rede interna)
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0,bird_backend').split(',')
+
+# ==========================================
+# 🚨 SEÇÃO CRÍTICA: LOGIN & CORS (O FIX DO LOGIN)
+# ==========================================
+
+# 1. Origens Confiáveis (Vite Frontend)
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
+
+# 2. Permite credenciais (Cookies de Sessão)
+CORS_ALLOW_CREDENTIALS = True
+
+# 3. FORÇA OS COOKIES A FUNCIONAREM SEM HTTPS (LOCALHOST)
+# Sem isso, o navegador bloqueia o login silenciosamente
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_HTTPONLY = False  # Facilita debug, mude para True em produção
+SESSION_COOKIE_DOMAIN = None     # Aceita localhost
+
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False     # O JS precisa ler este cookie para enviar no Header
 
 # ==========================================
 # 2. INSTALLED APPS
 # ==========================================
 INSTALLED_APPS = [
-    'daphne', # [ASGI] Primeiro para gerenciar WebSockets
+    'daphne', # [ASGI] Websockets
 
     'django.contrib.admin',
     'django.contrib.auth',
@@ -62,7 +94,7 @@ SITE_ID = 1
 # 3. MIDDLEWARE
 # ==========================================
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', # [API] Deve estar no topo
+    'corsheaders.middleware.CorsMiddleware', # [CRUCIAL] Deve ser o primeiro!
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -109,7 +141,7 @@ ASGI_APPLICATION = 'bird.asgi.application'
 # ==========================================
 DATABASES = {
     'default': dj_database_url.config(
-        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        default=os.getenv('DATABASE_URL', f'sqlite:///{BASE_DIR / "db.sqlite3"}'),
         conn_max_age=600,
         conn_health_checks=True,
     )
@@ -122,9 +154,10 @@ LOGIN_URL = 'account_login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'account_login'
 
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
+# Configuração simples para evitar erros de e-mail no login local
+ACCOUNT_EMAIL_REQUIRED = False 
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'username' # Simplificado para 'username' para teste
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 
 SOCIALACCOUNT_PROVIDERS = {
@@ -135,7 +168,7 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # ==========================================
-# 7. REST FRAMEWORK & CORS
+# 7. REST FRAMEWORK
 # ==========================================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -147,15 +180,13 @@ REST_FRAMEWORK = {
     ],
 }
 
-CORS_ALLOW_ALL_ORIGINS = True 
-CORS_ALLOW_CREDENTIALS = True
-
 # ==========================================
 # 8. STATIC & MEDIA
 # ==========================================
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -175,19 +206,16 @@ COMPRESS_OFFLINE = not DEBUG
 # ==========================================
 # 9. ASYNC & CELERY
 # ==========================================
-REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6380/0')
+REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 
-if os.getenv('REDIS_URL'):
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {"hosts": [REDIS_URL]},
-        }
-    }
-else:
-    CHANNEL_LAYERS = {
-        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
-    }
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+        },
+    },
+}
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = 'django-db'
