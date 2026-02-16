@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Zap, ShieldCheck, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom"; // Importação essencial
+// useNavigate removido de propósito para não conflitar com a lógica de reload
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -13,60 +13,51 @@ export default function Login() {
   const [debugError, setDebugError] = useState<string | null>(null);
   
   const { login } = useBird();
-  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setDebugError(null);
 
-    console.log("🚀 [BIRD] Iniciando login...");
+    console.log("🚀 [BIRD] Iniciando processo de login...");
 
     try {
       await login(username, password);
       
-      console.log("✅ [BIRD] Login SUCESSO! Redirecionando...");
-      toast.success("Login realizado! Entrando...", { duration: 2000 });
+      console.log("✅ [BIRD] Sucesso! Token salvo.");
+      toast.success("Acesso Autorizado! A entrar...");
 
-      // ============================================================
-      // ☢️ REDIRECIONAMENTO NUCLEAR
-      // ============================================================
-      // Tenta usar o router do React primeiro
+      // ☢️ SOLUÇÃO BRUTA (NUCLEAR):
+      // Força o navegador a recarregar a raiz (/) do zero.
+      // Isso limpa a memória do React e obriga o BirdContext a ler o token do LocalStorage na inicialização.
+      // É impossível o Router bloquear isso se o token estiver válido.
       setTimeout(() => {
-        try {
-          console.log("🔄 Tentando navigate('/')");
-          navigate("/"); 
-        } catch (err) {
-          console.warn("⚠️ navigate falhou, usando window.location");
-        }
-        
-        // Se ainda estivermos aqui após 500ms, força o reload
-        setTimeout(() => {
-           if (window.location.pathname === '/login') {
-             console.log("🚀 Forçando window.location.href = '/'");
-             window.location.href = '/';
-           }
-        }, 500);
+        window.location.href = "/";
       }, 500);
 
     } catch (error: any) {
-      console.error("❌ [BIRD] Erro:", error);
+      console.error("❌ [BIRD] Falha:", error);
       
       let errorMessage = "Erro desconhecido";
       if (error.response) {
-        // Erro do Django (400, 401, 403, 500)
-        errorMessage = `Erro Servidor (${error.response.status}): ${JSON.stringify(error.response.data)}`;
+        // Tenta pegar a mensagem de erro amigável do Django
+        const data = error.response.data;
+        if (data.non_field_errors) {
+            errorMessage = data.non_field_errors[0]; // Ex: "Unable to log in..."
+        } else if (data.detail) {
+            errorMessage = data.detail;
+        } else {
+            errorMessage = `Erro (${error.response.status}): ${JSON.stringify(data)}`;
+        }
       } else if (error.request) {
-        // Erro de Rede (Backend desligado ou CORS)
-        errorMessage = "Erro de Rede: O servidor não respondeu.";
+        errorMessage = "O servidor BIRD não respondeu. Verifique se o Docker está rodando.";
       } else {
-        errorMessage = `Erro Config: ${error.message}`;
+        errorMessage = error.message;
       }
 
       setDebugError(errorMessage);
       toast.error("Falha no Login", { description: errorMessage });
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Para o loading apenas se der erro. Se der sucesso, o reload cuida.
     }
   };
 
@@ -78,15 +69,16 @@ export default function Login() {
           <div className="p-3 bg-primary/10 rounded-full">
             <Zap className="w-10 h-10 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Login BIRD</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Acesso BIRD</h1>
         </div>
 
+        {/* Área de Erro (Só aparece se algo der errado) */}
         {debugError && (
           <div className="p-4 text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-md">
             <div className="flex items-center gap-2 mb-1 font-bold">
-              <AlertTriangle className="w-4 h-4" /> Erro Detectado:
+              <AlertTriangle className="w-4 h-4" /> Acesso Negado:
             </div>
-            <code className="break-all">{debugError}</code>
+            <code className="break-all text-xs">{debugError}</code>
           </div>
         )}
 
@@ -119,12 +111,19 @@ export default function Login() {
           </div>
           
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Entrar"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Validando Credenciais...
+              </>
+            ) : (
+              "Entrar no Sistema"
+            )}
           </Button>
         </form>
 
         <div className="flex justify-center text-xs text-muted-foreground">
-          <ShieldCheck className="w-3 h-3 mr-1" /> Ambiente Seguro
+          <ShieldCheck className="w-3 h-3 mr-1" /> Protegido pelo AEGIS
         </div>
       </div>
     </div>

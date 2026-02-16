@@ -1,21 +1,34 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useBird } from "./contexts/BirdContext";
 import Index from "./pages/Index";
-import Profile from "./pages/Profile";
-import ThalamusAdmin from "./pages/ThalamusAdmin";
 import Login from "./pages/Login";
 
-export default function Router() {
+const ProtectedRoute = () => {
   const { isAuthenticated } = useBird();
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+};
 
+const PublicRoute = () => {
+  const { isAuthenticated } = useBird();
+  return !isAuthenticated ? <Outlet /> : <Navigate to="/" replace />;
+};
+
+const Router = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
-        <Route path="/" element={isAuthenticated ? <Index /> : <Navigate to="/login" />} />
-        <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
-        <Route path="/thalamus-admin" element={isAuthenticated ? <ThalamusAdmin /> : <Navigate to="/login" />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      {/* Se estiver logado, não vê a tela de login */}
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<Login />} />
+      </Route>
+
+      {/* Só entra na Home se estiver logado */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<Index />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
-}
+};
+
+export default Router;

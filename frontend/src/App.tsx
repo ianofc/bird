@@ -12,7 +12,7 @@ import News from "./pages/News";
 import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
-import PostView from "./pages/PostView"; // Nova Página
+import PostView from "./pages/PostView";
 import Network from "./pages/Network";
 import Communities from "./pages/Communities";
 import Settings from "./pages/Settings";
@@ -22,14 +22,22 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// 🛡️ Rota Privada: Só entra se estiver autenticado
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
-  const { isLoggedIn } = useBird();
-  return isLoggedIn ? children : <Navigate to="/login" replace />;
+  const { isAuthenticated, isLoading } = useBird();
+
+  if (isLoading) return null; // Evita piscar tela de login enquanto recupera o token
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
+// 🔓 Rota Pública: Se já estiver logado, pula o login/signup e vai pra Home
 const PublicRoute = ({ children }: { children: JSX.Element }) => {
-  const { isLoggedIn } = useBird();
-  return isLoggedIn ? <Navigate to="/" replace /> : children;
+  const { isAuthenticated, isLoading } = useBird();
+
+  if (isLoading) return null;
+
+  return isAuthenticated ? <Navigate to="/" replace /> : children;
 };
 
 const AppRoutes = () => (
@@ -38,7 +46,7 @@ const AppRoutes = () => (
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
     
-    {/* Rotas Privadas */}
+    {/* Rotas Privadas (Protegidas) */}
     <Route path="/" element={<PrivateRoute><Index /></PrivateRoute>} />
     <Route path="/explore" element={<PrivateRoute><Explore /></PrivateRoute>} />
     <Route path="/news" element={<PrivateRoute><News /></PrivateRoute>} />
@@ -46,7 +54,7 @@ const AppRoutes = () => (
     <Route path="/messages" element={<PrivateRoute><Messages /></PrivateRoute>} />
     <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
     <Route path="/profile/:handle" element={<PrivateRoute><Profile /></PrivateRoute>} />
-    <Route path="/post/:id" element={<PrivateRoute><PostView /></PrivateRoute>} /> {/* Rota de Detalhe */}
+    <Route path="/post/:id" element={<PrivateRoute><PostView /></PrivateRoute>} />
     <Route path="/network" element={<PrivateRoute><Network /></PrivateRoute>} />
     <Route path="/communities" element={<PrivateRoute><Communities /></PrivateRoute>} />
     <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />

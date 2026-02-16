@@ -3,11 +3,10 @@ import { TrendingUp, MoreHorizontal, Search, ShieldCheck, Activity } from "lucid
 import { useState, useEffect } from "react";
 
 export function RightSidebar() {
-  // CORREÇÃO: Adicionamos o fallback ||= [] para garantir que o design não quebre
-  const { trends = [] } = useBird();
+  const { trends } = useBird();
   const [scanStatus, setScanStatus] = useState("Idle");
 
-  // Simulação do ciclo de vida do TAS (Selenium + Celery) - Mantido original
+  // Simulação do ciclo de vida do TAS (Selenium + Celery)
   useEffect(() => {
     const statuses = ["Mining Data...", "Parsing Trends...", "Optimizing ZIOS...", "TAS Active"];
     let i = 0;
@@ -19,9 +18,9 @@ export function RightSidebar() {
   }, []);
 
   return (
-    <aside className="sticky top-0 h-screen p-6 space-y-6 overflow-y-auto scrollbar-hide hidden lg:block w-[350px]">
+    <aside className="sticky top-0 h-screen p-6 space-y-6 overflow-y-auto scrollbar-hide">
       
-      {/* BARRA DE BUSCA - Original */}
+      {/* BARRA DE BUSCA */}
       <div className="relative group">
         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
           <Search className="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
@@ -33,12 +32,12 @@ export function RightSidebar() {
         />
       </div>
 
-      {/* TAS: TRENDING TOPICS & MONITORING - Original */}
+      {/* TAS: TRENDING TOPICS & MONITORING */}
       <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-[2.5rem] p-6 shadow-xl overflow-hidden relative group">
         
         {/* BARRA DE SCAN (FEEDBACK DO SELENIUM) */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gray-100/50">
-            <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-scan shadow-[0_0_10px_rgba(99,102,241,0.5)] w-1/3"></div>
+            <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-scan shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
         </div>
 
         <div className="flex items-center justify-between mb-6">
@@ -55,27 +54,20 @@ export function RightSidebar() {
         </div>
 
         <div className="space-y-6">
-          {/* CORREÇÃO: Verificamos se há trends, caso contrário mostramos o estado de busca */}
-          {trends.length > 0 ? (
-            trends.map((trend: any) => (
-              <div key={trend.id} className="group/item cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">{trend.category}</p>
-                    <p className="text-[15px] font-black text-gray-800 group-hover/item:text-indigo-600 transition-colors">#{trend.topic}</p>
-                    <p className="text-xs font-medium text-gray-500 mt-1">{trend.volume}</p>
-                  </div>
-                  <button className="text-gray-300 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition-all">
-                    <MoreHorizontal size={16} />
-                  </button>
+          {trends.map((trend) => (
+            <div key={trend.id} className="group/item cursor-pointer">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">{trend.category}</p>
+                  <p className="text-[15px] font-black text-gray-800 group-hover/item:text-indigo-600 transition-colors">#{trend.topic}</p>
+                  <p className="text-xs font-medium text-gray-500 mt-1">{trend.volume}</p>
                 </div>
+                <button className="text-gray-300 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition-all">
+                  <MoreHorizontal size={16} />
+                </button>
               </div>
-            ))
-          ) : (
-            <div className="py-4 text-center">
-              <p className="text-xs font-bold text-gray-400 uppercase animate-pulse">Sincronizando Tendências...</p>
             </div>
-          )}
+          ))}
         </div>
 
         <button className="w-full mt-8 py-3 text-xs font-black text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-colors border-2 border-dashed border-indigo-100 uppercase tracking-widest">
@@ -83,7 +75,7 @@ export function RightSidebar() {
         </button>
       </div>
 
-      {/* SEGURANÇA THALAMUS - Original */}
+      {/* SEGURANÇA THALAMUS */}
       <div className="bg-gray-900 rounded-[2.5rem] p-6 text-white shadow-2xl relative overflow-hidden">
         <div className="absolute -right-4 -bottom-4 opacity-10">
             <ShieldCheck size={120} />

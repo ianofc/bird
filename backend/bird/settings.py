@@ -1,6 +1,6 @@
 """
 Django settings for bird project.
-Version: Definitive Aurora 2.2 - Login Fix (Force Cookies)
+Version: Definitive Aurora 2.3 - Fix DisallowedHost (Docker Proxy)
 """
 
 import os
@@ -20,14 +20,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-# Configuração para Docker (Backend e rede interna)
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0,bird_backend').split(',')
+# 🚨 CORREÇÃO AQUI: Adicionado 'backend' (nome do serviço no docker-compose)
+# Isso permite que o Django aceite requisições vindas do Proxy do Vite
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0,bird_backend,backend').split(',')
 
 # ==========================================
-# 🚨 SEÇÃO CRÍTICA: LOGIN & CORS (O FIX DO LOGIN)
+# 🚨 SEÇÃO CRÍTICA: LOGIN & CORS
 # ==========================================
 
-# 1. Origens Confiáveis (Vite Frontend)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:8080",
@@ -40,19 +40,17 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8080",
 ]
 
-# 2. Permite credenciais (Cookies de Sessão)
 CORS_ALLOW_CREDENTIALS = True
 
-# 3. FORÇA OS COOKIES A FUNCIONAREM SEM HTTPS (LOCALHOST)
-# Sem isso, o navegador bloqueia o login silenciosamente
+# FORÇA OS COOKIES A FUNCIONAREM SEM HTTPS (LOCALHOST)
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_HTTPONLY = False  # Facilita debug, mude para True em produção
-SESSION_COOKIE_DOMAIN = None     # Aceita localhost
+SESSION_COOKIE_HTTPONLY = False
+SESSION_COOKIE_DOMAIN = None
 
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = False
-CSRF_COOKIE_HTTPONLY = False     # O JS precisa ler este cookie para enviar no Header
+CSRF_COOKIE_HTTPONLY = False
 
 # ==========================================
 # 2. INSTALLED APPS
@@ -94,7 +92,7 @@ SITE_ID = 1
 # 3. MIDDLEWARE
 # ==========================================
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', # [CRUCIAL] Deve ser o primeiro!
+    'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -154,10 +152,9 @@ LOGIN_URL = 'account_login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'account_login'
 
-# Configuração simples para evitar erros de e-mail no login local
 ACCOUNT_EMAIL_REQUIRED = False 
 ACCOUNT_USERNAME_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'username' # Simplificado para 'username' para teste
+ACCOUNT_AUTHENTICATION_METHOD = 'username' 
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 
 SOCIALACCOUNT_PROVIDERS = {
