@@ -1,0 +1,85 @@
+// frontend/src/services/api.ts
+import axios from 'axios';
+
+// Detectar ambiente
+const isDev = import.meta.env.DEV;
+const isDocker = window.location.hostname === 'localhost' && window.location.port === '8080';
+
+// URL base: se estiver no Docker dev, usar proxy relativo. Se não, usar URL absoluta
+const baseURL = isDocker ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8000');
+
+console.log('[API] Config:', { isDev, isDocker, baseURL, location: window.location.href });
+
+const api = axios.create({
+  baseURL,
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 15000,
+});
+
+// Interceptor de Request
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('@Bird:token');
+    
+    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+      baseURL: config.baseURL,
+      hasToken: !!token,
+    });
+
+    if (token) {
+      config.headers.Authorization = `Token ${token}`;
+    }
+
+    // CSRF para Django (apenas métodos mutáveis)
+    if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
+      const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1];
+      if (csrfToken) {
+        config.headers['X-CSRFToken'] = csrfToken;
+      }
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Interceptor de Response
+api.interceptors.response.use(
+  (response) => {
+    console.log(`[API Response] ${response.status} ${response.config.url}`);
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+
+    console.error('[API Error]', {
+      status: error.response?.status,
+      url: originalRequest?.url,
+      data: error.response?.data?.substring?.(0, 100),
+    });
+
+    // Se for 401 na validação de token, não fazer nada (deixa o contexto lidar)
+    if (error.response?.status === 401 && originalRequest?.url?.includes('/me/')) {
+      console.log('[API] 401 na validação - deixando BirdContext lidar');
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export const authService = {
+  login: async (credentials: { username: string; password: string }) => {
+    console.log('[AuthService] Tentando login em:', '/api-token-auth/');
+    const response = await api.post('/api-token-auth/', credentials);
+    console.log('[AuthService] Resposta:', response.data);
+    return response.data;
+  },
+  
+  getCurrentUser: async () => {
+    const response = await api.get('/api/auth/me/');
+    return response.data;
+  }
+};
+
+export default api;

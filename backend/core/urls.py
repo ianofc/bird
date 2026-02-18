@@ -1,19 +1,19 @@
 from django.urls import path
-from core.views import (
-    feed, profile, posts, interactions, settings, 
-    discovery, chat, events, groups, network, auth, general
-)
+from core.views import feed, profile, posts, interactions, settings, discovery, chat, events, groups, network, auth, general
 
 urlpatterns = [
     path('', feed.home_view, name='home'),
     path('profile/<str:username>/', profile.profile_view, name='profile_detail'),
-    path('profile/edit/submit/', profile.edit_profile, name='edit_profile'), # Rota CRÍTICA para o upload funcionar
+    path('profile/edit/submit/', profile.edit_profile, name='edit_profile'),
     path('p/<str:username>/', profile.profile_view, name='profile'),
     
     # Interações do Perfil
     path('profile/<str:username>/follow/', interactions.toggle_follow, name='toggle_follow'),
-    path('start_chat/<str:username>/', chat.start_dm, name='start_chat'), # Link do botão Mensagem
+    path('start_chat/<str:username>/', chat.start_dm, name='start_chat'),
 
+    # API Auth - APENAS AQUI (remova do bird/urls.py ou mantenha apenas uma)
+    path('api/auth/me/', auth.current_user_django, name='current_user_api'),  # Use current_user_django (mais estável)
+    
     # Posts
     path('bird/create/', posts.create_bird, name='create_bird'),
     path('bird/<int:bird_id>/', posts.bird_detail, name='bird_detail'),

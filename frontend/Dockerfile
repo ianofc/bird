@@ -2,17 +2,16 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copia arquivos de dependência
-COPY package.json package-lock.json* bun.lockb* ./
+# Copiar arquivos de dependências primeiro (cache)
+COPY package.json package-lock.json* ./
 
-# Instala dependências (tenta npm, se falhar usa bun se disponível, mas force npm aqui pela compatibilidade)
-RUN npm install
+# Instalar TODAS as dependências incluindo devDependencies
+# --include=dev é crucial para @vitejs/plugin-react
+RUN npm ci --include=dev || npm install
 
-# Copia o resto do código
+# Copiar código fonte
 COPY . .
 
-# Expõe a porta do Vite
-EXPOSE 5173
+EXPOSE 8080
 
-# Inicia em modo de desenvolvimento com host liberado para o Docker
-CMD ["npm", "run", "dev", "--", "--host"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

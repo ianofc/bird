@@ -1,127 +1,36 @@
-import os
-
-def write_file(path, content):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(content.strip())
-    print(f"✅ Sistema Sincronizado: {path}")
-
-# --- 1. LOGIN PAGE (UX VERDE + FUNCIONALIDADE) ---
-login_page = """
-import { useState } from "react";
-import { useBird } from "@/contexts/BirdContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Zap, ShieldCheck } from "lucide-react";
-
-export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const { login } = useBird();
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // No Bird, o Superusuário entra com autoridade
-    login(username, password);
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-[3rem] p-10 shadow-2xl border border-gray-100">
-        <div className="text-center mb-10">
-            <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-3 shadow-lg">
-                <span className="text-white font-black text-3xl">B</span>
-            </div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tighter italic">Bem-vindo ao Bird</h1>
-            <p className="text-gray-400 font-medium text-sm mt-2 font-mono uppercase tracking-widest text-[10px]">Identidade Requerida</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Input 
-              placeholder="Identificador (ex: iansantos)" 
-              className="h-14 rounded-2xl bg-gray-50 border-none px-6 font-bold"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Input 
-              type="password"
-              placeholder="Senha" 
-              className="h-14 rounded-2xl bg-gray-50 border-none px-6 font-bold"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          {/* BOTÃO VERDE (ESTILO UX RECOMENDADO) */}
-          <Button 
-            type="submit"
-            className="w-full h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg shadow-xl shadow-emerald-100 transition-all active:scale-95 flex items-center gap-2"
-          >
-            <ShieldCheck size={20} /> Entrar no Multiverso
-          </Button>
-        </form>
-
-        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-            <p className="text-gray-400 text-xs font-bold uppercase tracking-tighter flex items-center justify-center gap-2">
-                <Zap size={12} className="text-orange-400" /> Protegido por Thalamus Core
-            </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+#!/usr/bin/env python3
+"""
+FIX AGRESSIVO - Remove completamente zios/tas do settings.py
 """
 
-# --- 2. BIRD CONTEXT (GARANTIR BYPASS E PERSISTÊNCIA) ---
-bird_context = """
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import re
+from pathlib import Path
 
-const BirdContext = createContext<any>(undefined);
+settings_path = Path("backend/bird/settings.py")
 
-export const BirdProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // O Superusuário inicia com Soberania (Bypass)
-  const [isAuthenticated, setIsAuthenticated] = useState(true); 
-  const [currentUser, setCurrentUser] = useState({
-    name: "Ian Santos",
-    handle: "iansantos",
-    initials: "IS",
-    role: "SUPERUSER"
-  });
+if not settings_path.exists():
+    print("❌ settings.py não encontrado")
+    exit(1)
 
-  const login = (user: string, pass: string) => {
-    console.log("Thalamus validando credenciais...");
-    // Autoridade Total para iansantos
-    if (user === "iansantos") {
-      setIsAuthenticated(true);
-      setCurrentUser({ name: "Ian Santos", handle: "iansantos", initials: "IS", role: "SUPERUSER" });
-    }
-  };
+content = settings_path.read_text(encoding='utf-8')
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-  };
+# Remover completamente qualquer linha com zios ou tas (exceto comentários explicativos)
+lines = content.split('\n')
+new_lines = []
 
-  return (
-    <BirdContext.Provider value={{ isAuthenticated, currentUser, login, logout, posts: [], trends: [] }}>
-      {children}
-    </BirdContext.Provider>
-  );
-};
+for line in lines:
+    stripped = line.strip().lower()
+    
+    # Pular linhas que contenham zios ou tas (mas não comentários de aviso)
+    if ('zios' in stripped or 'tas' in stripped) and not stripped.startswith('#'):
+        print(f"🗑️  Removendo: {line.strip()[:60]}...")
+        continue  # Não adiciona esta linha
+    
+    new_lines.append(line)
 
-export const useBird = () => {
-  const context = useContext(BirdContext);
-  if (!context) throw new Error("useBird must be used within BirdProvider");
-  return context;
-};
-"""
+# Salvar
+new_content = '\n'.join(new_lines)
+settings_path.write_text(new_content, encoding='utf-8')
 
-# --- 3. REQUISITOS AGENTES (FIX MODULE ERRORS) ---
-write_file("bird_zios/requirements.txt", "fastapi\\nuvicorn\\ngoogle-genai\\npython-dotenv")
-write_file("bird_tas/requirements.txt", "fastapi\\nuvicorn\\nsqlalchemy\\npython-dotenv\\nsentence-transformers")
-
-write_file("frontend/src/pages/Login.tsx", login_page)
-write_file("frontend/src/contexts/BirdContext.tsx", bird_context)
+print("✅ settings.py limpo!")
+print("Reiniciando backend...")

@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'channels',
     'compressor',
     'django_celery_results',
+    'core',
 
     # [OAUTH2] Social Login
     'allauth',
@@ -82,9 +83,23 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.apple',
 
-    # Local Apps
-    'core',
 ]
+
+# Django REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# URLs de Auth
+LOGIN_URL = '/login/'  # Sua URL de login customizada, não 'account_login'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/login/'
 
 SITE_ID = 1
 
@@ -148,9 +163,9 @@ DATABASES = {
 # ==========================================
 # 6. AUTHENTICATION CONFIG
 # ==========================================
-LOGIN_URL = 'account_login'
+LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'account_login'
+LOGOUT_REDIRECT_URL = '/'
 
 ACCOUNT_EMAIL_REQUIRED = False 
 ACCOUNT_USERNAME_REQUIRED = True
