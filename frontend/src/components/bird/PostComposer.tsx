@@ -1,8 +1,8 @@
 import { X } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useBird } from "@/contexts/BirdContext";
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
+import { UserAvatar } from "./UserAvatar"; // Importação do Componente Mestre
 
 const ICONS = {
   camera: "/icons3d/camera.png",
@@ -52,24 +52,27 @@ export function PostComposer() {
       <input type="file" ref={videoInputRef} accept="video/*" className="hidden" />
 
       <div className="flex gap-4">
+        
+        {/* AVATAR INTELIGENTE (Com suporte a Premium/Gold) */}
         <Link to="/profile">
-            <Avatar className="h-11 w-11 cursor-pointer hover:ring-2 hover:ring-indigo-300 transition-all">
-            <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-sm">
-                {currentUser?.initials || "IA"}
-            </AvatarFallback>
-            </Avatar>
+            <UserAvatar 
+                user={currentUser} 
+                className="w-12 h-12" 
+                hoverEffect={true}
+                showBadge={false} // No composer não precisa do badge, só o anel
+            />
         </Link>
         
-        <div className="flex-1 relative">
+        <div className="relative flex-1">
           <textarea
-            className="w-full bg-transparent border-none focus:ring-0 resize-none text-[16px] text-gray-800 placeholder:text-gray-400 min-h-[50px] p-0 mt-2 font-medium outline-none leading-relaxed"
+            className="w-full bg-transparent border-none focus:ring-0 resize-none text-[16px] text-gray-800 placeholder:text-gray-400 min-h-[50px] p-0 mt-2.5 font-medium outline-none leading-relaxed"
             placeholder="No que você está pensando?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
 
           {selectedImage && (
-            <div className="relative mt-2 mb-4 w-full rounded-2xl overflow-hidden shadow-lg group/preview">
+            <div className="relative w-full mt-2 mb-4 overflow-hidden shadow-lg rounded-2xl group/preview">
                 <img src={selectedImage} alt="Preview" className="w-full h-auto object-cover max-h-[300px]" />
                 <button 
                     onClick={removeImage}
@@ -80,46 +83,46 @@ export function PostComposer() {
             </div>
           )}
           
-          <div className="flex items-center justify-between mt-2 pt-2">
+          <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-100/50">
             
             <div className="flex items-center gap-5 pl-1">
-               {/* ÍCONES REDUZIDOS: w-6 h-6 (24px) */}
-               <button onClick={handleImageClick} className="group relative focus:outline-none transition-transform active:scale-90" title="Foto">
-                  <img src={ICONS.camera} className="w-6 h-6 object-contain drop-shadow-sm transition-all group-hover:scale-110 group-hover:-translate-y-1" />
+               {/* Ícones de Mídia */}
+               <button onClick={handleImageClick} className="relative transition-transform group/icon focus:outline-none active:scale-90" title="Foto">
+                  <img src={ICONS.camera} className="object-contain w-6 h-6 transition-all drop-shadow-sm group-hover/icon:scale-110 group-hover/icon:-translate-y-1" />
                </button>
 
-               <button onClick={handleVideoClick} className="group relative focus:outline-none transition-transform active:scale-90" title="Vídeo">
-                  <img src={ICONS.video} className="w-6 h-6 object-contain drop-shadow-sm transition-all group-hover:scale-110 group-hover:-translate-y-1" />
+               <button onClick={handleVideoClick} className="relative transition-transform group/icon focus:outline-none active:scale-90" title="Vídeo">
+                  <img src={ICONS.video} className="object-contain w-6 h-6 transition-all drop-shadow-sm group-hover/icon:scale-110 group-hover/icon:-translate-y-1" />
                </button>
 
-               <button className="group relative focus:outline-none transition-transform active:scale-90" title="Sentimento">
-                  <img src={ICONS.smile} className="w-6 h-6 object-contain drop-shadow-sm transition-all group-hover:scale-110 group-hover:-translate-y-1" />
+               <button className="relative transition-transform group/icon focus:outline-none active:scale-90" title="Sentimento">
+                  <img src={ICONS.smile} className="object-contain w-6 h-6 transition-all drop-shadow-sm group-hover/icon:scale-110 group-hover/icon:-translate-y-1" />
                </button>
             </div>
             
-            {/* FOGUETE REDUZIDO: w-8 h-8 (Antes era 10) */}
+            {/* Botão de Enviar (Foguete) */}
             <button 
                 onClick={handlePost}
                 disabled={!canPost}
                 className={`
-                    group relative focus:outline-none transition-all duration-500
+                    group/send relative focus:outline-none transition-all duration-500
                     ${canPost 
                         ? 'opacity-100 cursor-pointer active:scale-90 hover:drop-shadow-lg' 
                         : 'opacity-40 cursor-not-allowed grayscale'
                     }
                 `}
-                title="Lançar Post"
+                title="Publicar Bird"
             >
                <div className={`
-                    p-2 rounded-full transition-all duration-500
-                    ${canPost ? 'bg-indigo-50/50 hover:bg-indigo-100' : 'bg-transparent'}
+                   p-2 rounded-full transition-all duration-500
+                   ${canPost ? 'bg-indigo-50/50 hover:bg-indigo-100' : 'bg-transparent'}
                `}>
                    <img 
-                        src={ICONS.rocket} 
-                        className={`
-                            w-8 h-8 object-contain transition-transform duration-700
-                            ${canPost ? 'rotate-0 group-hover:translate-x-1 group-hover:-translate-y-2 group-hover:rotate-12' : 'rotate-0'}
-                        `} 
+                       src={ICONS.rocket} 
+                       className={`
+                           w-8 h-8 object-contain transition-transform duration-700
+                           ${canPost ? 'rotate-0 group-hover/send:translate-x-1 group-hover/send:-translate-y-2 group-hover/send:rotate-12' : 'rotate-0'}
+                       `} 
                    />
                </div>
             </button>

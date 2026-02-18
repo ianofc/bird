@@ -14,21 +14,21 @@ export function StoriesBar() {
 
   return (
     // SEM BG-WHITE, SEM BORDER, SEM SHADOW
-    <div className="w-full mb-6 px-1">
-      <ScrollArea className="w-full whitespace-nowrap overflow-visible">
-        <div className="flex w-max space-x-5 p-1 items-start">
+    <div className="w-full px-1 mb-6">
+      <ScrollArea className="w-full overflow-visible whitespace-nowrap">
+        <div className="flex items-start p-1 space-x-5 w-max">
           
           {/* ITEM: VOCÊ */}
           <div className="flex flex-col items-center gap-2 cursor-pointer group">
             <div className="w-[68px] h-[68px] rounded-full border-2 border-dashed border-indigo-300 p-[3px] group-hover:scale-105 transition-transform relative bg-transparent">
-               <div className="w-full h-full bg-white/40 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
+               <div className="flex items-center justify-center w-full h-full rounded-full shadow-sm bg-white/40 backdrop-blur-sm">
                   <Plus className="w-6 h-6 text-indigo-600" />
                </div>
-               <div className="absolute bottom-0 right-0 bg-indigo-600 rounded-full p-1 border-2 border-white">
+               <div className="absolute bottom-0 right-0 p-1 bg-indigo-600 border-2 border-white rounded-full">
                   <Plus className="w-3 h-3 text-white" />
                </div>
             </div>
-            <span className="text-xs font-medium text-gray-500 group-hover:text-indigo-600 transition-colors">Seu story</span>
+            <span className="text-xs font-medium text-gray-500 transition-colors group-hover:text-indigo-600">Seu story</span>
           </div>
 
           {/* OUTROS STORIES */}
@@ -37,9 +37,9 @@ export function StoriesBar() {
               <div className="w-[68px] h-[68px] rounded-full p-[3px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-indigo-600 group-hover:scale-105 transition-transform shadow-md hover:shadow-lg">
                 <div className="w-full h-full rounded-full border-[3px] border-white/80 overflow-hidden bg-white">
                     {story.img ? (
-                        <img src={story.img} alt={story.user} className="w-full h-full object-cover" />
+                        <img src={story.img} alt={story.user} className="object-cover w-full h-full" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-50 text-sm font-bold text-gray-400">
+                        <div className="flex items-center justify-center w-full h-full text-sm font-bold text-gray-400 bg-gray-50">
                             {story.user[0]}
                         </div>
                     )}

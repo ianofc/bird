@@ -1,27 +1,20 @@
-
-import json
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
 from django.contrib import messages
-from django.urls import reverse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 # ========================================================
-# 🔐 REGISTRO DE USUÁRIO (SIGN UP)
+# 🔐 REGISTRO DE USUÁRIO (HTML / Template)
 # ========================================================
 
 def register_view(request):
     """
-    Cria uma nova conta de usuário, faz o login automático e redireciona para a Home.
+    Cria uma nova conta de usuário, faz o login automático e redireciona.
+    Usado pelas páginas HTML do Django (fallback).
     """
-    # Se já estiver logado, não precisa registrar
     if request.user.is_authenticated:
         return redirect('home')
 
@@ -29,14 +22,10 @@ def register_view(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            
-            # Login automático após registrar (UX Fluida)
             login(request, user)
-            
-            messages.success(request, f"Bem-vindo ao Bird, @{user.username}! Sua jornada começa agora.")
+            messages.success(request, f"Bem-vindo ao Bird, @{user.username}!")
             return redirect('home')
         else:
-            # Se houver erros (ex: senhas não batem), exibe mensagens
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"{error}")
@@ -47,12 +36,12 @@ def register_view(request):
 
 
 # ========================================================
-# 🔑 LOGIN (SIGN IN)
+# 🔑 LOGIN (HTML / Template)
 # ========================================================
 
 def login_view(request):
     """
-    Autentica o usuário. Suporta redirecionamento via parâmetro ?next=.
+    Autentica o usuário via formulário HTML.
     """
     if request.user.is_authenticated:
         return redirect('home')
@@ -63,105 +52,68 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
             
-            # Verifica se existe uma URL de destino (next) vinda do POST ou GET
+            # Redirecionamento inteligente (next url)
             next_url = request.POST.get('next') or request.GET.get('next')
-            
-            # Redireciona para 'next' se for seguro, senão vai para 'home'
             if next_url and next_url != 'None':
                 return redirect(next_url)
             
             return redirect('home')
         else:
-            messages.error(request, "Usuário ou senha inválidos. Tente novamente.")
+            messages.error(request, "Usuário ou senha inválidos.")
     else:
         form = AuthenticationForm()
 
-    # Passamos o 'next' para o template para manter o fluxo caso o login falhe na primeira tentativa
-    context = {
-        'form': form,
-        'next': request.GET.get('next', '') 
-    }
-    return render(request, 'registration/login.html', context)
+    return render(request, 'registration/login.html', {'form': form})
 
 
 # ========================================================
-# 🚪 LOGOUT (SIGN OUT)
+# 🚪 LOGOUT (Geral)
 # ========================================================
 
 def logout_view(request):
-    """
-    Encerra a sessão e redireciona para o login com feedback.
-    """
     if request.user.is_authenticated:
         logout(request)
-        messages.info(request, "Você saiu da sua conta. Até logo!")
-    
-    return redirect('login')
+        messages.info(request, "Você saiu da sua conta.")
+    return redirect('login_page')
 
 
 # ========================================================
-# 🔍 API - USUÁRIO LOGADO (VERSÃO ROBUSTA)
+# 🔍 API - USUÁRIO LOGADO (React Integration)
 # ========================================================
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def current_user_api(request):
-    """
-    Retorna dados do usuário autenticado via DRF.
-    Usa IsAuthenticated em vez de @login_required para evitar redirects.
-    """
-    user = request.user
-    
-    # Buscar ou criar perfil
-    from core.models import Profile
-    profile, created = Profile.objects.get_or_create(user=user)
-    
-    data = {
-        'id': user.id,
-        'username': user.username,
-        'name': f"{user.first_name} {user.last_name}".strip() or user.username,
-        'handle': user.username,
-        'email': user.email,
-        'initials': (user.first_name[:1] + user.last_name[:1]).upper() if (user.first_name and user.last_name) else user.username[:2].upper(),
-        'avatar': profile.avatar.url if profile.avatar else None,
-        'bio': profile.bio if hasattr(profile, 'bio') else '',
-        'is_authenticated': True,
-    }
-    
-    return JsonResponse(data, status=200)
-
-
-# Fallback para Django puro (sem DRF)
-@require_http_methods(["GET"])
 def current_user_django(request):
     """
-    Versão Django pura - verifica auth manualmente sem redirects.
+    Retorna os dados do usuário autenticado via Token (DRF).
+    Esta é a função que o React chama em /api/auth/me/
     """
-    if not request.user.is_authenticated:
-        return JsonResponse({
-            'error': 'Authentication required',
-            'authenticated': False
-        }, status=401)
-    
     user = request.user
     
-    # Buscar perfil
-    try:
-        profile = user.profile
-        avatar = profile.avatar.url if profile.avatar else None
-        bio = profile.bio
-    except:
-        avatar = None
-        bio = ''
+    # Tenta pegar o perfil de forma segura (caso ainda não tenha sido criado pelo signal)
+    avatar_url = None
+    bio_text = ""
     
-    return JsonResponse({
+    if hasattr(user, 'profile'):
+        if user.profile.avatar:
+            avatar_url = user.profile.avatar.url
+        bio_text = user.profile.bio or ""
+
+    # Formata iniciais
+    initials = user.username[:2].upper()
+    if user.first_name and user.last_name:
+        initials = (user.first_name[0] + user.last_name[0]).upper()
+
+    return Response({
         'id': user.id,
         'username': user.username,
-        'name': f"{user.first_name} {user.last_name}".strip() or user.username,
-        'handle': user.username,
+        'name': user.get_full_name() or user.username,
+        'handle': f"@{user.username}",
         'email': user.email,
-        'initials': (user.first_name[:1] + user.last_name[:1]).upper() if (user.first_name and user.last_name) else user.username[:2].upper(),
-        'avatar': avatar,
-        'bio': bio,
+        'initials': initials,
+        'avatar': avatar_url,
+        'bio': bio_text,
         'is_authenticated': True,
+        'following': 0, # Placeholder: Implementar lógica de contagem real depois
+        'followers': 0, # Placeholder: Implementar lógica de contagem real depois
     })
