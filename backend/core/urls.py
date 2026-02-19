@@ -1,5 +1,6 @@
 from django.urls import path
 from core.views import feed, profile, posts, interactions, settings, discovery, chat, events, groups, network, auth, general
+from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     # --- ROTA CRÍTICA DO PERFIL (Auth) ---
@@ -9,6 +10,9 @@ urlpatterns = [
     
     # Home e Feed
     path('', feed.home_view, name='home'),
+    
+    # ...
+    path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
     
     # Perfis
     path('profile/edit/submit/', profile.edit_profile, name='edit_profile'),

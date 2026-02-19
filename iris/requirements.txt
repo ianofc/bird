@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+requests
+# pytrends  <-- Descomente se tiver certeza que o ambiente aguenta
+# feedparser

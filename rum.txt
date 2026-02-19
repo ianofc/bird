@@ -21,3 +21,5 @@ docker rm -f redis-bird
 docker-compose exec bird-app python manage.py makemigrations
 
 docker-compose exec bird-app python manage.py migrate
+
+docker-compose up -d --build frontend

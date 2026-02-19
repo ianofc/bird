@@ -1,9 +1,6 @@
-// @ts-nocheck
-// Ignorar erros de tipo devido a conflitos de node_modules no Docker
-
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
+import path from "path"
+import react from "@vitejs/plugin-react"
+import { defineConfig } from "vite"
 
 export default defineConfig({
   plugins: [react()],
@@ -13,43 +10,28 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0',
+    host: "0.0.0.0", // Necessário para Docker
     port: 8080,
-    strictPort: false,
-    hmr: {
-      host: 'localhost',
-      port: 8080,
-    },
     proxy: {
-      // Proxy para API Django no backend:8000
+      // Rota para o Backend (Django)
       '/api': {
-        target: 'http://backend:8000',
+        target: 'http://backend:8000', // Usa o nome do serviço Docker 'backend'
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path,
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('Proxy error:', err.message);
-          });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Proxy:', req.method, req.url, '->', 'http://backend:8000' + proxyReq.path);
-          });
-        },
       },
+      // Rota para auth (token)
       '/api-token-auth': {
         target: 'http://backend:8000',
         changeOrigin: true,
         secure: false,
       },
-      '/api-auth': {
-        target: 'http://backend:8000',
+      // Rota para o Iris (Trends)
+      '/service/iris': {
+        target: 'http://iris:8003', // Usa o nome do serviço Docker 'iris'
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/service\/iris/, ''),
         secure: false,
-      },
-    },
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: true,
-  },
-});
+      }
+    }
+  }
+})

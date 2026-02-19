@@ -1,12 +1,29 @@
-import { Search, MoreHorizontal, ShieldCheck, Zap, Activity, Globe, Server, Star, UserPlus, Sparkles, TrendingUp, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, MoreHorizontal, ShieldCheck, Zap, Activity, Globe, Server, Star, UserPlus, Sparkles, TrendingUp, Lock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom"; // Importante para o link funcionar
+import { Link } from "react-router-dom";
+import { MercurioService, IrisData } from "@/services/mercurio";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function RightSidebar() {
+  const [irisData, setIrisData] = useState<IrisData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchIrisData = async () => {
+    setLoading(true);
+    const result = await MercurioService.getFullScan();
+    setIrisData(result);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchIrisData();
+  }, []);
+
   return (
     <aside className="sticky top-0 flex-col hidden h-screen gap-6 p-4 pb-24 overflow-y-auto bg-transparent lg:flex w-80 xl:w-96 xl:p-6 scrollbar-hide">
       
@@ -44,7 +61,7 @@ export function RightSidebar() {
         </CardContent>
       </Card>
 
-      {/* CARD 2: IRIS (Trends -> Mercúrio) */}
+      {/* CARD 2: IRIS (Trends -> Mercúrio) - AGORA COM DADOS REAIS */}
       <Card className="shrink-0 bg-white/60 backdrop-blur-xl border border-white/50 shadow-xl shadow-gray-200/50 rounded-[30px] overflow-hidden hover:bg-white/70 transition-colors duration-300">
         <CardHeader className="px-6 pt-6 pb-3 border-b border-gray-100/50">
           <div className="flex items-center justify-between">
@@ -54,29 +71,47 @@ export function RightSidebar() {
               </div>
               IRIS Trends
             </CardTitle>
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-100/50 px-2 py-1 rounded-lg">Mercúrio</span>
+            <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-100/50 px-2 py-1 rounded-lg">Mercúrio</span>
+                <button onClick={fetchIrisData} className="text-gray-400 hover:text-indigo-600 transition-colors">
+                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="px-4 py-2">
-          {[
-            { category: "Política • Brasil", title: "PEC da Soberania Digital", count: "154K", color: "text-blue-600" },
-            { category: "Tecnologia • AI", title: "Lançamento do ZIOS Core", count: "82K", color: "text-purple-600" },
-            { category: "Bahia • Eventos", title: "Festival de Lençóis 2026", count: "45K", color: "text-green-600" },
-          ].map((trend, i) => (
-            <div key={i} className="relative p-3 transition-all cursor-pointer group rounded-2xl hover:bg-white/60">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate max-w-[70%]">{trend.category}</span>
-                <MoreHorizontal className="w-4 h-4 text-gray-300 transition-colors group-hover:text-gray-500" />
-              </div>
-              <p className="text-sm font-bold leading-tight text-gray-800 transition-colors group-hover:text-indigo-600 line-clamp-2">{trend.title}</p>
-              <div className="flex items-center gap-1 mt-1.5">
-                <TrendingUp className={`w-3 h-3 ${trend.color}`} />
-                <span className="text-xs font-medium text-gray-500">{trend.count} birds</span>
-              </div>
-            </div>
-          ))}
+          {loading ? (
+             <div className="p-3 space-y-4">
+                 {[1, 2, 3].map((i) => (
+                     <div key={i} className="space-y-2">
+                        <Skeleton className="h-2 w-1/3 bg-gray-200" />
+                        <Skeleton className="h-4 w-3/4 bg-gray-300" />
+                     </div>
+                 ))}
+             </div>
+          ) : irisData?.google_trends && irisData.google_trends.length > 0 ? (
+            irisData.google_trends.map((trend, i) => (
+              <Link to={`/explore?q=${encodeURIComponent(trend.topic)}`} key={i} className="block relative p-3 transition-all cursor-pointer group rounded-2xl hover:bg-white/60">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate max-w-[70%]">
+                    {i + 1} • {trend.source}
+                  </span>
+                  <MoreHorizontal className="w-4 h-4 text-gray-300 transition-colors group-hover:text-gray-500" />
+                </div>
+                <p className="text-sm font-bold leading-tight text-gray-800 transition-colors group-hover:text-indigo-600 line-clamp-2">
+                  {trend.context}
+                </p>
+                <div className="flex items-center gap-1 mt-1.5">
+                  <TrendingUp className="w-3 h-3 text-blue-600" />
+                  <span className="text-xs font-medium text-indigo-600">{trend.topic}</span>
+                </div>
+              </Link>
+            ))
+          ) : (
+            <div className="p-4 text-center text-sm text-gray-500">Sem dados da Iris no momento.</div>
+          )}
+
           <Button variant="ghost" className="w-full h-10 mt-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50/50 rounded-xl" asChild>
-            {/* Link direto para a nova rota */}
             <Link to="/mercurio">
               Acessar Ambiente Mercúrio →
             </Link>
