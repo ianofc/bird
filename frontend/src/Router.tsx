@@ -1,8 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Feed from "./pages/Feed";
 import Explore from "./pages/Explore";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
@@ -14,12 +12,13 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Messages from "./pages/Messages";
 import PostView from "./pages/PostView";
 import ThalamusAdmin from "./pages/ThalamusAdmin";
-import Mercurio from "./pages/Mercurio"; // Adicionado
+import Mercurio from "./pages/Mercurio"; 
+import Feed from "./pages/Feed";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Index />,
+    element: <Feed />,
   },
   {
     path: "/login",
@@ -78,11 +77,15 @@ const router = createBrowserRouter([
     element: <ThalamusAdmin />,
   },
   {
-    path: "/mercurio", // Antiga rota News
+    path: "/mercurio", 
     element: <Mercurio />,
   },
   {
-    path: "/news", // Redireciona ou mantém compatibilidade
+   path: "/mercurio/*",
+   element: <Mercurio />
+  },
+  {
+    path: "/news", // 
     element: <Mercurio />,
   },
   {

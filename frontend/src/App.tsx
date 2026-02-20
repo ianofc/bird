@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { BirdProvider, useBird } from "@/contexts/BirdContext";
 
 // Páginas
-import Index from "./pages/Index";
+import Index from "./pages/Feed";
 import Explore from "./pages/Explore";
 import News from "./pages/News";
 import Notifications from "./pages/Notifications";
