@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
+import Mercurio from "./pages/Mercurio"; // Adicionado Import do Mercúrio
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,10 @@ const AppRoutes = () => (
     <Route path="/network" element={<PrivateRoute><Network /></PrivateRoute>} />
     <Route path="/communities" element={<PrivateRoute><Communities /></PrivateRoute>} />
     <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+    
+    {/* Hub de Inteligência (PentaIA) */}
+    <Route path="/mercurio" element={<PrivateRoute><Mercurio /></PrivateRoute>} />
+    <Route path="/mercurio/*" element={<PrivateRoute><Mercurio /></PrivateRoute>} />
     
     <Route path="*" element={<NotFound />} />
   </Routes>
