@@ -14,7 +14,7 @@ docker-compose restart django
 
 python run_tas.py
 
-docker-compose up --build
+docker compose up --build
 
 docker rm -f redis-bird
 

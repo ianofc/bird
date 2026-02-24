@@ -1,5 +1,9 @@
 fastapi
 uvicorn
 requests
-# pytrends  <-- Descomente se tiver certeza que o ambiente aguenta
-# feedparser
+pytrends
+feedparser
+beautifulsoup4
+lxml
+google-generativeai
+python-dotenv
