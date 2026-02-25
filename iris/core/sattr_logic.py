@@ -136,7 +136,9 @@ class SATTR:
             seen_tags.add(hashtag)
 
             # Cálculo de Momentum Gravitacional
+
             score = IRIS_Physics.calculate_momentum(item["auth"], item["pos"])
+
             
             # Ressonância Neural (Gemini)
             # Só acionamos o Gemini para os top 12 para economizar cota e ganhar performance

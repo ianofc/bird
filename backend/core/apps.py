@@ -15,7 +15,8 @@ class CoreConfig(AppConfig):
         Aqui importamos os Signals para garantir que eles 'escutem' os eventos do banco.
         """
         try:
-            from . import signals  # noqa: F401
-        except ImportError as exc:
+            from . import signals  # noqa: F401       except ImportError as exc:
             logger.warning("Falha ao carregar signals do app core: %s", exc)
+
+
     label = 'core'

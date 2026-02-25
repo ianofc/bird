@@ -1,5 +1,10 @@
 """ASGI config for bird project."""
 
+<<<<<<< codex/corrigir-todos-os-erros-do-projeto-4gokus
+=======
+# ruff: noqa: E402
+
+>>>>>>> main
 import os
 import django
 
