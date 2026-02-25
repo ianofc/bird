@@ -1,9 +1,8 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.db.models import Q
 
 User = get_user_model()
 
