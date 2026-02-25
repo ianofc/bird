@@ -1,8 +1,8 @@
 # fastapi_service/routers/proactive.py
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 import random
 import logging
 

@@ -1,3 +1,7 @@
+"""ASGI config for bird project."""
+
+# ruff: noqa: E402
+
 import os
 import django
 

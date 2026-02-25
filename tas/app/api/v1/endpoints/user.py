@@ -21,8 +21,10 @@ async def update_profile(data: ProfileUpdate, db=Depends(get_db)):
         profile = UserProfileModel(user_id=data.user_id)
         db.add(profile)
     
-    if data.blacklisted_tags is not None: profile.blacklisted_tags = data.blacklisted_tags
-    if data.blacklisted_authors is not None: profile.blacklisted_authors = data.blacklisted_authors
+    if data.blacklisted_tags is not None:
+        profile.blacklisted_tags = data.blacklisted_tags
+    if data.blacklisted_authors is not None:
+        profile.blacklisted_authors = data.blacklisted_authors
     
     await db.commit()
     return {"status": "success", "user_id": data.user_id}

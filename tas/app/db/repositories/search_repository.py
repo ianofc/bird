@@ -1,6 +1,4 @@
 from sqlalchemy import text
-from app.db.base import ContentModel
-import json
 
 class SearchRepository:
     def __init__(self, db_session):
@@ -15,7 +13,7 @@ class SearchRepository:
         vector_str = str(query_vector)
         
         # Query otimizada para buscar os mais próximos
-        query = text(f"""
+        query = text("""
             SELECT id, title, tags, safety_label, author_id, embedding
             FROM contents
             ORDER BY embedding::jsonb <=> :vector::jsonb
