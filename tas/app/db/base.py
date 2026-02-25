@@ -1,7 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, String, Integer, JSON, DateTime
+from sqlalchemy import Column, String, JSON, DateTime
 from sqlalchemy.sql import func
-import numpy as np
 
 Base = declarative_base()
 
