@@ -58,6 +58,10 @@ class SATTR:
             "GOOGLE": {"url": "https://news.google.com/rss?hl=pt-BR&gl=BR&ceid=BR:pt-419", "weight": 1.2},
             "REUTERS": {"url": "https://www.reutersagency.com/feed/?best-topics=world-news&format=xml", "weight": 1.5}
         }
+        self.api_sources = {
+            "hackernews": "https://hn.algolia.com/api/v1/search?tags=front_page",
+            "reddit": "https://www.reddit.com/r/worldnews/top.json?t=day&limit=10"
+        }
 
     def _get_gemini_resonance(self, topic: str) -> str:
         """
@@ -77,6 +81,38 @@ class SATTR:
             return response.text.strip()
         except Exception:
             return "Tendência identificada e sob monitoramento proativo."
+
+
+    def _fetch_api_news(self) -> List[Dict[str, Any]]:
+        items = []
+        # Hacker News API
+        try:
+            hn = requests.get(self.api_sources["hackernews"], timeout=4)
+            if hn.status_code == 200:
+                for hit in hn.json().get("hits", [])[:5]:
+                    title = hit.get("title") or hit.get("story_title")
+                    link = hit.get("url") or hit.get("story_url") or "https://news.ycombinator.com/"
+                    if title:
+                        items.append({"source": "HackerNews", "title": title, "link": link, "published": hit.get("created_at", "N/A")})
+        except Exception as e:
+            logger.warning(f"Falha API HackerNews: {e}")
+
+        # Reddit JSON API
+        try:
+            headers = {"User-Agent": "bird-iris/1.0"}
+            rd = requests.get(self.api_sources["reddit"], timeout=4, headers=headers)
+            if rd.status_code == 200:
+                children = rd.json().get("data", {}).get("children", [])
+                for child in children[:5]:
+                    data = child.get("data", {})
+                    title = data.get("title")
+                    link = data.get("url") or f"https://reddit.com{data.get('permalink', '')}"
+                    if title:
+                        items.append({"source": "Reddit", "title": title, "link": link, "published": datetime.utcfromtimestamp(data.get("created_utc", 0)).isoformat()})
+        except Exception as e:
+            logger.warning(f"Falha API Reddit: {e}")
+
+        return items
 
     def _to_camel_hashtag(self, text: str) -> str:
         """Determinismo de Hashtag: Garante a identidade visual solicitada."""
@@ -109,12 +145,20 @@ class SATTR:
         except Exception as e:
             logger.warning(f"Sensor Pytrends em modo cooldown: {e}")
 
+        news_items: List[Dict[str, Any]] = []
+
         # 2. SENSOR SECUNDÁRIO: RSS Multicamada
         for name, info in self.sources.items():
             try:
                 feed = feedparser.parse(info["url"])
                 for i, entry in enumerate(feed.entries[:5]):
                     title = entry.title.split(' - ')[0]
+                    news_items.append({
+                        "source": name,
+                        "title": title,
+                        "link": entry.link,
+                        "published": getattr(entry, "published", "N/A")
+                    })
                     raw_pool.append({
                         "topic": title,
                         "pos": i,
@@ -124,7 +168,10 @@ class SATTR:
                     })
             except: continue
 
-        # 3. FILTRAGEM, RESSONÂNCIA E PONTUAÇÃO
+        # 3. APIs externas de notícias reais
+        news_items.extend(self._fetch_api_news())
+
+        # 4. FILTRAGEM, RESSONÂNCIA E PONTUAÇÃO
         processed = []
         seen_tags = set()
 
@@ -134,7 +181,7 @@ class SATTR:
             seen_tags.add(hashtag)
 
             # Cálculo de Momentum Gravitacional
-            score = IRIS_Physics.calculate_momentum(item["topic"], item["pos"], item["auth"])
+            score = IRIS_Physics.calculate_momentum(item["auth"], item["pos"], item["auth"])
             
             # Ressonância Neural (Gemini)
             # Só acionamos o Gemini para os top 12 para economizar cota e ganhar performance
@@ -162,7 +209,8 @@ class SATTR:
                 "raw_captured": len(raw_pool),
                 "neural_resonance": self.ai_enabled
             },
-            "google_trends": final_trends
+            "google_trends": final_trends,
+            "news": news_items[:20]
         }
 
     def _detect_category(self, text: str) -> str:
