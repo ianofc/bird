@@ -11,7 +11,7 @@ def test_ingest():
     try:
         response = requests.post(url, json=data)
         print(f"Status: {response.status_code}, Response: {response.json()}")
-    except:
+    except requests.RequestException:
         print("❌ Erro: A API está ligada? Rode 'python -m uvicorn app.main:app --reload'")
 
 if __name__ == "__main__":

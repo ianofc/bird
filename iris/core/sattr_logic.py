@@ -1,7 +1,6 @@
 # iris/core/sattr_logic.py
 
 import feedparser
-import requests
 import re
 import hashlib
 import logging
@@ -9,7 +8,7 @@ import math
 import os
 import google.generativeai as genai
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Dict, Any
 from pytrends.request import TrendReq
 from dotenv import load_dotenv
 
@@ -25,7 +24,7 @@ class IRIS_Physics:
     Implementa decaimento newtoniano para relevância temporal.
     """
     @staticmethod
-    def calculate_momentum(weight: float, position: int, source_authority: float) -> float:
+    def calculate_momentum(source_authority: float, position: int) -> float:
         # Fórmula: (Peso da Fonte * (20 - Posição)) / log(Tempo + e)
         # Garante que o que é novo e de fonte forte domine o feed.
         gravity = 1.8
@@ -118,7 +117,8 @@ class SATTR:
         """Determinismo de Hashtag: Garante a identidade visual solicitada."""
         clean = re.sub(r'[^\w\s]', '', text)
         words = clean.split()
-        if not words: return "#PentaIA"
+        if not words:
+            return "#PentaIA"
         # CamelCase das 2 primeiras palavras semânticas
         tag = "".join(word.capitalize() for word in words[:2] if len(word) > 2)
         return f"#{tag}" if tag else f"#{words[0].capitalize()}"
@@ -166,7 +166,8 @@ class SATTR:
                         "cat_suggest": f"Notícia {name}",
                         "link": entry.link
                     })
-            except: continue
+            except Exception:
+                continue
 
         # 3. APIs externas de notícias reais
         news_items.extend(self._fetch_api_news())
@@ -177,10 +178,12 @@ class SATTR:
 
         for item in raw_pool:
             hashtag = self._to_camel_hashtag(item["topic"])
-            if hashtag in seen_tags: continue
+            if hashtag in seen_tags:
+                continue
             seen_tags.add(hashtag)
 
             # Cálculo de Momentum Gravitacional
+
             score = IRIS_Physics.calculate_momentum(item["auth"], item["pos"], item["auth"])
             
             # Ressonância Neural (Gemini)
@@ -216,9 +219,14 @@ class SATTR:
     def _detect_category(self, text: str) -> str:
         """IA Heurística para categorização instantânea (Frontend Badges)."""
         text = text.lower()
-        if any(w in text for w in ['vasco', 'gol', 'futebol', 'campeão', 'vitoria', 'flamengo', 'palmeiras']): return "Esportes"
-        if any(w in text for w in ['mercado', 'dólar', 'ações', 'economia', 'investimento', 'selic']): return "Economia"
-        if any(w in text for w in ['ia', 'tech', 'apple', 'foguete', 'software', 'chip', 'celular']): return "Tecnologia"
-        if any(w in text for w in ['governo', 'lula', 'senado', 'política', 'stf', 'eleição']): return "Política"
-        if any(w in text for w in ['filme', 'série', 'bbb', 'show', 'música', 'atriz', 'carnaval']): return "Cultura"
+        if any(w in text for w in ['vasco', 'gol', 'futebol', 'campeão', 'vitoria', 'flamengo', 'palmeiras']):
+            return "Esportes"
+        if any(w in text for w in ['mercado', 'dólar', 'ações', 'economia', 'investimento', 'selic']):
+            return "Economia"
+        if any(w in text for w in ['ia', 'tech', 'apple', 'foguete', 'software', 'chip', 'celular']):
+            return "Tecnologia"
+        if any(w in text for w in ['governo', 'lula', 'senado', 'política', 'stf', 'eleição']):
+            return "Política"
+        if any(w in text for w in ['filme', 'série', 'bbb', 'show', 'música', 'atriz', 'carnaval']):
+            return "Cultura"
         return "Geral"
