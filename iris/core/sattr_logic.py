@@ -24,7 +24,7 @@ class IRIS_Physics:
     Implementa decaimento newtoniano para relevância temporal.
     """
     @staticmethod
-    def calculate_momentum(weight: float, position: int, source_authority: float) -> float:
+    def calculate_momentum(source_authority: float, position: int) -> float:
         # Fórmula: (Peso da Fonte * (20 - Posição)) / log(Tempo + e)
         # Garante que o que é novo e de fonte forte domine o feed.
         gravity = 1.8
@@ -136,7 +136,9 @@ class SATTR:
             seen_tags.add(hashtag)
 
             # Cálculo de Momentum Gravitacional
-            score = IRIS_Physics.calculate_momentum(item["auth"], item["pos"], item["auth"])
+
+            score = IRIS_Physics.calculate_momentum(item["auth"], item["pos"])
+
             
             # Ressonância Neural (Gemini)
             # Só acionamos o Gemini para os top 12 para economizar cota e ganhar performance

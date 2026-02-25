@@ -12,8 +12,10 @@ def _has_django() -> bool:
 
 
 def _run_offline_check() -> int:
-    """Fallback check for restricted environments without Django installed."""
-    print("[offline-check] Django não está instalado; executando validações de sintaxe.")
+
+    """Syntax-only fallback for restricted environments without Django installed."""
+    print("[offline-check] Django não está instalado; executando SOMENTE validações de sintaxe (compileall).")
+
     return subprocess.call(
         [sys.executable, "-m", "compileall", "-q", "backend/bird", "backend/core"],
         cwd=os.path.dirname(os.path.dirname(__file__)),
@@ -30,8 +32,10 @@ def main():
         execute_from_command_line(sys.argv)
         return
 
-    is_check_command = len(sys.argv) > 1 and sys.argv[1] == "check"
-    if is_check_command:
+    command = sys.argv[1] if len(sys.argv) > 1 else ""
+    is_offline_check = command in {"check", "offline_check"}
+    if is_offline_check:
+
         raise SystemExit(_run_offline_check())
 
     raise ImportError(
