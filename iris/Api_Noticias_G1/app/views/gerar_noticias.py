@@ -17,7 +17,7 @@ class GerarNoticias(Resource):
             noticias.get_local()
             noticias.get_imagem()
             noticias_dados = (noticias.noticias_dados(), 200)
-        except:
+        except Exception:
             noticias_dados = ([{}, "Occoreu um erro inesperado"], 502)
 
         noticias.sair()

@@ -3,13 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
 
+from .routers import education, chat, proactive
+
 # Configuração de Logs
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ioconscius")
-
-# --- IMPORTAÇÃO DOS LÓBULOS CEREBRAIS (ROUTERS) ---
-# Certifique-se de que estes arquivos existem na pasta 'routers/'
-from .routers import education, chat, proactive
 
 app = FastAPI(
     title="IO CONSCIOS API",

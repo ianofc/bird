@@ -87,7 +87,7 @@ class Noticias:
                     complemento = complemento_elem[0]
                     complemento = complemento.text
                     complementos.append(complemento)
-                except:
+                except (IndexError, AttributeError, TypeError):
                     complementos = []
 
             self.noticias[i]["complementos"] = complementos
@@ -102,7 +102,7 @@ class Noticias:
                 hora = hora[0]
                 hora = hora.text
                 hora = hora.strip()
-            except:
+            except (IndexError, AttributeError, TypeError):
                 hora = None
 
             self.noticias[i]["hora"] = hora
@@ -117,7 +117,7 @@ class Noticias:
                 local = local[0]
                 local = local.text
                 local = local.strip()
-            except:
+            except (IndexError, AttributeError, TypeError):
                 local = None
 
             self.noticias[i]["local"] = local
@@ -131,13 +131,13 @@ class Noticias:
             if soup.find_all("img", class_="feed-post-video-trademark"):
                 imagem = None
 
-            if imagem != None:
+            if imagem is not None:
                 imagem = imagem.get_attribute_list("src")
             else:
                 try:
                     imagem = soup.video
                     imagem = imagem.get_attribute_list("poster")
-                except:
+                except (AttributeError, TypeError, IndexError):
                     imagem = [None]
 
             imagem = imagem[0]

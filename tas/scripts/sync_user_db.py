@@ -4,7 +4,6 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.db.base import Base
-import app.db.base_user # Força o carregamento do modelo de perfil
 from app.db.session import engine
 
 async def sync():

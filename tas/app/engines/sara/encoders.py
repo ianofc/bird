@@ -1,4 +1,3 @@
-import numpy as np
 try:
     from sentence_transformers import SentenceTransformer
     MODEL = SentenceTransformer('all-MiniLM-L6-v2')
@@ -12,7 +11,7 @@ class SaraEncoder:
         if MODEL:
             try:
                 return MODEL.encode(text).tolist()
-            except:
+            except Exception:
                 pass
         # Fallback: Gera um vetor determinístico baseado no texto para não quebrar o banco
         return [float(ord(c)) / 1000 for c in text[:384]] + [0.0]*(384-len(text[:384]))

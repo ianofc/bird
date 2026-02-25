@@ -1,5 +1,5 @@
 from django.urls import path
-from core.views import feed, profile, posts, interactions, settings, discovery, chat, events, groups, network, auth, general
+from core.views import feed, profile, posts, interactions, settings, discovery, chat, groups, network, auth, general
 from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [

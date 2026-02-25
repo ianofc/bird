@@ -66,7 +66,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Tenta encontrar a sala ou cria uma genérica se não existir (fallback)
         try:
             room = Room.objects.get(id=int(room_name)) if room_name.isdigit() else Room.objects.first()
-        except:
+        except (ValueError, TypeError, Room.DoesNotExist):
             return None
             
         if room:
@@ -79,6 +79,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             user = User.objects.get(id=user_id)
             if user.profile.avatar:
                 return user.profile.avatar.url
-        except:
+        except (User.DoesNotExist, AttributeError, ValueError, TypeError):
             pass
         return None
