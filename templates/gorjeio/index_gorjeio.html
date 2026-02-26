@@ -12,8 +12,8 @@
         <p class="text-xs text-gray-500">Mensageiro em tempo real</p>
       </div>
 
-      <span class="text-[11px] text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">Telegram style</span>
-
+      <span class="text-[11px] text-[#00C853] bg-emerald-50 px-2 py-1 rounded-full">Telegram style</span>
+    
     </div>
     {% include 'gorjeio/chat_drawer.html' %}
   </aside>
@@ -30,9 +30,12 @@
           </div>
         </div>
 
-        <div class="text-gray-400 flex gap-3 items-center">
+        <div class="text-gray-400 flex gap-2 items-center">
           <button id="mode-cloud" class="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100">Cloud</button>
           <button id="mode-secret" class="text-[11px] px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">Secret</button>
+          <button title="Buscar"><i class="fas fa-search"></i></button>
+          <button title="Mais"><i class="fas fa-ellipsis-v"></i></button>
+
         </div>
       </header>
 
@@ -79,8 +82,8 @@
   const chatLog = document.getElementById('chat-log');
   const input = document.getElementById('chat-message-input');
   const submit = document.getElementById('chat-message-submit');
-  const typingIndicator = document.getElementById('typing-indicaor');
 
+  const typingIndicator = document.getElementById('typing-indicator');
   const cloudBtn = document.getElementById('mode-cloud');
   const secretBtn = document.getElementById('mode-secret');
   let gorjeioMode = 'Cloud';

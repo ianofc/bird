@@ -121,6 +121,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         try:
 
+
             user = User.objects.get(id=user_id)
             room = Room.objects.get(id=int(room_name))
         except (User.DoesNotExist, Room.DoesNotExist, ValueError, TypeError):
