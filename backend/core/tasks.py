@@ -68,5 +68,5 @@ def process_video_upload(bird_id):
             bird = Bird.objects.get(id=bird_id)
             bird.is_processing = False
             bird.save()
-        except:
+        except Bird.DoesNotExist:
             pass

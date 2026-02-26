@@ -8,6 +8,12 @@ import os
 import sys
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import List, Optional
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 # Configuração de logging PentaIA
 logging.basicConfig(
@@ -42,13 +48,6 @@ async def lifespan(app):
     logger.info("🛑 TAS Engine desligado")
 
 # --- FASTAPI APP ---
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
-import random
-
 app = FastAPI(
     title="TAS - Thalamus Accumbens SARA",
     description="Motor de decisão do feed PentaIA. Filtra (Thalamus), Alinha (SARA) e Ranqueia (Accumbens).",
@@ -174,7 +173,7 @@ async def get_trends():
         eng_str = trend.engagement.replace('k', '').replace('m', '')
         try:
             eng_num = float(eng_str)
-        except:
+        except (TypeError, ValueError):
             eng_num = 1.0
         
         # Fórmula Accumbens: afinidade * log(engagement + 1)

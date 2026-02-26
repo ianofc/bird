@@ -22,7 +22,9 @@ class ThalamusFilter:
                 continue
 
             # 3. Filtro de Contexto (Bird vs Outros)
-            if request.context == "STUDY" and c.get("safety") != "safe":
+            # Aceita variações de maiúsculas/minúsculas para evitar bypass acidental.
+            context = str(getattr(request, "context", "")).upper()
+            if context == "STUDY" and c.get("safety") != "safe":
                 continue
 
             clean_list.append(c)

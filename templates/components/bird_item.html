@@ -68,12 +68,12 @@
                 {% endif %}
             </button>
 
-            <button class="flex items-center gap-2 group transition-colors">
-                <i class="far fa-comment text-xl text-gray-500 group-hover:text-blue-500"></i>
+            <span class="flex items-center gap-2 text-gray-500">
+                <i class="far fa-comment text-xl"></i>
                 {% if bird.comments.count > 0 %}
                     <span class="text-sm font-medium text-gray-600">{{ bird.comments.count }}</span>
                 {% endif %}
-            </button>
+            </span>
 
             <button class="flex items-center gap-2 group transition-colors" onclick="navigator.clipboard.writeText(window.location.host + '{% url 'profile_detail' bird.author.username %}'); alert('Link copiado!');">
                 <i class="far fa-paper-plane text-xl text-gray-500 group-hover:text-green-500"></i>
@@ -84,4 +84,20 @@
             <i class="far fa-bookmark text-xl"></i>
         </button>
     </div>
+</div>
+
+<div class="px-4 pb-4 space-y-3">
+    <form method="POST" action="{% url 'add_comment' bird.id %}" class="flex gap-2">
+        {% csrf_token %}
+        <input name="content" required maxlength="280" placeholder="Comente neste post..."
+               class="flex-1 rounded-full border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        <button type="submit" class="rounded-full bg-indigo-600 text-white px-4 py-2 text-sm font-semibold">Enviar</button>
+    </form>
+
+    {% for comment in bird.comments.all|slice:":3" %}
+        <div class="text-sm">
+            <span class="font-semibold text-gray-700">@{{ comment.author.username }}</span>
+            <span class="text-gray-600">{{ comment.content }}</span>
+        </div>
+    {% endfor %}
 </div>
