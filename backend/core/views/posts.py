@@ -10,14 +10,20 @@ def create_bird(request):
         image = request.FILES.get('image')
         video = request.FILES.get('video')
         
-        # Validação básica: tem de ter conteúdo ou mídia
+        # Validação básica: tem de ter conteúdo ou pelo menos uma mídia
         if content or image or video:
+            post_type = 'text'
+            if video:
+                post_type = 'video'
+            elif image:
+                post_type = 'image'
+
             new_bird = Bird.objects.create(
                 author=request.user,
                 content=content,
                 image=image,
                 video=video,
-                post_type='image' if image else 'video' if video else 'text'
+                post_type=post_type
             )
             
             # SE FOR HTMX (Ajax): Retorna apenas o card do novo post

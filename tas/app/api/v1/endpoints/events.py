@@ -1,6 +1,4 @@
 from fastapi import APIRouter
-import redis.asyncio as redis # Fix: Trocado aioredis por redis.asyncio
-import json
 import os
 
 router = APIRouter()

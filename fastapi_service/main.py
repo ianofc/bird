@@ -2,14 +2,11 @@ from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
+from .routers import education, chat, proactive, gorjeio
 
 # Configuração de Logs
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ioconscius")
-
-# --- IMPORTAÇÃO DOS LÓBULOS CEREBRAIS (ROUTERS) ---
-# Certifique-se de que estes arquivos existem na pasta 'routers/'
-from .routers import education, chat, proactive, gorjeio
 
 app = FastAPI(
     title="IO CONSCIOS API",
@@ -29,9 +26,7 @@ app.add_middleware(
 
 # --- AUTENTICAÇÃO ENTRE SISTEMAS (SERVICE TOKEN) ---
 async def verify_token(x_service_token: str = Header(...)):
-    """
-    Garante que apenas o NioCortex (que tem o segredo) possa acessar o Cérebro.
-    """
+
     expected_token = os.getenv("SERVICE_TOKEN_SECRET", "dev-secret")
     if x_service_token != expected_token:
         logger.warning("Tentativa de acesso não autorizado ao IO CONSCIOS.")

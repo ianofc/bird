@@ -1,6 +1,6 @@
 # niocortex/fastapi_service/routers/chat.py
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel
 # from core.agents import AgentFactory
 # from core.safety import SafetyModule # Importar seu módulo de segurança existente

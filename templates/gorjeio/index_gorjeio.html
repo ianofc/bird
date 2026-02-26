@@ -2,14 +2,20 @@
 {% load static %}
 
 {% block main_content %}
-<div class="h-[calc(100vh-96px)] rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-[#FFFFFF] dark:bg-gray-900 grid grid-cols-1 lg:grid-cols-[340px_1fr] shadow-sm">
+
+<div class="h-[calc(100vh-96px)] rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900 grid grid-cols-1 lg:grid-cols-[340px_1fr] shadow-sm">
+
   <aside class="border-r border-gray-200 dark:border-gray-700 flex flex-col">
     <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
       <div>
         <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">Gorjeio</h1>
         <p class="text-xs text-gray-500">Mensageiro em tempo real</p>
       </div>
+
+
       <span class="text-[11px] text-[#00C853] bg-emerald-50 px-2 py-1 rounded-full">Telegram style</span>
+    
+
     </div>
     {% include 'gorjeio/chat_drawer.html' %}
   </aside>
@@ -25,11 +31,13 @@
             <p id="presence-status" class="text-xs text-green-600">online</p>
           </div>
         </div>
+
         <div class="text-gray-400 flex gap-2 items-center">
           <button id="mode-cloud" class="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100">Cloud</button>
           <button id="mode-secret" class="text-[11px] px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">Secret</button>
           <button title="Buscar"><i class="fas fa-search"></i></button>
           <button title="Mais"><i class="fas fa-ellipsis-v"></i></button>
+
         </div>
       </header>
 
@@ -37,6 +45,7 @@
         {% for msg in messages %}
           <div class="flex {% if msg.sender == request.user %}justify-end{% else %}justify-start{% endif %}" data-message-id="{{ msg.id }}">
             <article class="max-w-[75%] px-4 py-2 rounded-2xl text-sm shadow-sm {% if msg.sender == request.user %}bg-[#00C853] text-white rounded-br-sm{% else %}bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-sm border border-gray-200 dark:border-gray-700{% endif %}">
+
               {% if msg.reply_to %}<p class="text-[11px] opacity-70 mb-1">↩ {{ msg.reply_to.content|truncatechars:40 }}</p>{% endif %}
               <p>{{ msg.content|default:"📎 Anexo" }}</p>
               <p class="text-[10px] mt-1 opacity-70 text-right">{{ msg.created_at|date:"H:i" }} {% if msg.sender == request.user %}<i class="fas fa-check-double"></i>{% endif %}</p>
@@ -53,6 +62,7 @@
           <button class="w-9 h-9 rounded-full hover:bg-gray-200/70 dark:hover:bg-gray-700 text-gray-500" title="Anexar"><i class="fas fa-paperclip"></i></button>
           <input id="chat-message-input" type="text" placeholder="Escreva uma mensagem" class="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-gray-100" maxlength="2000" />
           <button id="chat-message-submit" class="w-9 h-9 rounded-full bg-[#00C853] hover:bg-[#00B24A] text-white disabled:opacity-50" disabled><i class="fas fa-paper-plane"></i></button>
+
         </div>
       </div>
     {% else %}
@@ -74,10 +84,12 @@
   const chatLog = document.getElementById('chat-log');
   const input = document.getElementById('chat-message-input');
   const submit = document.getElementById('chat-message-submit');
+
   const typingIndicator = document.getElementById('typing-indicator');
   const cloudBtn = document.getElementById('mode-cloud');
   const secretBtn = document.getElementById('mode-secret');
   let gorjeioMode = 'Cloud';
+
   const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
   const socket = new WebSocket(`${wsScheme}${window.location.host}/ws/chat/${roomId}/`);
 
@@ -91,6 +103,7 @@
     if (message_id) wrapper.dataset.messageId = String(message_id);
 
     const bubble = document.createElement('article');
+
     bubble.className = `max-w-[75%] px-4 py-2 rounded-2xl text-sm shadow-sm ${isMe ? 'bg-[#00C853] text-white rounded-br-sm' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-sm border border-gray-200 dark:border-gray-700'}`;
 
     const content = document.createElement('p');
@@ -127,6 +140,7 @@
     applyModeVisual();
   });
 
+
   socket.onopen = () => {
     scrollBottom();
     socket.send(JSON.stringify({ type: 'read' }));
@@ -152,7 +166,9 @@
   submit.addEventListener('click', () => {
     const message = input.value.trim();
     if (!message) return;
+
     socket.send(JSON.stringify({ type: 'message', message, mode: gorjeioMode }));
+
     input.value = '';
     toggleSubmit();
   });
@@ -168,7 +184,10 @@
       submit.click();
     }
   });
+
+
   applyModeVisual();
+
 })();
 </script>
 {% endif %}

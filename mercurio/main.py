@@ -48,28 +48,37 @@ async def get_integrated_bundle(request: Request):
 
     # 2. TRENDS (Redundância PentaIA: TAS -> IRIS)
     final_trends = []
+    news = []
     source = "NONE"
 
     # TENTATIVA A: TAS (Inteligência da Rede)
     try:
         tas_res = requests.get(TAS_URL, timeout=2)
         if tas_res.status_code == 200:
-            final_trends = tas_res.json()
+            tas_payload = tas_res.json()
+            if isinstance(tas_payload, dict) and "trends" in tas_payload:
+                final_trends = tas_payload.get("trends", [])
+            else:
+                final_trends = tas_payload
             source = "TAS_INTERNAL"
-            if not final_trends: raise ValueError("TAS Empty")
+            if not final_trends:
+                raise ValueError("TAS Empty")
     except Exception:
         # TENTATIVA B: IRIS/SATTR (Varredura Externa)
         logger.info("TAS indisponível ou em processamento. Acionando sensores IRIS...")
         try:
             iris_res = requests.get(IRIS_URL, timeout=5)
             if iris_res.status_code == 200:
-                final_trends = iris_res.json().get("google_trends", [])
+                iris_payload = iris_res.json()
+                final_trends = iris_payload.get("google_trends", [])
+                news = iris_payload.get("news", [])
                 source = "IRIS_EXTERNAL"
         except Exception as e:
             logger.error(f"IRIS SATTR Offline: {e}")
             final_trends = [
                 {"hashtag": "#Sincronizando", "topic": "Aguardando pulso de rede...", "category": "SISTEMA"}
             ]
+            news = [{"source": "SYSTEM", "title": "Sem conexão com provedores de notícias", "link": "", "published": "N/A"}]
 
     # 3. EVENTOS
     events = [
@@ -80,6 +89,7 @@ async def get_integrated_bundle(request: Request):
         "trends": final_trends,
         "security": security_data,
         "events": events,
+        "news": news,
         "metadata": {
             "source": source,
             "evolution_level": 1,
