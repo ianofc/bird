@@ -1,0 +1,37 @@
+<div class="p-4 border-b border-gray-200 dark:border-gray-700">
+  <form method="get" class="relative">
+    {% if active_room %}<input type="hidden" name="room" value="{{ active_room.id }}">{% endif %}
+    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+    <input type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Buscar conversa..." class="w-full bg-slate-100 dark:bg-gray-700 border border-transparent focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 rounded-xl py-2.5 pl-9 pr-3 text-sm outline-none" />
+  </form>
+</div>
+
+<div class="divide-y divide-gray-100 dark:divide-gray-800 overflow-y-auto">
+  {% for room in rooms %}
+    <a href="{% url 'chat_room' room.id %}" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition {% if active_room and room.id == active_room.id %}bg-indigo-50/80 dark:bg-indigo-900/20{% endif %}">
+      <div class="flex gap-3 items-center">
+        <div class="relative shrink-0">
+          {% if room.chat_avatar %}
+            <img src="{{ room.chat_avatar }}" alt="avatar" class="w-11 h-11 rounded-full object-cover" />
+          {% else %}
+            <div class="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 text-white flex items-center justify-center font-bold">
+              {{ room.chat_name|slice:":1"|upper }}
+            </div>
+          {% endif %}
+          {% if room.unread_count %}
+            <span class="absolute -top-1 -right-1 text-[10px] min-w-5 px-1.5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center">{{ room.unread_count }}</span>
+          {% endif %}
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-2">
+            <p class="font-semibold text-sm truncate text-gray-900 dark:text-gray-100">{{ room.chat_name }}</p>
+            <span class="text-[11px] text-gray-400 shrink-0">{% if room.last_message_obj %}{{ room.last_message_obj.created_at|date:"H:i" }}{% endif %}</span>
+          </div>
+          <p class="text-xs text-gray-500 truncate">{% if room.last_message_obj %}{% if room.last_message_obj.sender == request.user %}Você: {% endif %}{{ room.last_message_obj.content|default:"📎 Anexo" }}{% else %}Iniciar conversa{% endif %}</p>
+        </div>
+      </div>
+    </a>
+  {% empty %}
+    <div class="p-8 text-center text-sm text-gray-500">Nenhuma conversa encontrada.</div>
+  {% endfor %}
+</div>

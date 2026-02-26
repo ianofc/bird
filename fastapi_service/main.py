@@ -9,7 +9,7 @@ logger = logging.getLogger("ioconscius")
 
 # --- IMPORTAÇÃO DOS LÓBULOS CEREBRAIS (ROUTERS) ---
 # Certifique-se de que estes arquivos existem na pasta 'routers/'
-from .routers import education, chat, proactive
+from .routers import education, chat, proactive, gorjeio
 
 app = FastAPI(
     title="IO CONSCIOS API",
@@ -43,7 +43,7 @@ def health_check():
     return {
         "status": "active", 
         "system": "IO CONSCIOS", 
-        "modules": ["Education", "Chat", "Proactive"],
+        "modules": ["Education", "Chat", "Proactive", "Gorjeio"],
         "mode": os.getenv("APP_ENV", "guerrilla")
     }
 
@@ -65,6 +65,12 @@ app.include_router(
 app.include_router(
     proactive.router, 
     dependencies=[Depends(verify_token)]
+)
+
+
+# 4. Módulo Gorjeio (Supra-Messenger)
+app.include_router(
+    gorjeio.router
 )
 
 if __name__ == "__main__":
