@@ -1,5 +1,5 @@
 from django.urls import path
-from core.views import feed, profile, posts, interactions, settings, discovery, chat, events, groups, network, auth, general
+from core.views import feed, profile, posts, interactions, settings, discovery, gorjeio, events, groups, network, auth, general
 from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
@@ -24,10 +24,10 @@ urlpatterns = [
     path('bird/<int:bird_id>/like/', interactions.toggle_like, name='toggle_like'),
 
     # Chat
-    path('start_chat/<str:username>/', chat.start_dm, name='start_chat'),
-    path('messages/', chat.chat_index, name='chat_index'),
-    path('messages/t/<str:username>/', chat.start_dm, name='start_dm'),
-    path('messages/<int:room_id>/', chat.chat_room, name='chat_room'),
+    path('start_chat/<str:username>/', gorjeio.start_dm, name='start_chat'),
+    path('messages/', gorjeio.chat_index, name='chat_index'),
+    path('messages/t/<str:username>/', gorjeio.start_dm, name='start_dm'),
+    path('messages/<int:room_id>/', gorjeio.chat_room, name='chat_room'),
 
     # Posts (Birds)
     path('bird/create/', posts.create_bird, name='create_bird'),
