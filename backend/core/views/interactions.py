@@ -1,16 +1,15 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.urls import reverse
+
 
 User = get_user_model()
 
-# Importação Segura dos Modelos (Adaptado para o novo models.py)
 try:
     from ..models import Bird, Connection, Notification, Profile, Comment
-    # Tenta importar modelos secundários ou define como None
     try:
         from ..models import SavedPost
     except ImportError:
@@ -18,186 +17,123 @@ try:
 except ImportError:
     Bird = Connection = Notification = Profile = Comment = None
 
-# ========================================================
-# ❤️ LIKES (COM HTMX E NOTIFICAÇÃO)
-# ========================================================
+
+def _create_notification(recipient, text):
+    if Notification and recipient and text:
+        Notification.objects.create(recipient=recipient, text=text)
+
+
+def _comment_relation_kwargs(bird):
+    # Compatibilidade defensiva: alguns ambientes antigos podem usar `post` em vez de `bird`.
+    comment_fields = {f.name for f in Comment._meta.get_fields()} if Comment else set()
+    if 'bird' in comment_fields:
+        return {'bird': bird}
+    if 'post' in comment_fields:
+        return {'post': bird}
+    return {'bird': bird}
+
+
+def _comment_target_author(comment):
+    target = getattr(comment, 'bird', None) or getattr(comment, 'post', None)
+    return getattr(target, 'author', None)
+
 
 @login_required
 def toggle_like(request, bird_id):
-    """
-    Alterna o like em um Bird (Post).
-    Suporta HTMX para atualização sem refresh.
-    """
     if not Bird:
         return HttpResponse("Erro: Modelos não carregados.", status=500)
 
     bird = get_object_or_404(Bird, id=bird_id)
     user = request.user
-    
-    # Verifica se já curtiu (Many-to-Many)
+
     if bird.likes.filter(id=user.id).exists():
         bird.likes.remove(user)
-        user_liked = False
     else:
         bird.likes.add(user)
-        user_liked = True
-        
-        # 🔔 Gera Notificação (apenas se não for o próprio autor)
-        if bird.author != user and Notification:
-            # Evita spam de notificações (verifica se já notificou recentemente)
-            already_notified = Notification.objects.filter(
-                recipient=bird.author, sender=user, tipo='like', link=f"/bird/{bird.id}/"
-            ).exists()
-            
-            if not already_notified:
-                Notification.objects.create(
-                    recipient=bird.author,
-                    sender=user,
-                    tipo='like',
-                    message=f"curtiu sua publicação: {bird.content[:30]}...",
-                    link=f"/bird/{bird.id}/" # Link direto pro post
-                )
+        if bird.author != user:
+            _create_notification(bird.author, f"@{user.username} curtiu sua publicação.")
 
-    # Se for uma requisição HTMX (AJAX), retorna apenas o botão atualizado
     if request.headers.get('HX-Request'):
-        context = {
-            'bird': bird,
-            'user_liked': user_liked
-        }
-        # Precisamos ter este template parcial criado
-        return render(request, 'components/partials/like_button.html', context)
-    
-    # Se for normal, recarrega a página
+        icon_class = 'fas text-rose-500' if bird.likes.filter(id=user.id).exists() else 'far text-gray-500 group-hover:text-rose-500'
+        likes = bird.likes.count()
+        count_html = f'<span class="text-sm font-medium text-gray-600">{likes}</span>' if likes > 0 else ''
+        like_url = reverse('toggle_like', args=[bird.id])
+        return HttpResponse(
+            f'''<button hx-post="{like_url}" hx-swap="outerHTML" class="flex items-center gap-2 group transition-colors">
+'''
+            f'''<i class="{icon_class} fa-heart text-xl"></i>{count_html}</button>'''
+        )
+
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
-
-# ========================================================
-# 💬 COMENTÁRIOS
-# ========================================================
 
 @login_required
 def add_comment(request, bird_id):
-    """
-    Adiciona um comentário usando o modelo Comment.
-    """
     if request.method == 'POST':
         bird = get_object_or_404(Bird, id=bird_id)
-        content = request.POST.get('content')
-        
+        content = request.POST.get('content', '').strip()
+
         if content and Comment:
-            Comment.objects.create(author=request.user, post=bird, content=content)
-            
-            # 🔔 Notificação
-            if bird.author != request.user and Notification:
-                Notification.objects.create(
-                    recipient=bird.author,
-                    sender=request.user,
-                    tipo='comment',
-                    message=f"comentou: {content[:40]}...",
-                    link=f"/bird/{bird.id}/"
-                )
-        
+            Comment.objects.create(author=request.user, content=content, **_comment_relation_kwargs(bird))
+            if bird.author != request.user:
+                _create_notification(bird.author, f"@{request.user.username} comentou no seu post.")
+
     return redirect(request.META.get('HTTP_REFERER', 'home'))
+
 
 @login_required
 def delete_comment(request, comment_id):
     if Comment:
         comment = get_object_or_404(Comment, id=comment_id)
-        # Permissão: Dono do comentário OU Dono do post original
-        if request.user == comment.author or request.user == comment.post.author:
+        if request.user == comment.author or request.user == _comment_target_author(comment):
             comment.delete()
             messages.success(request, "Comentário removido.")
-            
+
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 
-# ========================================================
-# 📡 SEGUIR / CONEXÕES (CONNECTION MODEL)
-# ========================================================
-
 @login_required
 def toggle_follow(request, username):
-    """
-    Gerencia seguir/deixar de seguir usando o modelo Connection.
-    """
     target_user = get_object_or_404(User, username=username)
-    
+
     if target_user == request.user:
         return redirect('profile_detail', username=username)
 
     if Connection:
-        # Busca conexão existente
         conn = Connection.objects.filter(follower=request.user, target=target_user).first()
-        
+
         if conn:
-            # Se já existe, remove (Unfollow)
             conn.delete()
-            # messages.info(request, f"Você deixou de seguir @{username}")
         else:
-            # Se não existe, cria (Follow)
-            Connection.objects.create(
-                follower=request.user, 
-                target=target_user, 
-                status='active'
-            )
-            
-            # 🔔 Gera Notificação
-            if Notification:
-                Notification.objects.create(
-                    recipient=target_user,
-                    sender=request.user,
-                    tipo='follow',
-                    message="começou a seguir você.",
-                    link=f"/profile/{request.user.username}/"
-                )
-                
+            Connection.objects.create(follower=request.user, target=target_user, status='active')
+            _create_notification(target_user, f"@{request.user.username} começou a seguir você.")
+
     return redirect('profile_detail', username=username)
 
 
-# ========================================================
-# 🛡️ BLOQUEIO E SEGURANÇA
-# ========================================================
-
 @login_required
 def block_user(request, username):
-    """
-    Bloqueia um usuário criando uma Connection com status 'blocked'.
-    """
     target_user = get_object_or_404(User, username=username)
-    
+
     if Connection:
-        # 1. Verifica/Cria a conexão de bloqueio
-        block_conn, created = Connection.objects.get_or_create(
-            follower=request.user, 
-            target=target_user
-        )
-        
-        # 2. Se já estava bloqueado, desbloqueia (delete)
+        block_conn, created = Connection.objects.get_or_create(follower=request.user, target=target_user)
+
         if not created and block_conn.status == 'blocked':
             block_conn.delete()
             messages.success(request, f"Usuário @{username} desbloqueado.")
         else:
-            # 3. Se não, aplica o bloqueio
             block_conn.status = 'blocked'
             block_conn.save()
-            
-            # 4. Força o "Unfollow" da outra parte (Destrói a conexão inversa se existir)
-            # Assim, quem foi bloqueado deixa de seguir quem bloqueou
             Connection.objects.filter(follower=target_user, target=request.user).delete()
-            
             messages.warning(request, f"Você bloqueou @{username}.")
-            
+
     return redirect('home')
 
-
-# ========================================================
-# 💾 SALVAR E COMPARTILHAR (FEATURES EXTRAS)
-# ========================================================
 
 @login_required
 def toggle_save(request, bird_id):
     bird = get_object_or_404(Bird, id=bird_id)
-    
+
     if SavedPost:
         saved, created = SavedPost.objects.get_or_create(user=request.user, post=bird)
         if not created:
@@ -205,11 +141,11 @@ def toggle_save(request, bird_id):
             messages.info(request, "Item removido dos salvos.")
         else:
             messages.success(request, "Item salvo!")
-            
+
     return redirect(request.META.get('HTTP_REFERER', 'home'))
+
 
 @login_required
 def share_post(request, bird_id):
-    # Futuramente: Criar um Bird tipo 'repost'
     messages.success(request, "Link copiado para a área de transferência! (Simulado)")
     return redirect(request.META.get('HTTP_REFERER', 'home'))

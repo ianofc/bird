@@ -120,12 +120,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         from core.models import Message, Room
 
         try:
+
             user = User.objects.get(id=user_id)
             room = Room.objects.get(id=int(room_name))
         except (User.DoesNotExist, Room.DoesNotExist, ValueError, TypeError):
             return None
 
         if not room.participants.filter(id=user_id).exists():
+
             return None
 
         message = Message.objects.create(room=room, sender=user, content=content)
@@ -141,6 +143,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         from core.models import Message, Room
 
         try:
+
             room = Room.objects.get(id=int(room_name))
         except (Room.DoesNotExist, ValueError, TypeError):
             return

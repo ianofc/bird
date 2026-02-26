@@ -17,4 +17,4 @@ api = Api(
 # db = SQLAlchemy(app)
 CORS(app)
 
-from .views import gerar_noticias
+from .views import gerar_noticias  # noqa: E402,F401

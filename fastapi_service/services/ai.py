@@ -1,7 +1,6 @@
 # fastapi_service/services/ai.py
 import os
 import google.generativeai as genai
-import json
 from ..schemas import AnalisePedagogicaOutput, ProvaGeradaOutput
 
 # Configuração
