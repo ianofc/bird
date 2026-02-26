@@ -11,6 +11,7 @@ from . import (
     discovery,
     network,
     chat,
+    gorjeio,
     groups,
     events,
     general
