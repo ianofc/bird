@@ -2,8 +2,7 @@ from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
-
-from .routers import education, chat, proactive
+from .routers import education, chat, proactive, gorjeio
 
 # Configuração de Logs
 logging.basicConfig(level=logging.INFO)
@@ -27,9 +26,7 @@ app.add_middleware(
 
 # --- AUTENTICAÇÃO ENTRE SISTEMAS (SERVICE TOKEN) ---
 async def verify_token(x_service_token: str = Header(...)):
-    """
-    Garante que apenas o NioCortex (que tem o segredo) possa acessar o Cérebro.
-    """
+
     expected_token = os.getenv("SERVICE_TOKEN_SECRET", "dev-secret")
     if x_service_token != expected_token:
         logger.warning("Tentativa de acesso não autorizado ao IO CONSCIOS.")
@@ -41,7 +38,7 @@ def health_check():
     return {
         "status": "active", 
         "system": "IO CONSCIOS", 
-        "modules": ["Education", "Chat", "Proactive"],
+        "modules": ["Education", "Chat", "Proactive", "Gorjeio"],
         "mode": os.getenv("APP_ENV", "guerrilla")
     }
 
@@ -63,6 +60,12 @@ app.include_router(
 app.include_router(
     proactive.router, 
     dependencies=[Depends(verify_token)]
+)
+
+
+# 4. Módulo Gorjeio (Supra-Messenger)
+app.include_router(
+    gorjeio.router
 )
 
 if __name__ == "__main__":

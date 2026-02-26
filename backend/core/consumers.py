@@ -149,4 +149,3 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
         Message.objects.filter(room=room, is_read=False).exclude(sender_id=user_id).update(is_read=True)
-
