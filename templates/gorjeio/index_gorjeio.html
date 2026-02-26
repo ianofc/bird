@@ -1,0 +1,148 @@
+{% extends 'layout/base_bird.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="h-[calc(100vh-96px)] rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900 grid grid-cols-1 lg:grid-cols-[340px_1fr] shadow-sm">
+  <aside class="border-r border-gray-200 dark:border-gray-700 flex flex-col">
+    <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">Gorjeio</h1>
+        <p class="text-xs text-gray-500">Mensageiro em tempo real</p>
+      </div>
+      <span class="text-[11px] text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">Telegram style</span>
+    </div>
+    {% include 'gorjeio/chat_drawer.html' %}
+  </aside>
+
+  <section class="flex flex-col min-w-0">
+    {% if active_room %}
+      <header class="px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white/90 dark:bg-gray-900/90 backdrop-blur">
+        <div class="flex items-center gap-3 min-w-0">
+          <a href="{% url 'chat_index' %}" class="lg:hidden text-gray-500"><i class="fas fa-arrow-left"></i></a>
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 text-white flex items-center justify-center font-bold shrink-0">{{ active_room.chat_name|slice:":1"|upper }}</div>
+          <div class="min-w-0">
+            <h2 class="font-semibold text-sm truncate text-gray-900 dark:text-gray-100">{{ active_room.chat_name }}</h2>
+            <p id="presence-status" class="text-xs text-green-600">online</p>
+          </div>
+        </div>
+        <div class="text-gray-400 flex gap-3">
+          <button title="Buscar"><i class="fas fa-search"></i></button>
+          <button title="Mais"><i class="fas fa-ellipsis-v"></i></button>
+        </div>
+      </header>
+
+      <div id="chat-log" class="flex-1 overflow-y-auto p-5 bg-slate-50 dark:bg-gray-950 space-y-3">
+        {% for msg in messages %}
+          <div class="flex {% if msg.sender == request.user %}justify-end{% else %}justify-start{% endif %}" data-message-id="{{ msg.id }}">
+            <article class="max-w-[75%] px-4 py-2 rounded-2xl text-sm shadow-sm {% if msg.sender == request.user %}bg-indigo-600 text-white rounded-br-sm{% else %}bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-sm border border-gray-200 dark:border-gray-700{% endif %}">
+              {% if msg.reply_to %}<p class="text-[11px] opacity-70 mb-1">↩ {{ msg.reply_to.content|truncatechars:40 }}</p>{% endif %}
+              <p>{{ msg.content|default:"📎 Anexo" }}</p>
+              <p class="text-[10px] mt-1 opacity-70 text-right">{{ msg.created_at|date:"H:i" }} {% if msg.sender == request.user %}<i class="fas fa-check-double"></i>{% endif %}</p>
+            </article>
+          </div>
+        {% empty %}
+          <p class="text-sm text-gray-400 text-center py-8">Sem mensagens. Comece o papo 👋</p>
+        {% endfor %}
+      </div>
+
+      <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div id="typing-indicator" class="text-xs text-indigo-500 h-5"></div>
+        <div class="flex items-center gap-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800 px-2 py-2">
+          <button class="w-9 h-9 rounded-full hover:bg-gray-200/70 dark:hover:bg-gray-700 text-gray-500" title="Anexar"><i class="fas fa-paperclip"></i></button>
+          <input id="chat-message-input" type="text" placeholder="Escreva uma mensagem" class="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-gray-100" maxlength="2000" />
+          <button id="chat-message-submit" class="w-9 h-9 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50" disabled><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    {% else %}
+      <div class="h-full grid place-items-center text-center p-8">
+        <div>
+          <p class="text-lg font-semibold text-gray-700 dark:text-gray-200">Selecione uma conversa</p>
+          <p class="text-sm text-gray-500">Abra um perfil e toque em “Mensagem” para iniciar uma DM.</p>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+</div>
+
+{% if active_room %}
+<script>
+(() => {
+  const roomId = "{{ active_room.id }}";
+  const currentUsername = "{{ request.user.username|escapejs }}";
+  const chatLog = document.getElementById('chat-log');
+  const input = document.getElementById('chat-message-input');
+  const submit = document.getElementById('chat-message-submit');
+  const typingIndicator = document.getElementById('typing-indicator');
+  const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+  const socket = new WebSocket(`${wsScheme}${window.location.host}/ws/chat/${roomId}/`);
+
+  const scrollBottom = () => { chatLog.scrollTop = chatLog.scrollHeight; };
+  const toggleSubmit = () => { submit.disabled = !input.value.trim(); };
+
+  const appendMessage = ({ message, username, timestamp, message_id }) => {
+    const isMe = username === currentUsername;
+    const wrapper = document.createElement('div');
+    wrapper.className = `flex ${isMe ? 'justify-end' : 'justify-start'}`;
+    if (message_id) wrapper.dataset.messageId = String(message_id);
+
+    const bubble = document.createElement('article');
+    bubble.className = `max-w-[75%] px-4 py-2 rounded-2xl text-sm shadow-sm ${isMe ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-sm border border-gray-200 dark:border-gray-700'}`;
+
+    const content = document.createElement('p');
+    content.textContent = message;
+
+    const footer = document.createElement('p');
+    footer.className = 'text-[10px] mt-1 opacity-70 text-right';
+    footer.innerHTML = `${timestamp || '--:--'} ${isMe ? '<i class="fas fa-check-double"></i>' : ''}`;
+
+    bubble.append(content, footer);
+    wrapper.appendChild(bubble);
+    chatLog.appendChild(wrapper);
+    scrollBottom();
+  };
+
+  socket.onopen = () => {
+    scrollBottom();
+    socket.send(JSON.stringify({ type: 'read' }));
+  };
+
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'typing' && data.username !== currentUsername) {
+      typingIndicator.textContent = `${data.username} está digitando...`;
+      clearTimeout(window.__typingTimer);
+      window.__typingTimer = setTimeout(() => { typingIndicator.textContent = ''; }, 1200);
+      return;
+    }
+
+    if (data.type === 'message') {
+      appendMessage(data);
+      if (data.username !== currentUsername) {
+        socket.send(JSON.stringify({ type: 'read' }));
+      }
+    }
+  };
+
+  submit.addEventListener('click', () => {
+    const message = input.value.trim();
+    if (!message) return;
+    socket.send(JSON.stringify({ type: 'message', message }));
+    input.value = '';
+    toggleSubmit();
+  });
+
+  input.addEventListener('input', () => {
+    toggleSubmit();
+    socket.send(JSON.stringify({ type: 'typing' }));
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submit.click();
+    }
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}
