@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Max
-from core.models import Room, Message
+from core.models import Room
 
 @login_required
 def chat_index(request):

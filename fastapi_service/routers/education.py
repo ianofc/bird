@@ -1,8 +1,8 @@
 # niocortex/fastapi_service/routers/education.py
 
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List, Optional, Any
+from typing import List
 import random 
 
 # Simulação do "Core Brain" (No futuro, isso chamará o OpenAI/Gemini real)
