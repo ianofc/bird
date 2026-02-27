@@ -17,12 +17,36 @@ logger = logging.getLogger("ZIOS_MAIN")
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+try:
+    from heimdall import attach_heimdall, settings_from_env, ThreatDetector
+except ImportError:  # compatibilidade para execução isolada do serviço
+    attach_heimdall = lambda *args, **kwargs: False
+
+    class ThreatDetector:
+        @classmethod
+        def from_cidrs(cls, cidrs):
+            return cls()
+
+        def evaluate_ip(self, ip):
+            class Verdict:
+                allowed = True
+                reason = "Heimdall indisponível"
+
+            return Verdict()
+
+    def settings_from_env():
+        class Settings:
+            blocked_networks = set()
+
+        return Settings()
 
 app = FastAPI(
     title="ZIOS - Proactive Intelligence",
     description="Motor de IA e segurança do ecossistema PentaIA",
     version="2.0.0"
 )
+heimdall_active = attach_heimdall(app, service_name="zios")
+_heimdall_detector = ThreatDetector.from_cidrs(settings_from_env().blocked_networks)
 
 app.add_middleware(
     CORSMiddleware,
@@ -49,31 +73,35 @@ async def health():
         "components": {
             "brain": "ACTIVE",
             "memory": "ACTIVE",
-            "resonance": "ACTIVE"
+            "resonance": "ACTIVE",
+            "heimdall": "ACTIVE" if heimdall_active else "INACTIVE"
         }
     }
 
 @app.get("/v1/proactive/heimdall/check")
 async def heimdall_check(ip: str = Query(...)):
     logger.info(f"🔒 Heimdall verificando IP: {ip}")
-    
-    threat_detected = False
-    shield_level = "OPTIMAL"
-    recommendations = []
-    
-    blocked_ips = ["192.168.1.100", "10.0.0.50", "172.16.0.99"]
-    if ip in blocked_ips:
-        threat_detected = True
-        shield_level = "ELEVATED"
-        recommendations = ["Ativar 2FA", "Revisar sessões ativas", "Notificar administrador"]
-        logger.warning(f"⚠️ Ameaça detectada no IP: {ip}")
-    
+
+    verdict = _heimdall_detector.evaluate_ip(ip)
+    threat_detected = not verdict.allowed
+    shield_level = "ELEVATED" if threat_detected else "OPTIMAL"
+    recommendations = [] if not threat_detected else [
+        "Ativar 2FA",
+        "Revisar sessões ativas",
+        "Notificar administrador",
+    ]
+
+    if threat_detected:
+        logger.warning("⚠️ Ameaça detectada no IP: %s", ip)
+
     return {
         "status": "PROTECTED" if not threat_detected else "WARNING",
         "shield_level": shield_level,
         "client_ip": ip,
         "threat_detected": threat_detected,
-        "recommendations": recommendations
+        "reason": verdict.reason,
+        "heimdall": "active" if heimdall_active else "inactive",
+        "recommendations": recommendations,
     }
 
 @app.get("/api/v1/zios/status")

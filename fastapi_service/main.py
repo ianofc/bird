@@ -3,6 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
 from .routers import education, chat, proactive, gorjeio
+try:
+    from heimdall import attach_heimdall
+except ImportError:  # compatibilidade para execução isolada do serviço
+    def attach_heimdall(*args, **kwargs):
+        return False
 
 # Configuração de Logs
 logging.basicConfig(level=logging.INFO)
@@ -13,6 +18,8 @@ app = FastAPI(
     description="The Soul OS & Pedagogical Brain for NioCortex",
     version="2.1.0 (Full Brain Enabled)"
 )
+
+heimdall_active = attach_heimdall(app, service_name="fastapi_service")
 
 # --- CONFIGURAÇÃO DE SEGURANÇA (CORS) ---
 # Permite que o Django (NioCortex) converse com o FastAPI
@@ -39,6 +46,7 @@ def health_check():
         "status": "active", 
         "system": "IO CONSCIOS", 
         "modules": ["Education", "Chat", "Proactive", "Gorjeio"],
+        "security": {"heimdall": "active" if heimdall_active else "inactive"},
         "mode": os.getenv("APP_ENV", "guerrilla")
     }
 
