@@ -144,7 +144,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         from core.models import Message, Room
 
         try:
-
             room = Room.objects.get(id=int(room_name))
         except (Room.DoesNotExist, ValueError, TypeError):
             return

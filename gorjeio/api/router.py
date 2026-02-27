@@ -1,8 +1,3 @@
-
-from gorjeio.api.router import router
-
-__all__ = ["router"]
-=======
 from __future__ import annotations
 
 import base64
@@ -82,15 +77,6 @@ async def send_message(
     x_gorjeio_mode: Literal["Secret", "Cloud"] = Header(default="Cloud", alias="X-Gorjeio-Mode"),
     x_zios_intelligent: Literal["True", "False"] = Header(default="False", alias="X-ZIOS-Intelligent"),
 ):
-    """
-    Endpoint de envio conforme a spec do Gorjeio Supra-Messenger.
-
-    Segurança/validação MVP:
-    - Bearer token obrigatório
-    - payload precisa ser Base64
-    - modo Secret exige payload criptografado (simulado por content_type)
-    """
-
     _validate_bearer(authorization)
 
     if not _is_base64_payload(body.payload):
@@ -105,10 +91,7 @@ async def send_message(
     accepted_at = datetime.now(timezone.utc)
     expires_at = None
     if body.ephemeral_timer > 0:
-        expires_at = datetime.fromtimestamp(
-            accepted_at.timestamp() + body.ephemeral_timer,
-            tz=timezone.utc,
-        )
+        expires_at = datetime.fromtimestamp(accepted_at.timestamp() + body.ephemeral_timer, tz=timezone.utc)
 
     message_id = uuid4()
 
@@ -150,13 +133,6 @@ async def message_ws(websocket: WebSocket, recipient_id: str):
             if event == "ping":
                 await websocket.send_json({"event": "pong", "ts": datetime.now(timezone.utc).isoformat()})
             elif event == "typing":
-                await manager.fanout(
-                    recipient_id,
-                    {
-                        "event": "typing.started",
-                        "at": datetime.now(timezone.utc).isoformat(),
-                    },
-                )
+                await manager.fanout(recipient_id, {"event": "typing.started", "at": datetime.now(timezone.utc).isoformat()})
     except WebSocketDisconnect:
         manager.disconnect(recipient_id, websocket)
-
