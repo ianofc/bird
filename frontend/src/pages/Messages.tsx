@@ -4,22 +4,27 @@ import { useState, useRef, useEffect } from "react";
 import { Send, ArrowLeft } from "lucide-react";
 
 const Messages = () => {
-  const { users, messages, sendMessage, currentUser } = useBird();
+  const bird = useBird() as any;
+  const users = bird?.users ?? [];
+  const messages = bird?.messages ?? [];
+  const sendMessage = bird?.sendMessage ?? (() => {});
+  const currentUser = bird?.currentUser;
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [text, setText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const otherUsers = users.filter(u => u.id !== currentUser.id);
+  const otherUsers = currentUser ? users.filter((u: any) => u.id !== currentUser.id) : [];
 
   const conversationMessages = selectedUserId
-    ? messages.filter(m =>
+    ? messages.filter((m: any) =>
         (m.fromId === currentUser.id && m.toId === selectedUserId) ||
         (m.fromId === selectedUserId && m.toId === currentUser.id)
       )
     : [];
 
   const getLastMessage = (userId: string) => {
-    const msgs = messages.filter(m =>
+    if (!currentUser) return undefined;
+    const msgs = messages.filter((m: any) =>
       (m.fromId === currentUser.id && m.toId === userId) ||
       (m.fromId === userId && m.toId === currentUser.id)
     );
@@ -36,7 +41,7 @@ const Messages = () => {
     setText("");
   };
 
-  const selectedUser = users.find(u => u.id === selectedUserId);
+  const selectedUser = users.find((u: any) => u.id === selectedUserId);
 
   return (
     <BirdLayout>
