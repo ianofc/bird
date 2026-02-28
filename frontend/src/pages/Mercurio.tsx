@@ -44,7 +44,7 @@ export default function Mercurio() {
     setLoading(true);
     try {
       // Bate no unificador Mercurio que consolidou IRIS e Heimdall
-      const response = await fetch('http://localhost:8001/api/v1/mercurio/bundle');
+      const response = await fetch('/service/mercurio/api/v1/mercurio/bundle');
       const json = await response.json();
       setData(json);
     } catch (error) {
