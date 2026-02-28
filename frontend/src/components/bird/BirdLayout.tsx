@@ -7,7 +7,7 @@ export function BirdLayout({ children }: { children: React.ReactNode }) {
   const isHomePage = location.pathname === "/";
 
   return (
-    <div className="min-h-screen w-full flex justify-center bg-transparent">
+    <div className="flex justify-center w-full min-h-screen bg-transparent">
       <div className="flex w-full max-w-[1300px] relative">
         <div className="hidden md:block w-[100px] shrink-0">
           <LeftSidebar />
@@ -18,7 +18,7 @@ export function BirdLayout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
         {isHomePage && (
-          <div className="hidden lg:block w-[350px] shrink-0 border-l border-white/20">
+          <div className="hidden md:block w-[100px] shrink-0">
             <RightSidebar />
           </div>
         )}

@@ -1,420 +1,190 @@
-// frontend/src/components/bird/RightSidebar.tsx
-import React, { useState, useEffect } from "react";
-import { 
-  Search, ShieldCheck, Zap, Brain, Rocket, Activity, 
-  Lock, RefreshCw, Eye, TrendingUp, Sparkles, Shield,
-  ChevronRight, LockKeyhole, Flame, Hash, ArrowUpRight,
-  Radio, Cpu, Globe
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, MoreHorizontal, ShieldCheck, Zap, Star, UserPlus, Sparkles, TrendingUp, Lock, RefreshCw, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-// --- Evolution System com Cores Vivas ---
-const EVOLUTION_STAGES = [
-  { 
-    id: 1, 
-    label: 'Reativo', 
-    icon: Eye, 
-    gradient: 'from-blue-400/20 via-blue-500/10 to-cyan-400/5',
-    accent: 'blue-400',
-    border: 'blue-400/40',
-    glow: 'bg-blue-400/20',
-    text: 'text-blue-300'
-  },
-  { 
-    id: 2, 
-    label: 'Contextual', 
-    icon: ShieldCheck, 
-    gradient: 'from-cyan-400/20 via-cyan-500/10 to-teal-400/5',
-    accent: 'cyan-400',
-    border: 'cyan-400/40',
-    glow: 'bg-cyan-400/20',
-    text: 'text-cyan-300'
-  },
-  { 
-    id: 3, 
-    label: 'Proativo', 
-    icon: Zap, 
-    gradient: 'from-amber-400/20 via-orange-500/10 to-yellow-400/5',
-    accent: 'amber-400',
-    border: 'amber-400/40',
-    glow: 'bg-amber-400/20',
-    text: 'text-amber-300'
-  },
-  { 
-    id: 4, 
-    label: 'Inovador', 
-    icon: Brain, 
-    gradient: 'from-purple-400/20 via-violet-500/10 to-fuchsia-400/5',
-    accent: 'purple-400',
-    border: 'purple-400/40',
-    glow: 'bg-purple-400/20',
-    text: 'text-purple-300'
-  },
-  { 
-    id: 5, 
-    label: 'Simbiótico', 
-    icon: Rocket, 
-    gradient: 'from-emerald-400/20 via-green-500/10 to-teal-400/5',
-    accent: 'emerald-400',
-    border: 'emerald-400/40',
-    glow: 'bg-emerald-400/20',
-    text: 'text-emerald-300'
-  },
-] as const;
-
-const EvolutionCard = ({ level }: { level: number }) => {
-  const stage = EVOLUTION_STAGES[Math.min(level - 1, 4)];
-  const Icon = stage.icon;
-  const progress = (level / 5) * 100;
-
-  return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-white/[0.12] bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 backdrop-blur-xl">
-      {/* Animated Background Gradient */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${stage.gradient} opacity-80 animate-pulse`} />
-      
-      {/* Floating Orbs */}
-      <div className={`absolute -top-10 -right-10 w-32 h-32 ${stage.glow} rounded-full blur-3xl animate-pulse`} />
-      <div className={`absolute -bottom-10 -left-10 w-24 h-24 ${stage.glow} rounded-full blur-2xl animate-pulse delay-700`} />
-      
-      <div className="relative p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-white/40" />
-            <span className="text-[10px] font-bold tracking-[0.2em] text-white/50 uppercase">
-              Neural Core
-            </span>
-          </div>
-          <Badge 
-            className={`${stage.glow} ${stage.text} border-${stage.border} border px-3 py-1 text-[11px] font-bold backdrop-blur-md shadow-lg`}
-          >
-            <Icon size={12} className="mr-1.5" />
-            LVL 0{level}
-          </Badge>
-        </div>
-
-        {/* Progress Bar com Brilho */}
-        <div className="h-3 w-full bg-black/30 rounded-full overflow-hidden mb-5 border border-white/5 relative">
-          <div 
-            className={`h-full bg-gradient-to-r from-${stage.accent} to-white rounded-full transition-all duration-1000 ease-out relative`}
-            style={{ width: `${progress}%` }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-2xl ${stage.glow} border border-${stage.border} backdrop-blur-sm shadow-inner`}>
-              <Icon size={20} className={stage.text} />
-            </div>
-            <div>
-              <p className={`text-lg font-bold ${stage.text}`}>{stage.label}</p>
-              <p className="text-[10px] text-white/40 font-medium uppercase tracking-wider">Phase Active</p>
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-[10px] text-white/30 font-mono">{Math.round(progress)}%</span>
-            <ChevronRight size={18} className="text-white/20" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Trend Item Estilo Feed ---
-const TrendItem = ({ trend, index }: { trend: any; index: number }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const isViral = trend.viral || index < 3;
-  const rankColors = ['text-yellow-400', 'text-gray-300', 'text-orange-400', 'text-white/60'];
-
-  return (
-    <div 
-      className="group cursor-pointer py-4 px-4 -mx-4 rounded-2xl transition-all duration-500 hover:bg-white/[0.08] border border-transparent hover:border-white/[0.08]"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="flex items-start gap-4">
-        {/* Ranking Number */}
-        <div className="flex flex-col items-center gap-2 pt-1 min-w-[28px]">
-          <span className={`text-lg font-black ${rankColors[index] || 'text-white/30'} font-mono`}>
-            {String(index + 1).padStart(2, '0')}
-          </span>
-          <div className={`w-1 rounded-full transition-all duration-500 ${isHovered ? 'h-12 bg-indigo-400' : 'h-6 bg-white/10'}`} />
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1">
-              <Globe size={10} />
-              {trend.category || "Global"}
-            </span>
-            {isViral && (
-              <span className="flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-gradient-to-r from-rose-500/20 to-orange-500/20 text-rose-300 border border-rose-500/30 font-bold">
-                <Flame size={9} className="animate-pulse" />
-                VIRAL
-              </span>
-            )}
-          </div>
-          
-          <h3 className="text-[15px] font-bold text-white truncate group-hover:text-indigo-300 transition-colors duration-300">
-            {trend.hashtag?.startsWith('#') ? trend.hashtag : `#${trend.hashtag || 'Trend'}`}
-          </h3>
-          
-          <p className="text-[12px] text-white/50 truncate mt-1.5 leading-relaxed group-hover:text-white/70 transition-colors">
-            {trend.topic || "Tópico em ascensão global"}
-          </p>
-          
-          <div className="flex items-center justify-between mt-3">
-            <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-              <span className="text-[10px] text-white/40 flex items-center gap-1.5 font-medium">
-                <Activity size={11} className="text-emerald-400" />
-                {trend.engagement || '2.4k'} pulsações
-              </span>
-              <span className="text-[10px] text-white/30">•</span>
-              <span className="text-[10px] text-indigo-400/60 font-medium">Ver análise</span>
-            </div>
-            <div className={`transition-all duration-300 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-              <ArrowUpRight size={16} className="text-indigo-400" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Security Card Vibrante ---
-const SecurityCard = () => (
-  <div className="relative overflow-hidden rounded-[2rem] border border-emerald-500/30 bg-gradient-to-br from-emerald-950/40 via-slate-900/40 to-emerald-900/20 backdrop-blur-xl">
-    {/* Glow Effects */}
-    <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/15 rounded-full blur-3xl animate-pulse" />
-    <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-400/10 rounded-full blur-2xl animate-pulse delay-1000" />
-    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent" />
-    
-    <div className="relative p-6">
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 backdrop-blur-sm shadow-lg shadow-emerald-500/10">
-              <Shield size={22} className="text-emerald-400" />
-            </div>
-            <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse shadow-lg shadow-emerald-400/50" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-white tracking-wide">HeimFrost</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-bold text-emerald-400/90 uppercase tracking-wider">
-                Guard Ativo
-              </span>
-            </div>
-          </div>
-        </div>
-        <LockKeyhole size={20} className="text-emerald-400/40" />
-      </div>
-      
-      <div className="space-y-3">
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-          <span className="text-[11px] text-white/50 font-medium">Criptografia</span>
-          <span className="text-[11px] font-bold text-emerald-400/80 font-mono">AES-256-GCM</span>
-        </div>
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-          <span className="text-[11px] text-white/50 font-medium">Status</span>
-          <span className="text-[11px] font-bold text-emerald-400/80 font-mono">ONLINE</span>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-// --- Search Component Estilo Feed ---
-const SearchBox = () => (
-  <div className="relative group">
-    <div className="absolute inset-0 bg-indigo-500/20 rounded-2xl blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-    <div className="relative flex items-center">
-      <Search className="absolute left-5 w-5 h-5 text-white/30 group-focus-within:text-indigo-400 transition-colors duration-300" />
-      <Input
-        placeholder="Sondar pulso da rede..."
-        className="h-14 w-full bg-slate-900/50 border-white/[0.08] text-white placeholder:text-white/30 rounded-2xl pl-14 pr-16 focus-visible:ring-2 focus-visible:ring-indigo-500/40 focus-visible:border-indigo-500/30 transition-all backdrop-blur-xl text-[14px] font-medium"
-      />
-      <div className="absolute right-4 px-3 py-1.5 rounded-xl bg-white/[0.06] border border-white/[0.1] shadow-inner">
-        <span className="text-[11px] text-white/40 font-mono font-bold">⌘K</span>
-      </div>
-    </div>
-  </div>
-);
-
-// --- Header Card Component ---
-const SectionHeader = ({ 
-  icon: Icon, 
-  title, 
-  subtitle, 
-  action, 
-  loading 
-}: { 
-  icon: any, 
-  title: string, 
-  subtitle: string, 
-  action: () => void,
-  loading: boolean
-}) => (
-  <div className="relative p-6 border-b border-white/[0.08] bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent">
-    <div className="absolute top-0 right-0 w-64 h-full bg-indigo-500/5 blur-3xl" />
-    <div className="relative flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <div className="relative p-3 rounded-2xl bg-indigo-500/15 border border-indigo-400/30 shadow-lg shadow-indigo-500/20">
-          <Icon className="w-6 h-6 text-indigo-400" />
-          <div className="absolute inset-0 bg-indigo-400/20 rounded-2xl animate-pulse" />
-        </div>
-        <div>
-          <h2 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
-            {title}
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400/60" />
-          </h2>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shadow-lg shadow-indigo-400/50" />
-            <span className="text-[10px] font-bold text-indigo-400/80 uppercase tracking-wider">
-              {subtitle}
-            </span>
-          </div>
-        </div>
-      </div>
-      <button 
-        onClick={action}
-        className="p-3 rounded-xl hover:bg-white/10 transition-all active:scale-95 group bg-white/[0.05] border border-white/[0.08]"
-      >
-        <RefreshCw 
-          size={18} 
-          className={`text-white/40 group-hover:text-indigo-400 transition-all ${loading ? 'animate-spin' : ''}`} 
-        />
-      </button>
-    </div>
-  </div>
-);
+import { Link } from "react-router-dom";
+import { MercurioService, IrisData } from "@/services/mercurio";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function RightSidebar() {
-  const [data, setData] = useState<any>(null);
+  const [irisData, setIrisData] = useState<IrisData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchBundle = async () => {
+  const fetchIrisData = async () => {
     setLoading(true);
-    try {
-      const res = await fetch('/service/mercurio/api/v1/mercurio/bundle');
-      if (!res.ok) throw new Error("Offline");
-      const json = await res.json();
-      setData(json);
-    } catch (e) {
-      console.warn("MERCÚRIO indisponível. Modo standby.");
-    } finally {
-      setLoading(false);
-    }
+    const result = await MercurioService.getFullScan();
+    setIrisData(result);
+    setLoading(false);
   };
 
-  useEffect(() => { fetchBundle(); }, []);
-
-  const trends = data?.trends || [];
+  useEffect(() => {
+    fetchIrisData();
+  }, []);
 
   return (
-    <aside className="hidden lg:flex w-[400px] flex-col h-screen top-0 bg-transparent overflow-hidden shrink-0">
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20 px-6 py-8 space-y-6">
-        
-        {/* Search */}
-        <SearchBox />
-
-        {/* Íris Trends Card - Estilo Feed */}
-        <div className="relative overflow-hidden rounded-[2.5rem] border border-white/[0.1] bg-gradient-to-b from-slate-900/50 via-slate-800/30 to-slate-900/50 backdrop-blur-2xl shadow-2xl shadow-black/20">
-          {/* Background Effects */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-indigo-500/10 blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl" />
-          
-          {/* Header */}
-          <SectionHeader 
-            icon={Radio}
-            title="Íris Trends"
-            subtitle="SATTR Real-time"
-            action={fetchBundle}
-            loading={loading}
-          />
-
-          {/* Trends List */}
-          <div className="relative p-5">
-            {loading && !data ? (
-              <div className="py-16 flex flex-col items-center justify-center gap-5">
-                <div className="relative">
-                  <div className="w-16 h-16 border-2 border-indigo-400/20 border-t-indigo-400 rounded-full animate-spin" />
-                  <div className="absolute inset-0 w-16 h-16 border-2 border-transparent border-t-purple-400/40 rounded-full animate-spin delay-150" />
-                </div>
-                <span className="text-[11px] font-bold text-white/30 uppercase tracking-[0.3em] animate-pulse">
-                  Sincronizando Sensores
-                </span>
-              </div>
-            ) : trends.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/[0.03] flex items-center justify-center border border-white/[0.08]">
-                  <Eye className="w-10 h-10 text-white/10" />
-                </div>
-                <p className="text-[13px] text-white/30 font-medium">Aguardando sinais do ecossistema...</p>
-              </div>
-            ) : (
-              <div className="flex flex-col divide-y divide-white/[0.04]">
-                {trends.slice(0, 5).map((trend: any, i: number) => (
-                  <TrendItem key={trend.id || i} trend={trend} index={i} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <button className="w-full py-5 text-[11px] font-bold text-white/40 uppercase tracking-[0.2em] border-t border-white/[0.08] hover:text-indigo-300 hover:bg-white/[0.05] transition-all flex items-center justify-center gap-2 group">
-            <Hash size={14} className="opacity-50" />
-            Explorar Universo Completo
-            <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-
-        {/* Security Card */}
-        <SecurityCard />
-
-        {/* Evolution Card */}
-        <EvolutionCard level={data?.metadata?.evolution_level || 1} />
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-5 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-              <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Nodes</span>
-            </div>
-            <p className="text-2xl font-black text-white">5</p>
-            <p className="text-[10px] text-white/30 mt-1">PentaIA Online</p>
-          </div>
-          <div className="p-5 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Latência</span>
-            </div>
-            <p className="text-2xl font-black text-white">12<span className="text-lg text-white/50">ms</span></p>
-            <p className="text-[10px] text-white/30 mt-1">Real-time Sync</p>
-          </div>
-        </div>
-
-        {/* Footer Meta */}
-        <div className="pt-8 pb-4 text-center">
-          <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-white/[0.05] to-white/[0.02] border border-white/[0.08] backdrop-blur-xl shadow-xl">
-            <div className="relative">
-              <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-              <div className="absolute inset-0 w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
-            </div>
-            <p className="text-[10px] text-white/30 font-bold tracking-[0.3em] uppercase">
-              PentaIA System
-            </p>
-          </div>
-          <p className="text-[9px] text-white/20 mt-4 tracking-widest font-mono">v2.0.4-stable • build 8921</p>
-        </div>
-
+    <aside className="sticky top-0 flex-col hidden h-screen gap-6 p-4 pb-24 overflow-y-auto bg-transparent lg:flex w-80 xl:w-96 xl:p-6 scrollbar-hide">
+      
+      {/* Barra de Busca Flutuante */}
+      <div className="relative z-20 group shrink-0">
+        <div className="absolute inset-0 transition-opacity duration-500 rounded-full opacity-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 blur-md group-focus-within:opacity-100" />
+        <Search className="absolute left-4 top-3.5 h-5 w-5 text-indigo-600/70 group-focus-within:text-indigo-600 transition-colors z-30" />
+        <Input 
+          placeholder="Buscar no Bird..." 
+          className="relative z-20 h-12 pl-12 text-base transition-all border rounded-full shadow-lg bg-white/70 border-white/50 focus:border-indigo-300 focus:bg-white/90 backdrop-blur-xl shadow-indigo-500/5 placeholder:text-gray-500/80" 
+        />
       </div>
+
+      {/* CARD 1: BIRD PREMIUM */}
+      <Card className="shrink-0 bg-white/70 backdrop-blur-xl border border-white/60 shadow-2xl shadow-indigo-500/10 rounded-[30px] overflow-hidden relative group hover:scale-[1.02] transition-all duration-300">
+        <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+        
+        <CardHeader className="relative z-10 px-6 pt-6 pb-2">
+          <CardTitle className="flex items-center justify-between text-xl font-black tracking-tight text-gray-800">
+            <span className="flex items-center gap-2">
+              <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">Bird Premium</span>
+            </span>
+            <Badge className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-0 shadow-md shadow-indigo-500/20 hover:scale-105 transition-transform text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
+              Assine
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="relative z-10 px-6 pb-6 space-y-5">
+          <p className="text-sm font-medium leading-relaxed text-gray-600">
+            Desbloqueie o selo <Star className="inline w-3.5 h-3.5 text-amber-500 fill-amber-500 mx-0.5" />, uploads 4K e o poder do <span className="font-bold text-indigo-600">ZIOS AI</span>.
+          </p>
+          <Button className="w-full rounded-2xl font-bold text-sm h-11 bg-gradient-to-r from-gray-900 to-gray-800 text-white shadow-xl shadow-gray-900/20 hover:shadow-gray-900/30 hover:scale-[1.02] transition-all border border-white/10">
+            Obter Premium
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* CARD 2: IRIS (Trends Reais -> Mercúrio) */}
+      <Card className="shrink-0 bg-white/60 backdrop-blur-xl border border-white/50 shadow-xl shadow-gray-200/50 rounded-[30px] overflow-hidden hover:bg-white/70 transition-colors duration-300">
+        <CardHeader className="px-6 pt-6 pb-3 border-b border-gray-100/50">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg font-bold text-gray-800">
+              <div className="p-2 rounded-xl bg-amber-100/50 text-amber-600">
+                <Sparkles className="w-4 h-4 fill-amber-600/20" />
+              </div>
+              IRIS Trends
+            </CardTitle>
+            <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-100/50 px-2 py-1 rounded-lg">Mercúrio</span>
+                <Button variant="ghost" size="icon" className="w-6 h-6 hover:bg-transparent" onClick={fetchIrisData} disabled={loading}>
+                    <RefreshCw className={`w-3.5 h-3.5 text-gray-400 hover:text-indigo-600 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 py-2">
+          
+          {loading ? (
+             <div className="p-2 space-y-4">
+                 {[1, 2, 3].map((i) => (
+                     <div key={i} className="space-y-2">
+                        <Skeleton className="w-1/2 h-3 rounded-full bg-gray-200/50" />
+                        <Skeleton className="w-3/4 h-4 rounded-full bg-gray-200/80" />
+                        <Skeleton className="w-1/3 h-3 rounded-full bg-gray-200/50" />
+                     </div>
+                 ))}
+             </div>
+          ) : !irisData || irisData.google_trends.length === 0 ? (
+             <div className="flex flex-col items-center justify-center py-6 text-center text-gray-500">
+                <AlertCircle className="w-6 h-6 mb-2 opacity-50 text-amber-500" />
+                <p className="text-sm font-semibold">Íris Offline</p>
+                <p className="text-xs opacity-70">Não foi possível conectar ao satélite.</p>
+             </div>
+          ) : (
+            <>
+              {irisData.google_trends.slice(0, 4).map((trend, i) => (
+                <Link to={`/explore?q=${encodeURIComponent(trend.topic)}`} key={i} className="relative block p-3 transition-all cursor-pointer group rounded-2xl hover:bg-white/60">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate max-w-[70%]">
+                      {i + 1} • {trend.source}
+                    </span>
+                    <MoreHorizontal className="w-4 h-4 text-gray-300 transition-colors group-hover:text-gray-500" />
+                  </div>
+                  <p className="text-[15px] font-black leading-tight text-gray-800 transition-colors group-hover:text-indigo-600 truncate">
+                    {trend.topic}
+                  </p>
+                  <p className="mt-1 text-xs font-medium leading-snug text-gray-500 line-clamp-2">
+                     {trend.context}
+                  </p>
+                </Link>
+              ))}
+            </>
+          )}
+
+          <Button variant="ghost" className="w-full h-10 mt-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50/50 rounded-xl" asChild>
+            <Link to="/mercurio">
+              Acessar Ambiente Mercúrio →
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* CARD 3: SUGESTÕES */}
+      <Card className="shrink-0 bg-white/60 backdrop-blur-xl border border-white/50 shadow-xl shadow-gray-200/50 rounded-[30px] overflow-hidden hover:bg-white/70 transition-colors duration-300">
+        <CardHeader className="px-6 pt-6 pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg font-bold text-gray-800">
+            <div className="p-2 text-blue-600 rounded-xl bg-blue-100/50">
+              <UserPlus className="w-4 h-4" />
+            </div>
+            Para você
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-6 pb-6 space-y-4">
+          {[
+            { name: "Dev Senior", user: "@code_master", img: "/placeholder-user.jpg", bg: "bg-blue-100 text-blue-700" },
+            { name: "Design BR", user: "@ux_ui_br", img: "/placeholder-user.jpg", bg: "bg-pink-100 text-pink-700" },
+          ].map((profile, i) => (
+            <div key={i} className="flex items-center justify-between gap-2 group">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <Avatar className="w-10 h-10 transition-transform border-2 border-white shadow-sm group-hover:scale-105 shrink-0">
+                  <AvatarImage src={profile.img} />
+                  <AvatarFallback className={`${profile.bg} font-bold text-xs`}>{profile.name.substring(0,2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col truncate">
+                  <span className="text-sm font-bold leading-none text-gray-800 truncate transition-colors cursor-pointer hover:text-indigo-600">{profile.name}</span>
+                  <span className="text-xs text-gray-500 mt-0.5 truncate">{profile.user}</span>
+                </div>
+              </div>
+              <Button size="sm" className="h-8 px-3 text-xs font-bold text-gray-700 transition-all bg-white border border-gray-200 rounded-full shadow-sm hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 shrink-0">
+                Seguir
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* CARD 4: HEIMDALL (Privacidade) */}
+      <Card className="shrink-0 bg-white/60 backdrop-blur-xl border border-white/50 shadow-xl shadow-emerald-500/5 rounded-[30px] overflow-hidden group hover:bg-white/70 transition-colors duration-300">
+        <CardContent className="flex items-center gap-4 p-5">
+          <div className="flex items-center justify-center w-12 h-12 transition-all duration-300 border shadow-sm rounded-2xl bg-emerald-100/50 shrink-0 border-emerald-100 group-hover:scale-110 group-hover:bg-emerald-100">
+            <Lock className="w-5 h-5 text-emerald-600 fill-emerald-600/20" />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black text-gray-800">Privacidade Blindada</span>
+              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+            </div>
+            <span className="text-xs font-medium leading-tight text-gray-500">
+              Protegido pelo <span className="font-bold text-emerald-600">Heimdall</span>. Seus dados são <br className="hidden xl:block"/> 100% criptografados.
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Footer */}
+      <footer className="shrink-0 px-4 flex flex-wrap gap-x-4 gap-y-2 text-[11px] font-medium text-gray-400 pb-4">
+        <a href="#" className="transition-colors hover:text-indigo-500">Privacidade</a>
+        <a href="#" className="transition-colors hover:text-indigo-500">Termos</a>
+        <a href="#" className="transition-colors hover:text-indigo-500">Cookies</a>
+        <span className="w-full opacity-50">© 2026 Bird Inc.</span>
+      </footer>
     </aside>
   );
 }

@@ -6,9 +6,10 @@ import hashlib
 import logging
 import math
 import os
+import requests  # Adicionado: necessário para _fetch_api_news
 import google.generativeai as genai
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, List  # Adicionado: List para anotações de tipo
 from pytrends.request import TrendReq
 from dotenv import load_dotenv
 
@@ -80,7 +81,6 @@ class SATTR:
             return response.text.strip()
         except Exception:
             return "Tendência identificada e sob monitoramento proativo."
-
 
     def _fetch_api_news(self) -> List[Dict[str, Any]]:
         items = []
@@ -183,8 +183,8 @@ class SATTR:
             seen_tags.add(hashtag)
 
             # Cálculo de Momentum Gravitacional
-
-            score = IRIS_Physics.calculate_momentum(item["auth"], item["pos"], item["auth"])
+            # Corrigido: Removido argumento extra item["auth"] que causava erro
+            score = IRIS_Physics.calculate_momentum(item["auth"], item["pos"])
             
             # Ressonância Neural (Gemini)
             # Só acionamos o Gemini para os top 12 para economizar cota e ganhar performance
