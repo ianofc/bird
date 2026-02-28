@@ -1,16 +1,8 @@
-fastapi==0.109.0
-uvicorn==0.27.0
-redis>=5.0.1
-numpy
-requests
-python-multipart
-sqlalchemy>=1.4.0
+fastapi
+uvicorn
+sqlalchemy
 asyncpg
-python-dotenv
-#sentence-transformers>=2.2.0  # Descomentar quando for usar embeddings reais
 psycopg2-binary
-gunicorn
-pydantic-settings
-asyncpg
-pydantic>=2.5.0
-#supabase>=2.0.0               # Descomentar quando for usar Supabase
+python-dotenv
+numpy
+sentence-transformers

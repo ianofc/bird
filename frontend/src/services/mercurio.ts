@@ -1,20 +1,21 @@
 import axios from 'axios';
 
-// Usando o proxy do Vite
-const BASE_URL = "/service/iris"; 
+const BASE_URL = "/service/iris";
 
 export interface TrendContext {
   topic: string;
   context: string;
   link: string;
   source: string;
+  hashtag?: string;
+  related_posts_count?: number;
+  related_news_count?: number;
 }
 
 export interface IrisData {
-  stats: { trends_count: number; news_count: number };
+  stats?: Record<string, number | boolean>;
   google_trends: TrendContext[];
-  breaking_news: TrendContext[];
-  matches: any[];
+  news?: any[];
 }
 
 export const MercurioService = {

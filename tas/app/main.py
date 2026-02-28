@@ -18,6 +18,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": str(exc), "trace": "Verifique o terminal"})
 
 app.include_router(api_router, prefix="/api/v1")
+
+@app.get("/")
+async def root():
+    return {"status": "online", "service": "tas"}
+
 @app.get("/health")
 async def health():
     return {"status": "online", "security": {"heimdall": "active" if heimdall_active else "inactive"}}
