@@ -1,6 +1,6 @@
 import { BirdLayout } from "@/components/bird/BirdLayout";
 import { useBird } from "@/contexts/BirdContext";
-import { Search, ArrowLeft, UserPlus, Users as UsersIcon, UserCheck, Megaphone, Sparkles } from "lucide-react";
+import { UserPlus, Users as UsersIcon, UserCheck, Megaphone, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 const tabs = [
@@ -12,10 +12,29 @@ const tabs = [
 ];
 
 const Network = () => {
-  const { users, currentUser, followingIds, followUser, unfollowUser } = useBird();
+  const bird = useBird() as {
+    users?: Array<{
+      id: string;
+      color?: string;
+      initials?: string;
+      name?: string;
+      handle?: string;
+      bio?: string;
+    }>;
+    currentUser?: { id?: string } | null;
+    followingIds?: string[];
+    followUser?: (id: string) => void;
+    unfollowUser?: (id: string) => void;
+  };
+
+  const users = bird.users ?? [];
+  const currentUserId = bird.currentUser?.id;
+  const followingIds = bird.followingIds ?? [];
+  const followUser = bird.followUser ?? (() => undefined);
+  const unfollowUser = bird.unfollowUser ?? (() => undefined);
   const [activeTab, setActiveTab] = useState("suggestions");
 
-  const otherUsers = users.filter(u => u.id !== currentUser.id);
+  const otherUsers = users.filter(u => u.id !== currentUserId);
   const followedUsers = otherUsers.filter(u => followingIds.includes(u.id));
   const suggestedUsers = otherUsers.filter(u => !followingIds.includes(u.id));
 
