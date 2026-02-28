@@ -38,7 +38,7 @@ export function IrisCard() {
                 </div>
                 {/* Clica na hashtag e vai para o Explore do Bird */}
                 <Link to={`/explore?q=${encodeURIComponent(trend.topic)}`} className="font-bold text-[15px] group-hover:text-primary transition-colors">
-                    {trend.topic}
+                    {`IRIS Trends ${trend.hashtag || `#${trend.topic.replace(/\s+/g, "")}`}`}
                 </Link>
                 <span className="text-xs text-muted-foreground line-clamp-2 leading-snug">
                     {trend.context}
