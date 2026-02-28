@@ -7,3 +7,4 @@ beautifulsoup4
 lxml
 google-generativeai
 python-dotenv
+urllib3<2
