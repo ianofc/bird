@@ -37,11 +37,11 @@ export function IrisCard() {
                     <span>{i + 1} • Assunto em {trend.source}</span>
                 </div>
                 {/* Clica na hashtag e vai para o Explore do Bird */}
-                <Link to={`/explore?q=${encodeURIComponent(trend.topic)}`} className="font-bold text-[15px] group-hover:text-primary transition-colors">
-                    {trend.topic}
+                <Link to={`/mercurio?trend=${encodeURIComponent(trend.hashtag || trend.topic)}`} className="font-bold text-[15px] group-hover:text-primary transition-colors">
+                    {trend.hashtag || `#${trend.topic.replace(/\s+/g, "")}`}
                 </Link>
                 <span className="text-xs text-muted-foreground line-clamp-2 leading-snug">
-                    {trend.context}
+                    {`${trend.related_posts_count ?? 0} posts no BIRD • ${trend.related_news_count ?? 0} notícias relacionadas`}
                 </span>
             </div>
         ))}

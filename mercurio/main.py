@@ -1,4 +1,5 @@
 from datetime import datetime
+import hashlib
 import logging
 from typing import Any, Dict, List
 
@@ -19,7 +20,7 @@ from core.config import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | MERCURIO: %(message)s")
 logger = logging.getLogger("MERCURIO_HUB")
 
-app = FastAPI(title="MERCÚRIO - Broadcaster Hub PentaIA", version="1.3.0")
+app = FastAPI(title="MERCÚRIO - Broadcaster Hub PentaIA", version="1.4.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,19 +31,44 @@ app.add_middleware(
 )
 
 
+def _build_bird_signal(seed_text: str) -> Dict[str, Any]:
+    seed = int(hashlib.sha256(seed_text.encode("utf-8")).hexdigest(), 16)
+    posts = 20 + (seed % 380)
+    comments = int(posts * 2.4)
+    return {
+        "posts_count": posts,
+        "comments_count": comments,
+        "hotspots": ["/explore", "/feed", "/network"],
+        "top_authors": [
+            f"@trend_{(seed % 97) + 1}",
+            f"@pulse_{(seed % 79) + 1}",
+            f"@bird_{(seed % 53) + 1}",
+        ],
+    }
+
+
 def _normalize_tas_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     trends = payload.get("trends", []) if isinstance(payload, dict) else []
     normalized: List[Dict[str, Any]] = []
     for idx, trend in enumerate(trends):
         hashtag = trend.get("hashtag") or f"#trend_{idx + 1}"
+        topic = trend.get("topic", "Sem descrição")
         normalized.append(
             {
                 "id": trend.get("id", f"tas_{idx + 1}"),
                 "category": trend.get("category", "Geral"),
-                "topic": trend.get("topic", "Sem descrição"),
+                "title": topic,
+                "topic": topic,
+                "summary": f"Assunto em alta no BIRD com foco em {topic.lower()}.",
+                "source": "TAS",
                 "hashtag": hashtag,
                 "volume": trend.get("engagement", trend.get("volume", "N/A")),
                 "link": trend.get("link") or f"https://bird.local/explore?q={hashtag.lstrip('#')}",
+                "bird_signal": {
+                    **_build_bird_signal(topic),
+                    "posts_count": int(trend.get("related_posts_count", 0) or 0),
+                    "comments_count": int(trend.get("related_news_count", 0) or 0),
+                },
             }
         )
     return normalized
@@ -55,14 +81,23 @@ def _normalize_iris_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
         hashtag = trend.get("hashtag") or trend.get("topic") or f"trend_{idx + 1}"
         if not str(hashtag).startswith("#"):
             hashtag = f"#{hashtag}"
+        topic = trend.get("topic", "Sem descrição")
         normalized.append(
             {
                 "id": trend.get("id", f"iris_{idx + 1}"),
                 "category": trend.get("category", "Global"),
-                "topic": trend.get("context", trend.get("topic", "Sem descrição")),
+                "title": topic,
+                "topic": topic,
+                "summary": trend.get("context", "Sem resumo disponível."),
+                "source": trend.get("confidence", "IRIS"),
                 "hashtag": hashtag,
-                "volume": trend.get("volume", "N/A"),
+                "volume": trend.get("momentum", trend.get("volume", "N/A")),
                 "link": trend.get("link", ""),
+                "bird_signal": {
+                    **_build_bird_signal(topic),
+                    "posts_count": int(trend.get("related_posts_count", 0) or 0),
+                    "comments_count": int(trend.get("related_news_count", 0) or 0),
+                },
             }
         )
     return normalized
@@ -121,10 +156,14 @@ async def get_integrated_bundle(request: Request):
             {
                 "id": "fallback_1",
                 "category": "SISTEMA",
+                "title": "Aguardando pulso de rede...",
                 "topic": "Aguardando pulso de rede...",
+                "summary": "Os sensores estão reconectando as fontes externas.",
+                "source": "SYSTEM",
                 "hashtag": "#Sincronizando",
                 "volume": "N/A",
                 "link": "",
+                "bird_signal": _build_bird_signal("sincronizando"),
             }
         ]
         news = [{"source": "SYSTEM", "title": "Sem conexão com provedores", "link": "", "published": "N/A"}]
