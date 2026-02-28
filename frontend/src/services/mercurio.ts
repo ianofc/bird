@@ -9,7 +9,7 @@ export interface TrendContext {
   source: string;
   hashtag?: string;
   related_posts_count?: number;
-  related_news_count?: number;
+
 }
 
 export interface IrisData {
