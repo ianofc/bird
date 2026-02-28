@@ -119,9 +119,13 @@ class SATTR:
         words = clean.split()
         if not words:
             return "#PentaIA"
-        # CamelCase das 2 primeiras palavras semânticas
-        tag = "".join(word.capitalize() for word in words[:2] if len(word) > 2)
-        return f"#{tag}" if tag else f"#{words[0].capitalize()}"
+        semantic_words = [w for w in words if len(w) > 2]
+        base_words = semantic_words[:4] if semantic_words else words[:4]
+        while len(base_words) < 4:
+            base_words.append(["Bird", "Trend", "Agora", "Brasil"][len(base_words)])
+
+        tag = "".join(word.capitalize() for word in base_words[:4])
+        return f"#{tag}" if tag else "#PentaIATrendAgoraBrasil"
 
     def perform_scan(self) -> Dict[str, Any]:
         """
@@ -190,12 +194,23 @@ class SATTR:
             # Só acionamos o Gemini para os top 12 para economizar cota e ganhar performance
             context = self._get_gemini_resonance(item["topic"]) if len(processed) < 12 else "Pulso validado."
 
+            topic_words = [w.lower() for w in re.findall(r"\w+", item["topic"]) if len(w) > 3]
+            related_news_count = 0
+            if topic_words:
+                for n in news_items:
+                    title_l = str(n.get("title", "")).lower()
+                    if any(w in title_l for w in topic_words[:4]):
+                        related_news_count += 1
+            related_posts_count = max(1, int(score * 35) + (related_news_count * 3))
+
             processed.append({
                 "id": hashlib.md5(hashtag.encode()).hexdigest()[:10],
                 "hashtag": hashtag,
                 "topic": item["topic"],
                 "category": self._detect_category(item["topic"]),
                 "context": context,
+                "related_posts_count": related_posts_count,
+                "related_news_count": related_news_count,
                 "link": item["link"],
                 "momentum": score,
                 "confidence": "High" if item["auth"] > 1.3 else "Standard"

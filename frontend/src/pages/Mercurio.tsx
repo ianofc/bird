@@ -1,6 +1,6 @@
 import { BirdLayout } from "@/components/bird/BirdLayout";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   RefreshCw,
@@ -59,6 +59,8 @@ interface MercurioData {
 export default function Mercurio() {
   const [data, setData] = useState<MercurioData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const selectedTrend = searchParams.get("trend")?.toLowerCase() || "";
 
   const fetchData = async () => {
     setLoading(true);
@@ -76,6 +78,16 @@ export default function Mercurio() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const orderedTrends = [...(data?.trends || [])].sort((a, b) => {
+    if (!selectedTrend) return 0;
+    const aHit = `${a.hashtag} ${a.title} ${a.topic}`.toLowerCase().includes(selectedTrend);
+    const bHit = `${b.hashtag} ${b.title} ${b.topic}`.toLowerCase().includes(selectedTrend);
+    if (aHit && !bHit) return -1;
+    if (!aHit && bHit) return 1;
+    return 0;
+  });
+
 
   return (
     <BirdLayout>
@@ -156,8 +168,10 @@ export default function Mercurio() {
                 ))}
               </div>
             ) : (
-              data?.trends.map((trend, idx) => (
-                <Card key={trend.id} className="overflow-hidden rounded-[2rem] border border-white/50 bg-white/70 backdrop-blur-sm hover:shadow-2xl transition-all group">
+
+              orderedTrends.map((trend, idx) => (
+                <Card key={trend.id} className={`overflow-hidden rounded-[2rem] border bg-white/70 backdrop-blur-sm hover:shadow-2xl transition-all group ${selectedTrend && `${trend.hashtag} ${trend.title} ${trend.topic}`.toLowerCase().includes(selectedTrend) ? "border-indigo-400 shadow-indigo-200/60" : "border-white/50"}`}> 
+
                   <CardContent className="p-6 space-y-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2">
@@ -169,13 +183,6 @@ export default function Mercurio() {
                         </Badge>
                       </div>
                       <span className="text-xs font-black text-gray-400">#{idx + 1}</span>
-                    </div>
-
-                    <div>
-                      <h3 className="mb-2 text-2xl font-black leading-tight text-gray-900 transition-colors group-hover:text-indigo-600">
-                        {trend.title || trend.topic}
-                      </h3>
-                      <p className="font-medium leading-relaxed text-gray-600">{trend.summary || trend.topic}</p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

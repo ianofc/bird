@@ -102,7 +102,7 @@ export function RightSidebar() {
           ) : (
             <>
               {irisData.google_trends.slice(0, 4).map((trend, i) => (
-                <Link to={`/explore?q=${encodeURIComponent(trend.topic)}`} key={i} className="relative block p-3 transition-all cursor-pointer group rounded-2xl hover:bg-white/60">
+                <Link to={`/mercurio?trend=${encodeURIComponent(trend.hashtag || trend.topic)}`} key={i} className="relative block p-3 transition-all cursor-pointer group rounded-2xl hover:bg-white/60">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate max-w-[70%]">
                       {i + 1} • {trend.source}
@@ -110,13 +110,11 @@ export function RightSidebar() {
                     <MoreHorizontal className="w-4 h-4 text-gray-300 transition-colors group-hover:text-gray-500" />
                   </div>
                   <p className="text-[15px] font-black leading-tight text-gray-800 transition-colors group-hover:text-indigo-600 truncate">
-                    {`IRIS Trends ${trend.hashtag || `#${trend.topic.replace(/\s+/g, "")}`}`}
-                  </p>
-                  <p className="mt-1 text-[11px] font-bold text-indigo-500 truncate">
+                    
                     {trend.hashtag || `#${trend.topic.replace(/\s+/g, "")}`}
                   </p>
                   <p className="mt-1 text-xs font-medium leading-snug text-gray-500 line-clamp-2">
-                     {trend.context}
+                     {trend.related_posts_count ?? 0} posts no BIRD • {trend.related_news_count ?? 0} notícias relacionadas
                   </p>
                 </Link>
               ))}
