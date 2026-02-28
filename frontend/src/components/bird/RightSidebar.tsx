@@ -22,6 +22,8 @@ export function RightSidebar() {
 
   useEffect(() => {
     fetchIrisData();
+    const interval = setInterval(fetchIrisData, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -109,6 +111,9 @@ export function RightSidebar() {
                   </div>
                   <p className="text-[15px] font-black leading-tight text-gray-800 transition-colors group-hover:text-indigo-600 truncate">
                     {trend.topic}
+                  </p>
+                  <p className="mt-1 text-[11px] font-bold text-indigo-500 truncate">
+                    {trend.hashtag || `#${trend.topic.replace(/\s+/g, "")}`}
                   </p>
                   <p className="mt-1 text-xs font-medium leading-snug text-gray-500 line-clamp-2">
                      {trend.context}
