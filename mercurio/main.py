@@ -1,89 +1,136 @@
-# mercurio/main.py
+from datetime import datetime
+import logging
+from typing import Any, Dict, List
+
+import requests
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-import requests
-import logging
 
-# Configuração de Log para o Ecossistema PentaIA
-logging.basicConfig(level=logging.INFO)
+from core.config import (
+    CORS_ALLOW_ORIGINS,
+    HEIMDALL_CHECK_URL,
+    IRIS_SCAN_URL,
+    REQUEST_TIMEOUT_DEFAULT,
+    SERVICE_NAME,
+    SERVICE_PORT,
+    TAS_TRENDS_URL,
+)
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | MERCURIO: %(message)s")
 logger = logging.getLogger("MERCURIO_HUB")
 
-app = FastAPI(title="MERCÚRIO - Broadcaster Hub PentaIA", version="1.2.0")
+app = FastAPI(title="MERCÚRIO - Broadcaster Hub PentaIA", version="1.3.0")
 
-# FIX DE CORS: Autorizando explicitamente o frontend (8080) e mantendo flexibilidade de rede
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://127.0.0.1:8080", "*"],
+    allow_origins=CORS_ALLOW_ORIGINS or ["http://localhost:8080", "http://127.0.0.1:8080"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Endpoints Internos (Conforme definido no seu Docker Compose)
-TAS_URL = "http://tas:8001/api/v1/recommend/trends" # Ajuste o path conforme sua rota no TAS
-IRIS_URL = "http://iris:8003/scan/full"
-HEIMDALL_URL = "http://zios:8002/v1/proactive/heimdall/check" # Aponta para o node de segurança no Zios
+
+def _normalize_tas_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
+    trends = payload.get("trends", []) if isinstance(payload, dict) else []
+    normalized: List[Dict[str, Any]] = []
+    for idx, trend in enumerate(trends):
+        hashtag = trend.get("hashtag") or f"#trend_{idx + 1}"
+        normalized.append(
+            {
+                "id": trend.get("id", f"tas_{idx + 1}"),
+                "category": trend.get("category", "Geral"),
+                "topic": trend.get("topic", "Sem descrição"),
+                "hashtag": hashtag,
+                "volume": trend.get("engagement", trend.get("volume", "N/A")),
+                "link": trend.get("link") or f"https://bird.local/explore?q={hashtag.lstrip('#')}",
+            }
+        )
+    return normalized
+
+
+def _normalize_iris_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
+    trends = payload.get("google_trends", []) if isinstance(payload, dict) else []
+    normalized: List[Dict[str, Any]] = []
+    for idx, trend in enumerate(trends):
+        hashtag = trend.get("hashtag") or trend.get("topic") or f"trend_{idx + 1}"
+        if not str(hashtag).startswith("#"):
+            hashtag = f"#{hashtag}"
+        normalized.append(
+            {
+                "id": trend.get("id", f"iris_{idx + 1}"),
+                "category": trend.get("category", "Global"),
+                "topic": trend.get("context", trend.get("topic", "Sem descrição")),
+                "hashtag": hashtag,
+                "volume": trend.get("volume", "N/A"),
+                "link": trend.get("link", ""),
+            }
+        )
+    return normalized
+
 
 @app.get("/")
 async def health():
-    return {"status": "online", "service": "mercurio", "port": 8004}
+    return {
+        "status": "online",
+        "service": SERVICE_NAME,
+        "port": SERVICE_PORT,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
 
 @app.get("/api/v1/mercurio/bundle")
 async def get_integrated_bundle(request: Request):
-    """
-    Broadcaster: Consolida TAS, IRIS e HEIMDALL.
-    Implementa redundância: Prioriza tração interna (TAS), falha para varredura global (IRIS).
-    """
-    client_ip = request.client.host
-    logger.info(f"MERCURIO: Gerando bundle para IP {client_ip}")
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info("Gerando bundle para IP %s", client_ip)
 
-    # 1. SEGURANÇA (Heimdall)
-    security_data = {"status": "PROTECTED", "shield_level": "OPTIMAL"}
+    security_data = {"status": "PROTECTED", "shield_level": "OPTIMAL", "client_ip": client_ip}
     try:
-        sec_res = requests.get(f"{HEIMDALL_URL}?ip={client_ip}", timeout=1.0)
-        if sec_res.status_code == 200:
+        sec_res = requests.get(HEIMDALL_CHECK_URL, params={"ip": client_ip}, timeout=REQUEST_TIMEOUT_DEFAULT)
+        if sec_res.ok:
             security_data = sec_res.json()
-    except Exception:
-        logger.warning("Heimdall Shield operando em modo autônomo (Cache).")
+    except requests.RequestException as exc:
+        logger.warning("Heimdall indisponível, fallback local ativado: %s", exc)
 
-    # 2. TRENDS (Redundância PentaIA: TAS -> IRIS)
-    final_trends = []
-    news = []
+    final_trends: List[Dict[str, Any]] = []
+    news: List[Dict[str, Any]] = []
     source = "NONE"
 
-    # TENTATIVA A: TAS (Inteligência da Rede)
     try:
-        tas_res = requests.get(TAS_URL, timeout=2)
-        if tas_res.status_code == 200:
-            tas_payload = tas_res.json()
-            if isinstance(tas_payload, dict) and "trends" in tas_payload:
-                final_trends = tas_payload.get("trends", [])
-            else:
-                final_trends = tas_payload
-            source = "TAS_INTERNAL"
-            if not final_trends:
-                raise ValueError("TAS Empty")
-    except Exception:
-        # TENTATIVA B: IRIS/SATTR (Varredura Externa)
-        logger.info("TAS indisponível ou em processamento. Acionando sensores IRIS...")
+        tas_res = requests.get(TAS_TRENDS_URL, timeout=REQUEST_TIMEOUT_DEFAULT)
+        if tas_res.ok:
+            final_trends = _normalize_tas_trends(tas_res.json())
+            if final_trends:
+                source = "TAS_INTERNAL"
+    except requests.RequestException as exc:
+        logger.info("TAS indisponível: %s", exc)
+
+    if not final_trends:
+        logger.info("Acionando fallback IRIS...")
         try:
-            iris_res = requests.get(IRIS_URL, timeout=5)
-            if iris_res.status_code == 200:
+            iris_res = requests.get(IRIS_SCAN_URL, timeout=REQUEST_TIMEOUT_DEFAULT * 2)
+            if iris_res.ok:
                 iris_payload = iris_res.json()
-                final_trends = iris_payload.get("google_trends", [])
+                final_trends = _normalize_iris_trends(iris_payload)
                 news = iris_payload.get("news", [])
                 source = "IRIS_EXTERNAL"
-        except Exception as e:
-            logger.error(f"IRIS SATTR Offline: {e}")
-            final_trends = [
-                {"hashtag": "#Sincronizando", "topic": "Aguardando pulso de rede...", "category": "SISTEMA"}
-            ]
-            news = [{"source": "SYSTEM", "title": "Sem conexão com provedores de notícias", "link": "", "published": "N/A"}]
+        except requests.RequestException as exc:
+            logger.error("IRIS indisponível: %s", exc)
 
-    # 3. EVENTOS
-    events = [
-        {"id": "e1", "category": "PENTAIA", "title": "Protocolo Mercúrio Ativo"}
-    ]
+    if not final_trends:
+        final_trends = [
+            {
+                "id": "fallback_1",
+                "category": "SISTEMA",
+                "topic": "Aguardando pulso de rede...",
+                "hashtag": "#Sincronizando",
+                "volume": "N/A",
+                "link": "",
+            }
+        ]
+        news = [{"source": "SYSTEM", "title": "Sem conexão com provedores", "link": "", "published": "N/A"}]
+        source = "FALLBACK"
+
+    events = [{"id": "e1", "category": "PENTAIA", "title": "Protocolo Mercúrio Ativo"}]
 
     return {
         "trends": final_trends,
@@ -92,12 +139,14 @@ async def get_integrated_bundle(request: Request):
         "news": news,
         "metadata": {
             "source": source,
-            "evolution_level": 1,
-            "node": "mercurio_hub_8004"
-        }
+            "evolution_level": 2,
+            "node": f"{SERVICE_NAME}_hub_{SERVICE_PORT}",
+            "generated_at": datetime.utcnow().isoformat(),
+        },
     }
+
 
 if __name__ == "__main__":
     import uvicorn
-    # Mercúrio roda na 8004 conforme seu Docker Compose
-    uvicorn.run(app, host="0.0.0.0", port=8004)
+
+    uvicorn.run(app, host="0.0.0.0", port=SERVICE_PORT)

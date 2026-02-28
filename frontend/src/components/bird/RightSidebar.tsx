@@ -301,7 +301,7 @@ export function RightSidebar() {
   const fetchBundle = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8004/api/v1/mercurio/bundle');
+      const res = await fetch('/service/mercurio/api/v1/mercurio/bundle');
       if (!res.ok) throw new Error("Offline");
       const json = await res.json();
       setData(json);

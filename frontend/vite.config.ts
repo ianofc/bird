@@ -31,6 +31,13 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/service\/iris/, ''),
         secure: false,
+      },
+      // Rota para o Mercurio Hub
+      '/service/mercurio': {
+        target: 'http://mercurio:8004',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/service\/mercurio/, ''),
+        secure: false,
       }
     }
   }
