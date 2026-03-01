@@ -88,6 +88,7 @@ export default function Mercurio() {
     return 0;
   });
 
+
   return (
     <BirdLayout>
       <div className="w-full max-w-5xl p-4 pb-20 mx-auto space-y-6">
@@ -167,6 +168,8 @@ export default function Mercurio() {
                 ))}
               </div>
             ) : (
+
+              
               orderedTrends.map((trend, idx) => (
                 <Card key={trend.id} className={`overflow-hidden rounded-[2rem] border bg-white/70 backdrop-blur-sm hover:shadow-2xl transition-all group ${selectedTrend && `${trend.hashtag} ${trend.title} ${trend.topic}`.toLowerCase().includes(selectedTrend) ? "border-indigo-400 shadow-indigo-200/60" : "border-white/50"}`}> 
                   <CardContent className="p-6 space-y-4">
@@ -205,7 +208,7 @@ export default function Mercurio() {
                         <p className="text-xs text-gray-500 mt-1">Top autores: {(trend.bird_signal?.top_authors || []).join(", ")}</p>
                       </div>
                     </div>
-
+               
                     <div className="flex items-center gap-3 pt-2 border-t border-gray-100/50">
                       <Button className="flex-1 h-12 gap-2 font-bold transition-all bg-gray-900 shadow-lg rounded-2xl hover:bg-indigo-600 shadow-indigo-500/10" asChild>
                         <Link to={`/explore?q=${encodeURIComponent(trend.hashtag)}`}>

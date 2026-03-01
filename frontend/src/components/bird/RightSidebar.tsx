@@ -110,6 +110,7 @@ export function RightSidebar() {
                     <MoreHorizontal className="w-4 h-4 text-gray-300 transition-colors group-hover:text-gray-500" />
                   </div>
                   <p className="text-[15px] font-black leading-tight text-gray-800 transition-colors group-hover:text-indigo-600 truncate">
+
                     {trend.hashtag || `#${trend.topic.replace(/\s+/g, "")}`}
                   </p>
                   <p className="mt-1 text-xs font-medium leading-snug text-gray-500 line-clamp-2">

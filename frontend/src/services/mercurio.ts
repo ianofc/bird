@@ -12,6 +12,7 @@ export interface TrendContext {
   momentum?: number;
   confidence?: string;
   source: string;
+
   related_posts_count?: number;
   related_news_count?: number;
 }
@@ -24,6 +25,7 @@ export interface IrisData {
   };
   google_trends: TrendContext[];
   news: Array<{ source: string; title: string; link: string; published?: string }>;
+
 }
 
 const normalizeTrend = (trend: Partial<TrendContext>): TrendContext => ({
@@ -58,4 +60,5 @@ export const MercurioService = {
       return null;
     }
   },
+
 };

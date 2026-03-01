@@ -2,8 +2,8 @@ from collections import Counter
 from datetime import datetime, timezone
 import re
 from typing import Dict, Tuple
-
 from sqlalchemy import text
+
 
 from app.engines.thalamus.filters import ThalamusFilter
 from app.engines.sara.vector_search import SaraEngine
@@ -19,13 +19,16 @@ class RecommendationService:
         self.accumbens = AccumbensRanker()
 
     @staticmethod
+
     def _to_hashtag(text_value: str) -> str:
         clean = re.sub(r"[^\w\s]", "", text_value or "")
+
         words = [w for w in clean.split() if w]
         if not words:
             return "#PentaIA"
         selected = words[:2]
         return "#" + "".join(word.capitalize() for word in selected)
+
 
     @staticmethod
     def _trend_tokens(topic: str, hashtag: str) -> Tuple[str, str]:
@@ -81,14 +84,17 @@ class RecommendationService:
                 repo = ContentRepository(session)
                 raw_objects = await repo.get_candidates()
                 raw_data = [
-                    {
-                        "id": o.id,
-                        "title": o.title,
-                        "tags": o.tags,
-                        "safety": o.safety_label,
-                        "embedding": o.embedding,
-                    }
-                    for o in raw_objects
+
+
+                {
+                    "id": o.id,
+                    "title": o.title,
+                    "tags": o.tags,
+                    "safety": o.safety_label,
+                    "embedding": o.embedding,
+                }
+                for o in raw_objects
+
                 ]
         except Exception:
             raw_data = []
@@ -120,17 +126,21 @@ class RecommendationService:
 
         for idx, (tag, freq) in enumerate(tag_counter.most_common(limit)):
             topic = tag.replace("_", " ").title()
+
             hashtag = self._to_hashtag(topic)
             counters = await self._load_bird_counts(topic, hashtag)
+
             trends.append(
                 {
                     "id": f"trend_{idx + 1}",
                     "topic": topic,
                     "category": "TAS",
+
                     "hashtag": hashtag,
                     "engagement": int(freq * 10),
                     "related_posts_count": counters["related_posts_count"],
                     "related_news_count": counters["related_news_count"],
+
                     "link": f"/explore?q={tag}",
                 }
             )
@@ -138,17 +148,21 @@ class RecommendationService:
         if not trends:
             defaults = ["Mercado Financeiro", "IA Generativa", "Brasil Tecnologia", "Esportes Ao Vivo"]
             for idx, topic in enumerate(defaults[:limit]):
+
                 hashtag = self._to_hashtag(topic)
                 counters = await self._load_bird_counts(topic, hashtag)
+
                 trends.append(
                     {
                         "id": f"fallback_{idx + 1}",
                         "topic": topic,
                         "category": "Fallback",
+
                         "hashtag": hashtag,
                         "engagement": 100 - (idx * 10),
                         "related_posts_count": counters["related_posts_count"],
                         "related_news_count": counters["related_news_count"],
+
                         "link": f"/explore?q={topic.replace(' ', '+')}",
                     }
                 )
