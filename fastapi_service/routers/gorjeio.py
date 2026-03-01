@@ -1,8 +1,3 @@
-
-from gorjeio.api.router import router
-
-__all__ = ["router"]
-=======
 from __future__ import annotations
 
 import base64
@@ -159,4 +154,3 @@ async def message_ws(websocket: WebSocket, recipient_id: str):
                 )
     except WebSocketDisconnect:
         manager.disconnect(recipient_id, websocket)
-
