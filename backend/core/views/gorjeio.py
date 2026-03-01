@@ -3,7 +3,11 @@ from django.contrib.auth.models import User
 from django.db.models import Count, Max
 from django.shortcuts import get_object_or_404, redirect, render
 
-from core.models import Room
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from core.models import Message, Room
 
 
 def _build_room_preview(room: Room, current_user):
@@ -99,3 +103,104 @@ def chat_room(request, room_id):
     # Mantém compatibilidade da URL antiga, levando para a experiência única do Gorjeio
     room = get_object_or_404(request.user.chat_rooms, id=room_id)
     return redirect(f"/messages/?room={room.id}")
+
+
+def _participant_payload(user: User):
+    profile = getattr(user, 'profile', None)
+    full_name = (profile.full_name or '').strip() if profile else ''
+    name = full_name or user.get_full_name() or user.username
+    return {
+        'id': user.id,
+        'username': user.username,
+        'name': name,
+        'handle': f"@{user.username}",
+        'initials': (name[:2] if len(name) >= 2 else user.username[:2]).upper(),
+        'avatar': profile.avatar.url if profile and profile.avatar else None,
+    }
+
+
+def _message_payload(message: Message):
+    return {
+        'id': message.id,
+        'room_id': message.room_id,
+        'sender': _participant_payload(message.sender),
+        'content': message.content or '',
+        'created_at': message.created_at.isoformat(),
+        'is_read': message.is_read,
+    }
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def chat_rooms_api(request):
+    user = request.user
+
+    rooms_qs = (
+        user.chat_rooms
+        .prefetch_related('participants__profile')
+        .annotate(last_msg_time=Max('messages__created_at'))
+        .order_by('-last_msg_time', '-updated_at')
+    )
+
+    payload = []
+    for room in rooms_qs:
+        participants = [_participant_payload(p) for p in room.participants.exclude(id=user.id)]
+        last_message = room.messages.select_related('sender').order_by('-created_at').first()
+
+        if room.type == 'dm' and participants:
+            title = participants[0]['name']
+            subtitle = participants[0]['handle']
+        else:
+            title = room.name or 'Grupo'
+            subtitle = f"{room.participants.count()} membros"
+
+        payload.append({
+            'id': room.id,
+            'type': room.type,
+            'title': title,
+            'subtitle': subtitle,
+            'participants': participants,
+            'last_message': _message_payload(last_message) if last_message else None,
+            'unread_count': room.messages.exclude(sender=user).filter(is_read=False).count(),
+        })
+
+    return Response({'rooms': payload})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def chat_messages_api(request, room_id: int):
+    room = get_object_or_404(request.user.chat_rooms, id=room_id)
+    messages = room.messages.select_related('sender', 'sender__profile').order_by('created_at')[:200]
+    room.messages.exclude(sender=request.user).filter(is_read=False).update(is_read=True)
+
+    return Response({
+        'room_id': room.id,
+        'messages': [_message_payload(m) for m in messages],
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def start_dm_api(request):
+    username = (request.data.get('username') or '').strip()
+    if not username:
+        return Response({'detail': 'username é obrigatório.'}, status=400)
+
+    target_user = get_object_or_404(User, username=username)
+    if target_user == request.user:
+        return Response({'detail': 'Não é possível criar chat com você mesmo.'}, status=400)
+
+    dm_room = (
+        request.user.chat_rooms
+        .filter(type='dm', participants=target_user)
+        .annotate(participant_count=Count('participants'))
+        .filter(participant_count=2)
+        .first()
+    )
+
+    if not dm_room:
+        dm_room = Room.objects.create(type='dm')
+        dm_room.participants.add(request.user, target_user)
+
+    return Response({'room_id': dm_room.id})
