@@ -26,6 +26,11 @@ urlpatterns = [
     path('comment/<int:comment_id>/delete/', interactions.delete_comment, name='delete_comment'),
 
     # Chat
+
+    # Chat API (SPA/React)
+    path('chat/rooms/', gorjeio.chat_rooms_api, name='chat_rooms_api'),
+    path('chat/rooms/<int:room_id>/messages/', gorjeio.chat_messages_api, name='chat_messages_api'),
+    path('chat/start-dm/', gorjeio.start_dm_api, name='chat_start_dm_api'),
     path('start_chat/<str:username>/', gorjeio.start_dm, name='start_chat'),
     path('messages/', gorjeio.chat_index, name='chat_index'),
     path('messages/t/<str:username>/', gorjeio.start_dm, name='start_dm'),
