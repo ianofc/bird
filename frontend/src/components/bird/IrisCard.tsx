@@ -36,7 +36,8 @@ export function IrisCard() {
                 <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
                     <span>{i + 1} • Assunto em {trend.source}</span>
                 </div>
-
+            
+                {/* Clica na hashtag e vai para o Mercurio do Bird */}
                 <Link to={`/mercurio?trend=${encodeURIComponent(trend.hashtag || trend.topic)}`} className="font-bold text-[15px] group-hover:text-primary transition-colors">
                     {trend.hashtag || `#${trend.topic.replace(/\s+/g, "")}`}
 

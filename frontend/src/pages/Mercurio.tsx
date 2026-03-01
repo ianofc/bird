@@ -169,9 +169,9 @@ export default function Mercurio() {
               </div>
             ) : (
 
+              
               orderedTrends.map((trend, idx) => (
                 <Card key={trend.id} className={`overflow-hidden rounded-[2rem] border bg-white/70 backdrop-blur-sm hover:shadow-2xl transition-all group ${selectedTrend && `${trend.hashtag} ${trend.title} ${trend.topic}`.toLowerCase().includes(selectedTrend) ? "border-indigo-400 shadow-indigo-200/60" : "border-white/50"}`}> 
-
                   <CardContent className="p-6 space-y-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2">
@@ -183,6 +183,13 @@ export default function Mercurio() {
                         </Badge>
                       </div>
                       <span className="text-xs font-black text-gray-400">#{idx + 1}</span>
+                    </div>
+
+                    <div>
+                      <h3 className="mb-2 text-2xl font-black leading-tight text-gray-900 transition-colors group-hover:text-indigo-600">
+                        {trend.title || trend.topic}
+                      </h3>
+                      <p className="font-medium leading-relaxed text-gray-600">{trend.summary || trend.topic}</p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -201,7 +208,7 @@ export default function Mercurio() {
                         <p className="text-xs text-gray-500 mt-1">Top autores: {(trend.bird_signal?.top_authors || []).join(", ")}</p>
                       </div>
                     </div>
-
+               
                     <div className="flex items-center gap-3 pt-2 border-t border-gray-100/50">
                       <Button className="flex-1 h-12 gap-2 font-bold transition-all bg-gray-900 shadow-lg rounded-2xl hover:bg-indigo-600 shadow-indigo-500/10" asChild>
                         <Link to={`/explore?q=${encodeURIComponent(trend.hashtag)}`}>

@@ -64,7 +64,13 @@ def _normalize_tas_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "hashtag": hashtag,
                 "volume": trend.get("engagement", trend.get("volume", "N/A")),
                 "link": trend.get("link") or f"https://bird.local/explore?q={hashtag.lstrip('#')}",
-                "bird_signal": _build_bird_signal(topic),
+
+                "bird_signal": {
+                    **_build_bird_signal(topic),
+                    "posts_count": int(trend.get("related_posts_count", 0) or 0),
+                    "comments_count": int(trend.get("related_news_count", 0) or 0),
+                },
+
             }
         )
     return normalized
@@ -89,7 +95,13 @@ def _normalize_iris_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "hashtag": hashtag,
                 "volume": trend.get("momentum", trend.get("volume", "N/A")),
                 "link": trend.get("link", ""),
-                "bird_signal": _build_bird_signal(topic),
+
+                "bird_signal": {
+                    **_build_bird_signal(topic),
+                    "posts_count": int(trend.get("related_posts_count", 0) or 0),
+                    "comments_count": int(trend.get("related_news_count", 0) or 0),
+                },
+
             }
         )
     return normalized
