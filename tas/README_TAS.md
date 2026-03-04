@@ -21,3 +21,5 @@ Gerado em: 2026-01-15 04:49:57
 ## 4. Variáveis de Ambiente (.env)
 - DATABASE_URL: Conexão com Supabase. [cite: 1]
 - API_V1_STR: Prefixo da API. [cite: 1]
+## 5. Evolução de Capacidade sem Perder Velocidade
+- Ver guia: `docs/tas-capacidade-adaptativa.md`

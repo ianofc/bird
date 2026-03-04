@@ -1,7 +1,10 @@
 from collections import Counter
 from datetime import datetime, timezone
+import os
 import re
+import time
 from typing import Dict, Tuple
+import asyncio
 from sqlalchemy import text
 
 
@@ -17,6 +20,13 @@ class RecommendationService:
         self.thalamus = ThalamusFilter()
         self.sara = SaraEngine()
         self.accumbens = AccumbensRanker()
+
+        # Orçamentos por estágio (ms): podem ser ajustados via env sem alterar código.
+        self.budget_ms = {
+            "thalamus": int(os.getenv("TAS_BUDGET_THALAMUS_MS", "15")),
+            "sara": int(os.getenv("TAS_BUDGET_SARA_MS", "45")),
+            "accumbens": int(os.getenv("TAS_BUDGET_ACCUMBENS_MS", "25")),
+        }
 
     @staticmethod
 
@@ -78,7 +88,26 @@ class RecommendationService:
             return {"related_posts_count": 0, "related_news_count": 0}
 
     async def get_feed(self, request):
+        ids, _meta = await self.get_feed_with_meta(request)
+        return ids
+
+    async def _run_stage_with_budget(self, stage_name: str, coro, fallback):
+        start = time.perf_counter()
+        timeout_s = max(self.budget_ms.get(stage_name, 20), 1) / 1000
+        degraded = False
+
+        try:
+            result = await asyncio.wait_for(coro, timeout=timeout_s)
+        except Exception:
+            result = fallback
+            degraded = True
+
+        elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
+        return result, {"elapsed_ms": elapsed_ms, "degraded": degraded}
+
+    async def get_feed_with_meta(self, request):
         raw_data = []
+        degraded_global = False
         try:
             async with async_session() as session:
                 repo = ContentRepository(session)
@@ -98,13 +127,41 @@ class RecommendationService:
                 ]
         except Exception:
             raw_data = []
+            degraded_global = True
 
         if not raw_data:
             raw_data = [{"id": "test_1", "title": "Tendência Global", "tags": ["politics"], "safety": "safe"}]
+            degraded_global = True
 
-        clean = await self.thalamus.apply(request, raw_data)
-        aligned = await self.sara.align(request.user_id, clean)
-        return await self.accumbens.rank(aligned)
+        clean, thalamus_meta = await self._run_stage_with_budget(
+            "thalamus",
+            self.thalamus.apply(request, raw_data),
+            raw_data,
+        )
+
+        aligned, sara_meta = await self._run_stage_with_budget(
+            "sara",
+            self.sara.align(request.user_id, clean),
+            clean,
+        )
+
+        ranked_ids, accumbens_meta = await self._run_stage_with_budget(
+            "accumbens",
+            self.accumbens.rank(aligned),
+            [str(c["id"]) for c in aligned],
+        )
+
+        meta = {
+            "degraded": degraded_global or thalamus_meta["degraded"] or sara_meta["degraded"] or accumbens_meta["degraded"],
+            "stage_metrics": {
+                "thalamus": thalamus_meta,
+                "sara": sara_meta,
+                "accumbens": accumbens_meta,
+            },
+            "budgets_ms": self.budget_ms,
+        }
+
+        return ranked_ids, meta
 
     async def get_trends(self, limit: int = 10):
         raw_objects = []
