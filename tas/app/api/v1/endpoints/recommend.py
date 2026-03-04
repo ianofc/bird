@@ -13,7 +13,11 @@ router = APIRouter()
 
 
 @router.post("/")
-async def get_recommendations(req: RecRequest):
+async def get_recommendations(req: RecRequest, include_meta: bool = Query(default=False)):
+    if include_meta:
+        ids, meta = await recommendation_service.get_feed_with_meta(req)
+        return {"user_id": req.user_id, "items": ids, "meta": meta}
+
     ids = await recommendation_service.get_feed(req)
     return {"user_id": req.user_id, "items": ids}
 
