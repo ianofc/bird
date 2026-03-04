@@ -15,9 +15,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     HOST=0.0.0.0 \
     RELOAD=true
 
+# 1. Cria o usuário ANTES de definir o WORKDIR para evitar problemas de permissão base
+RUN useradd -m pentaia
+
 WORKDIR /app
 
-# Dependências de sistema
+# 2. Dependências de sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
@@ -25,17 +28,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Instala Python deps
+# 3. Instala dependências do Python PRIMEIRO (como root)
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Código
-COPY . .
+# 4. Copia o restante dos arquivos já pertencendo ao usuário 'pentaia'
+COPY --chown=pentaia:pentaia . /app/
 
-# Usuário não-root
-RUN useradd -m pentaia && \
-    chown -R pentaia:pentaia /app
+# 5. Define as permissões finais da pasta (caso o pip tenha deixado lixo como root)
+RUN chown -R pentaia:pentaia /app
+
+# 6. Troca para o usuário não-root só no final
 USER pentaia
 
 EXPOSE 8001
