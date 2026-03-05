@@ -151,10 +151,18 @@ def toggle_save(request, bird_id):
         else:
             messages.success(request, "Item salvo!")
 
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 
 @login_required
 def share_post(request, bird_id):
-    messages.success(request, "Link copiado para a área de transferência! (Simulado)")
+    bird = get_object_or_404(Bird, id=bird_id)
+    share_url = request.build_absolute_uri(reverse('bird_detail', args=[bird.id]))
+    messages.success(request, f"Link da publicação: {share_url}")
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect(request.META.get('HTTP_REFERER', 'home'))

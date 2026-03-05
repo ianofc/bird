@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from core.models import Bird, Connection, Profile, SocialBond
+from core.models import Bird, Connection, Profile, SavedPost, SocialBond
 
 User = get_user_model()
 
@@ -51,6 +51,8 @@ def profile_view(request, username):
     )
     friends_preview = User.objects.filter(id__in=friend_ids).select_related('profile')[:6]
 
+    saved_post_ids = set(SavedPost.objects.filter(user=request.user).values_list('post_id', flat=True))
+
     context = {
         'profile_user': profile_user,
         'profile': profile,
@@ -62,6 +64,7 @@ def profile_view(request, username):
         'relationship': relationship,
         'work_history': profile.work_history.all().order_by('-start_date')[:3],
         'education_history': profile.education_history.all().order_by('-start_date')[:3],
+        'saved_post_ids': saved_post_ids,
     }
     return render(request, 'pages/profile.html', context)
 

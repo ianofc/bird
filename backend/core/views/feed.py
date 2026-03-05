@@ -7,7 +7,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
-from core.models import Bird, Connection
+from core.models import Bird, Connection, SavedPost
 
 
 HASHTAG_RE = re.compile(r"#([\w_]{2,40})", re.UNICODE)
@@ -100,27 +100,36 @@ def _suggested_users(user, limit=5):
         ).values_list('target_id', flat=True)
     )
 
-    suggestions = []
-    for candidate in User.objects.exclude(id__in=following_ids + [user.id])[:30]:
-        try:
-            profile = candidate.profile
-        except Exception:
-            profile = None
-        mutuals = Connection.objects.filter(
+    mutuals_qs = (
+        Connection.objects.filter(
             follower_id__in=following_ids,
-            target=candidate,
             status='active',
-        ).count()
+        )
+        .exclude(target=user)
+        .values('target_id')
+        .annotate(total=Count('id'))
+    )
+    mutuals_map = {item['target_id']: item['total'] for item in mutuals_qs}
+
+    candidates = (
+        User.objects.exclude(id__in=following_ids + [user.id])
+        .select_related('profile')
+        .order_by('-date_joined')[:40]
+    )
+
+    suggestions = []
+    for candidate in candidates:
+        profile = getattr(candidate, 'profile', None)
         suggestions.append(
             {
                 'username': candidate.username,
                 'full_name': getattr(profile, 'full_name', '') if profile else '',
                 'avatar_url': profile.avatar.url if profile and profile.avatar else '',
-                'mutuals': mutuals,
+                'mutuals': mutuals_map.get(candidate.id, 0),
             }
         )
 
-    suggestions.sort(key=lambda item: item['mutuals'], reverse=True)
+    suggestions.sort(key=lambda item: (item['mutuals'], item['username']), reverse=True)
     return suggestions[:limit]
 
 @login_required
@@ -143,6 +152,8 @@ def home_view(request):
 
     recent_public_birds = Bird.objects.filter(visibility='public').only('content').order_by('-created_at')[:150]
 
+    saved_post_ids = set(SavedPost.objects.filter(user=user).values_list('post_id', flat=True))
+
     context = {
         'birds': feed_birds,
         'feed_mode': feed_mode,
@@ -150,5 +161,6 @@ def home_view(request):
         'trending_topics': _extract_trends(recent_public_birds),
         'suggested_users': _suggested_users(user),
         'stories': Bird.objects.filter(post_type='story').select_related('author', 'author__profile').order_by('-created_at')[:15],
+        'saved_post_ids': saved_post_ids,
     }
     return render(request, 'pages/feed.html', context)
