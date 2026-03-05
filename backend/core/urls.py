@@ -23,6 +23,8 @@ urlpatterns = [
     path('profile/<str:username>/follow/', interactions.toggle_follow, name='toggle_follow'),
     path('bird/<int:bird_id>/like/', interactions.toggle_like, name='toggle_like'),
     path('bird/<int:bird_id>/comment/', interactions.add_comment, name='add_comment'),
+    path('bird/<int:bird_id>/save/', interactions.toggle_save, name='toggle_save'),
+    path('bird/<int:bird_id>/share/', interactions.share_post, name='share_post'),
     path('comment/<int:comment_id>/delete/', interactions.delete_comment, name='delete_comment'),
 
     # Chat
@@ -47,5 +49,13 @@ urlpatterns = [
     path('explore/', discovery.explore_view, name='explore'),
     path('network/', network.network_view, name='network_dashboard'),
     path('groups/', groups.groups_index, name='groups'),
+    path('groups/create/', groups.create_group, name='create_group'),
+    path('groups/<int:group_id>/', groups.group_detail, name='group_detail'),
+    path('groups/<int:group_id>/join/', groups.join_group, name='join_group'),
+    path('groups/<int:group_id>/leave/', groups.leave_group, name='leave_group'),
+    path('events/', events.events_list_view, name='events_list'),
+    path('events/<int:event_id>/', events.event_detail_view, name='event_detail'),
+    path('events/<int:event_id>/attend/', events.event_attend, name='event_attend'),
+    path('network/bond/<int:request_id>/<str:action>/', network.manage_bond, name='manage_bond'),
     path('reels/', general.reels_view, name='reels'),
 ]

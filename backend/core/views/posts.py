@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from core.models import Bird
+from core.models import Bird, SavedPost
 
 @login_required
 def create_bird(request):
@@ -28,7 +28,7 @@ def create_bird(request):
             
             # SE FOR HTMX (Ajax): Retorna apenas o card do novo post
             if request.headers.get('HX-Request'):
-                return render(request, 'components/bird_item.html', {'bird': new_bird})
+                return render(request, 'components/bird_item.html', {'bird': new_bird, 'saved_post_ids': set(), 'single_mode': False})
                 
             # Fallback para navegação normal
             messages.success(request, "Bird publicado!")
@@ -53,5 +53,6 @@ def delete_bird(request, bird_id):
 
 @login_required
 def bird_detail(request, bird_id):
-    bird = get_object_or_404(Bird, id=bird_id)
-    return render(request, 'pages/feed.html', {'birds': [bird], 'single_mode': True})
+    bird = get_object_or_404(Bird.objects.select_related('author', 'author__profile'), id=bird_id)
+    saved_post_ids = set(SavedPost.objects.filter(user=request.user).values_list('post_id', flat=True))
+    return render(request, 'pages/feed.html', {'birds': [bird], 'single_mode': True, 'saved_post_ids': saved_post_ids, 'stories': []})
