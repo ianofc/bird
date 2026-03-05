@@ -1,6 +1,7 @@
 from datetime import datetime
 import hashlib
 import logging
+import time
 from typing import Any, Dict, List
 
 import requests
@@ -11,6 +12,13 @@ from core.config import (
     CORS_ALLOW_ORIGINS,
     HEIMDALL_CHECK_URL,
     IRIS_SCAN_URL,
+    MERCURIO_BUNDLE_CACHE_TTL_S,
+    MERCURIO_CIRCUIT_COOLDOWN_S,
+    MERCURIO_CIRCUIT_FAILURE_LIMIT,
+    MERCURIO_TOPIC_ALIASES,
+    MERCURIO_WEIGHT_API,
+    MERCURIO_WEIGHT_BIRD,
+    MERCURIO_WEIGHT_RSS,
     REQUEST_TIMEOUT_DEFAULT,
     SERVICE_NAME,
     SERVICE_PORT,
@@ -20,7 +28,7 @@ from core.config import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | MERCURIO: %(message)s")
 logger = logging.getLogger("MERCURIO_HUB")
 
-app = FastAPI(title="MERCÚRIO - Broadcaster Hub PentaIA", version="1.4.0")
+app = FastAPI(title="MERCÚRIO - Broadcaster Hub PentaIA", version="1.5.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,6 +39,51 @@ app.add_middleware(
 )
 
 
+BUNDLE_CACHE: Dict[str, Any] = {"expires_at": 0.0, "payload": None}
+SOURCE_STATE: Dict[str, Dict[str, float]] = {
+    "tas": {"failures": 0.0, "cooldown_until": 0.0},
+    "iris": {"failures": 0.0, "cooldown_until": 0.0},
+}
+
+
+def _normalize_slug(text: str) -> str:
+    raw = (text or "").lower().strip()
+    ascii_like = raw.encode("ascii", errors="ignore").decode("ascii")
+    slug = "".join(ch if ch.isalnum() or ch in {"-", "_", " ", "#"} else " " for ch in ascii_like)
+    return "-".join(slug.replace("#", "").split())
+
+
+def _build_topic_alias_map() -> Dict[str, str]:
+    aliases: Dict[str, str] = {}
+    for block in [item.strip() for item in MERCURIO_TOPIC_ALIASES.split(";") if item.strip()]:
+        if ":" not in block:
+            continue
+        canonical, variants_raw = block.split(":", 1)
+        canonical_slug = _normalize_slug(canonical)
+        if not canonical_slug:
+            continue
+        aliases[canonical_slug] = canonical_slug
+        for variant in [v.strip() for v in variants_raw.split(",") if v.strip()]:
+            aliases[_normalize_slug(variant)] = canonical_slug
+    return aliases
+
+
+TOPIC_ALIAS_MAP = _build_topic_alias_map()
+
+
+def _canonical_topic_key(trend: Dict[str, Any]) -> str:
+    hashtag = _normalize_slug(str(trend.get("hashtag", "")))
+    topic = _normalize_slug(str(trend.get("topic", "")))
+    key = hashtag or topic
+    if not key:
+        return "unknown-topic"
+    return TOPIC_ALIAS_MAP.get(key, key)
+
+
+def _topic_path_for_tag(hashtag: str) -> str:
+    return f"/mercurio/topico/{_normalize_slug(hashtag)}"
+
+
 def _build_bird_signal(seed_text: str) -> Dict[str, Any]:
     seed = int(hashlib.sha256(seed_text.encode("utf-8")).hexdigest(), 16)
     posts = 20 + (seed % 380)
@@ -38,7 +91,7 @@ def _build_bird_signal(seed_text: str) -> Dict[str, Any]:
     return {
         "posts_count": posts,
         "comments_count": comments,
-        "hotspots": ["/explore", "/feed", "/network"],
+        "hotspots": ["/mercurio", "/mercurio/topico", "/feed"],
         "top_authors": [
             f"@trend_{(seed % 97) + 1}",
             f"@pulse_{(seed % 79) + 1}",
@@ -62,9 +115,13 @@ def _parse_numeric(value: Any) -> float:
     return 0.0
 
 
-def _infer_external_origin(trend: Dict[str, Any]) -> str:
-    source = str(trend.get("source", "")).lower()
-    link = str(trend.get("link", "")).lower()
+def _infer_external_origin(data: Dict[str, Any]) -> str:
+    explicit = str(data.get("origin", "")).upper().strip()
+    if explicit in {"BIRD_NETWORK", "RSS", "API_NEWS"}:
+        return explicit
+
+    source = str(data.get("source", "")).lower()
+    link = str(data.get("link", "")).lower()
     blob = f"{source} {link}"
     if any(token in blob for token in ("rss", "feed", "xml")):
         return "RSS"
@@ -72,15 +129,13 @@ def _infer_external_origin(trend: Dict[str, Any]) -> str:
 
 
 def _weight_for_origin(origin: str) -> int:
-    # Política solicitada:
-    # 3 = viral no BIRD (publicações/comentários da rede)
-    # 2 = RSS
-    # 1 = APIs de notícias/revistas/etc.
     if origin == "BIRD_NETWORK":
-        return 3
+        return MERCURIO_WEIGHT_BIRD
     if origin == "RSS":
-        return 2
-    return 1
+        return MERCURIO_WEIGHT_RSS
+    if origin == "API_NEWS":
+        return MERCURIO_WEIGHT_API
+    return 0
 
 
 def _score_trend(trend: Dict[str, Any]) -> float:
@@ -89,7 +144,6 @@ def _score_trend(trend: Dict[str, Any]) -> float:
     comments = _parse_numeric(signal.get("comments_count", 0))
     volume = _parse_numeric(trend.get("volume", 0))
     weight = _parse_numeric(trend.get("weight", 1))
-    # Peso domina o ranking; engajamento e volume desempata dentro da mesma classe.
     return (weight * 10_000) + (posts * 15) + (comments * 7) + volume
 
 
@@ -99,17 +153,11 @@ def _rank_weighted_trends(trends: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
     dedup: Dict[str, Dict[str, Any]] = {}
     for trend in trends:
-        hashtag_key = str(trend.get("hashtag", "")).strip().lower() or str(trend.get("topic", "")).strip().lower()
-        if hashtag_key not in dedup:
-            dedup[hashtag_key] = trend
-            continue
+        topic_key = _canonical_topic_key(trend)
+        if topic_key not in dedup or _score_trend(trend) > _score_trend(dedup[topic_key]):
+            dedup[topic_key] = trend
 
-        current = dedup[hashtag_key]
-        if _score_trend(trend) > _score_trend(current):
-            dedup[hashtag_key] = trend
-
-    ranked = sorted(dedup.values(), key=_score_trend, reverse=True)
-    return ranked
+    return sorted(dedup.values(), key=_score_trend, reverse=True)
 
 
 def _normalize_tas_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -117,6 +165,9 @@ def _normalize_tas_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     normalized: List[Dict[str, Any]] = []
     for idx, trend in enumerate(trends):
         hashtag = trend.get("hashtag") or f"#trend_{idx + 1}"
+        if not str(hashtag).startswith("#"):
+            hashtag = f"#{hashtag}"
+
         topic = trend.get("topic", "Sem descrição")
         normalized.append(
             {
@@ -130,14 +181,12 @@ def _normalize_tas_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "weight": _weight_for_origin("BIRD_NETWORK"),
                 "hashtag": hashtag,
                 "volume": trend.get("engagement", trend.get("volume", "N/A")),
-                "link": trend.get("link") or f"https://bird.local/explore?q={hashtag.lstrip('#')}",
-
+                "link": trend.get("link") or _topic_path_for_tag(hashtag),
                 "bird_signal": {
                     **_build_bird_signal(topic),
                     "posts_count": int(trend.get("related_posts_count", 0) or 0),
                     "comments_count": int(trend.get("related_news_count", 0) or 0),
                 },
-
             }
         )
     return normalized
@@ -150,6 +199,7 @@ def _normalize_iris_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
         hashtag = trend.get("hashtag") or trend.get("topic") or f"trend_{idx + 1}"
         if not str(hashtag).startswith("#"):
             hashtag = f"#{hashtag}"
+
         topic = trend.get("topic", "Sem descrição")
         origin = _infer_external_origin(trend)
         normalized.append(
@@ -164,14 +214,12 @@ def _normalize_iris_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "weight": _weight_for_origin(origin),
                 "hashtag": hashtag,
                 "volume": trend.get("momentum", trend.get("volume", "N/A")),
-                "link": trend.get("link", ""),
-
+                "link": trend.get("link") or _topic_path_for_tag(hashtag),
                 "bird_signal": {
                     **_build_bird_signal(topic),
                     "posts_count": int(trend.get("related_posts_count", 0) or 0),
                     "comments_count": int(trend.get("related_news_count", 0) or 0),
                 },
-
             }
         )
     return normalized
@@ -185,9 +233,10 @@ def _normalize_news_items(news_payload: Any) -> List[Dict[str, Any]]:
     for item in news_payload:
         if not isinstance(item, dict):
             continue
+
         source = str(item.get("source", "Mercurio"))
         link = str(item.get("link", ""))
-        origin = _infer_external_origin({"source": source, "link": link})
+        origin = _infer_external_origin({"origin": item.get("origin"), "source": source, "link": link})
         normalized.append(
             {
                 "source": source,
@@ -199,7 +248,37 @@ def _normalize_news_items(news_payload: Any) -> List[Dict[str, Any]]:
             }
         )
 
-    return sorted(normalized, key=lambda item: item.get("weight", 1), reverse=True)
+    return sorted(normalized, key=lambda entry: entry.get("weight", 0), reverse=True)
+
+
+def _is_circuit_open(source_name: str) -> bool:
+    state = SOURCE_STATE[source_name]
+    return time.time() < state.get("cooldown_until", 0.0)
+
+
+def _mark_source_success(source_name: str) -> None:
+    SOURCE_STATE[source_name]["failures"] = 0
+    SOURCE_STATE[source_name]["cooldown_until"] = 0
+
+
+def _mark_source_failure(source_name: str) -> None:
+    SOURCE_STATE[source_name]["failures"] = SOURCE_STATE[source_name].get("failures", 0) + 1
+    if SOURCE_STATE[source_name]["failures"] >= MERCURIO_CIRCUIT_FAILURE_LIMIT:
+        SOURCE_STATE[source_name]["cooldown_until"] = time.time() + MERCURIO_CIRCUIT_COOLDOWN_S
+        logger.warning("Circuit breaker ativado para %s por %ss", source_name, MERCURIO_CIRCUIT_COOLDOWN_S)
+
+
+def _get_cached_bundle() -> Dict[str, Any] | None:
+    if BUNDLE_CACHE["payload"] and time.time() < BUNDLE_CACHE["expires_at"]:
+        payload = dict(BUNDLE_CACHE["payload"])
+        payload["metadata"] = {**payload.get("metadata", {}), "cache_hit": True}
+        return payload
+    return None
+
+
+def _store_cached_bundle(payload: Dict[str, Any]) -> None:
+    BUNDLE_CACHE["payload"] = payload
+    BUNDLE_CACHE["expires_at"] = time.time() + MERCURIO_BUNDLE_CACHE_TTL_S
 
 
 @app.get("/")
@@ -217,6 +296,10 @@ async def get_integrated_bundle(request: Request):
     client_ip = request.client.host if request.client else "unknown"
     logger.info("Gerando bundle para IP %s", client_ip)
 
+    cached = _get_cached_bundle()
+    if cached:
+        return cached
+
     security_data = {"status": "PROTECTED", "shield_level": "OPTIMAL", "client_ip": client_ip}
     try:
         sec_res = requests.get(HEIMDALL_CHECK_URL, params={"ip": client_ip}, timeout=REQUEST_TIMEOUT_DEFAULT)
@@ -230,25 +313,39 @@ async def get_integrated_bundle(request: Request):
     news: List[Dict[str, Any]] = []
     sources: List[str] = []
 
-    try:
-        tas_res = requests.get(TAS_TRENDS_URL, timeout=REQUEST_TIMEOUT_DEFAULT)
-        if tas_res.ok:
-            bird_trends = _normalize_tas_trends(tas_res.json())
-            if bird_trends:
-                sources.append("BIRD_NETWORK")
-    except requests.RequestException as exc:
-        logger.info("TAS indisponível: %s", exc)
+    if not _is_circuit_open("tas"):
+        try:
+            tas_res = requests.get(TAS_TRENDS_URL, timeout=REQUEST_TIMEOUT_DEFAULT)
+            if tas_res.ok:
+                bird_trends = _normalize_tas_trends(tas_res.json())
+                if bird_trends:
+                    sources.append("BIRD_NETWORK")
+                _mark_source_success("tas")
+            else:
+                _mark_source_failure("tas")
+        except requests.RequestException as exc:
+            logger.info("TAS indisponível: %s", exc)
+            _mark_source_failure("tas")
+    else:
+        logger.info("TAS em cooldown de circuit breaker")
 
-    try:
-        iris_res = requests.get(IRIS_SCAN_URL, timeout=REQUEST_TIMEOUT_DEFAULT * 2)
-        if iris_res.ok:
-            iris_payload = iris_res.json()
-            external_trends = _normalize_iris_trends(iris_payload)
-            news = _normalize_news_items(iris_payload.get("news", []))
-            if external_trends or news:
-                sources.append("EXTERNAL_FEEDS")
-    except requests.RequestException as exc:
-        logger.error("IRIS indisponível: %s", exc)
+    if not _is_circuit_open("iris"):
+        try:
+            iris_res = requests.get(IRIS_SCAN_URL, timeout=REQUEST_TIMEOUT_DEFAULT * 2)
+            if iris_res.ok:
+                iris_payload = iris_res.json()
+                external_trends = _normalize_iris_trends(iris_payload)
+                news = _normalize_news_items(iris_payload.get("news", []))
+                if external_trends or news:
+                    sources.append("EXTERNAL_FEEDS")
+                _mark_source_success("iris")
+            else:
+                _mark_source_failure("iris")
+        except requests.RequestException as exc:
+            logger.error("IRIS indisponível: %s", exc)
+            _mark_source_failure("iris")
+    else:
+        logger.info("IRIS em cooldown de circuit breaker")
 
     final_trends = _rank_weighted_trends([*bird_trends, *external_trends])
 
@@ -265,7 +362,7 @@ async def get_integrated_bundle(request: Request):
                 "weight": 0,
                 "hashtag": "#Sincronizando",
                 "volume": "N/A",
-                "link": "",
+                "link": "/mercurio",
                 "bird_signal": _build_bird_signal("sincronizando"),
             }
         ]
@@ -273,10 +370,9 @@ async def get_integrated_bundle(request: Request):
         sources = ["FALLBACK"]
 
     events = [{"id": "e1", "category": "PENTAIA", "title": "Protocolo Mercúrio Ativo"}]
-
     primary_source = sources[0] if sources else "NONE"
 
-    return {
+    payload = {
         "trends": final_trends,
         "security": security_data,
         "events": events,
@@ -285,15 +381,20 @@ async def get_integrated_bundle(request: Request):
             "source": primary_source,
             "sources": sources,
             "weight_policy": {
-                "BIRD_NETWORK": 3,
-                "RSS": 2,
-                "API_NEWS": 1,
+                "BIRD_NETWORK": MERCURIO_WEIGHT_BIRD,
+                "RSS": MERCURIO_WEIGHT_RSS,
+                "API_NEWS": MERCURIO_WEIGHT_API,
             },
+            "cache_ttl_s": MERCURIO_BUNDLE_CACHE_TTL_S,
+            "cache_hit": False,
             "evolution_level": 2,
             "node": f"{SERVICE_NAME}_hub_{SERVICE_PORT}",
             "generated_at": datetime.utcnow().isoformat(),
         },
     }
+
+    _store_cached_bundle(payload)
+    return payload
 
 
 if __name__ == "__main__":

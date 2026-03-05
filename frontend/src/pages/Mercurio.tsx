@@ -15,6 +15,8 @@ interface Trend {
   hashtag: string;
   volume: string | number;
   link: string;
+  origin?: string;
+  weight?: number;
 }
 
 interface NewsItem {
@@ -22,11 +24,18 @@ interface NewsItem {
   title: string;
   link: string;
   published: string;
+  origin?: string;
+  weight?: number;
 }
 
 interface MercurioData {
   trends: Trend[];
   news: NewsItem[];
+  metadata?: {
+    source?: string;
+    sources?: string[];
+    weight_policy?: Record<string, number>;
+  };
 }
 
 const categoryStyle: Record<string, string> = {
@@ -50,6 +59,28 @@ const normalizeSlug = (text: string) =>
 const tagToSlug = (tag: string) => normalizeSlug(tag.replace("#", ""));
 const getTrendSlug = (trend: Trend) => `${normalizeSlug(trend.title || trend.topic)}-${trend.id}`;
 const getNewsSlug = (item: NewsItem, index: number) => `${normalizeSlug(item.title || `boletim-${index + 1}`)}-${index}`;
+
+function originLabel(origin?: string) {
+  if (origin === "BIRD_NETWORK") return "Bird";
+  if (origin === "RSS") return "RSS";
+  if (origin === "API_NEWS") return "API";
+  return "Mercúrio";
+}
+
+function originClass(origin?: string) {
+  if (origin === "BIRD_NETWORK") return "bg-[#2442d5]/15 text-[#2442d5]";
+  if (origin === "RSS") return "bg-[#0ea64b]/15 text-[#0ea64b]";
+  if (origin === "API_NEWS") return "bg-[#ff6a00]/15 text-[#ff6a00]";
+  return "bg-slate-200 text-slate-700";
+}
+
+function OriginPill({ origin, weight }: { origin?: string; weight?: number }) {
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-black ${originClass(origin)}`}>
+      {originLabel(origin)} {typeof weight === "number" ? `• peso ${weight}` : ""}
+    </span>
+  );
+}
 
 function GlassCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
@@ -166,6 +197,11 @@ export default function Mercurio() {
                 <h1 className="mt-2 text-3xl sm:text-4xl font-black leading-tight text-[#112155]">{activeTrend.title || activeTrend.topic}</h1>
                 <p className="mt-4 text-base text-slate-700 leading-relaxed">{activeTrend.summary}</p>
 
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <OriginPill origin={activeTrend.origin} weight={activeTrend.weight} />
+                  <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-black bg-slate-100 text-slate-700">Fonte: {activeTrend.source || "Mercúrio"}</span>
+                </div>
+
                 <div className="mt-5 rounded-2xl border border-white/70 bg-gradient-to-br from-[#2442d5]/10 to-[#5ec8ff]/15 p-4">
                   <p className="text-sm font-semibold text-[#18317d]">Conteúdo proprietário Mercúrio</p>
                   <p className="text-sm text-slate-700 mt-1">Matéria editorial consolidada no núcleo Mercúrio, com linguagem própria da redação BIRD.</p>
@@ -189,6 +225,7 @@ export default function Mercurio() {
                     .slice(0, 6)
                     .map((t) => (
                       <Link key={t.id} to={`${basePath}/noticia/${getTrendSlug(t)}`} className="rounded-2xl border border-white/70 bg-white/60 p-3 hover:bg-white/85 transition-colors">
+                        <div className="flex items-center gap-2 mb-1"><OriginPill origin={t.origin} weight={t.weight} /></div>
                         <p className={`text-[11px] font-black uppercase ${categoryStyle[t.category] || "text-[#e42313]"}`}>{t.category || "Mercúrio"}</p>
                         <p className="mt-1 text-sm font-bold text-slate-900 leading-snug">{t.title || t.topic}</p>
                       </Link>
@@ -214,6 +251,7 @@ export default function Mercurio() {
                 </Button>
                 <p className="text-xs font-black tracking-wide uppercase text-[#2442d5]">Boletim Mercúrio</p>
                 <h1 className="mt-2 text-3xl sm:text-4xl font-black leading-tight text-[#112155]">{activeBulletin.title}</h1>
+                <div className="mt-3 flex items-center gap-2"><OriginPill origin={activeBulletin.origin} weight={activeBulletin.weight} /></div>
                 <p className="mt-2 text-sm text-slate-500">Origem editorial: {activeBulletin.source || "Mercúrio"}</p>
                 <p className="mt-4 text-base text-slate-700 leading-relaxed">Conteúdo próprio do Mercúrio publicado em boletim interno com curadoria editorial e distribuição no ecossistema BIRD.</p>
               </CardContent>
@@ -247,6 +285,7 @@ export default function Mercurio() {
                 topicTrends.map((item) => (
                   <GlassCard key={item.id} className="rounded-2xl">
                     <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-1"><OriginPill origin={item.origin} weight={item.weight} /></div>
                       <p className={`text-[11px] font-black uppercase ${categoryStyle[item.category] || "text-[#e42313]"}`}>{item.category || "Mercúrio"}</p>
                       <h2 className="mt-1 text-base font-bold text-slate-900 leading-tight">{item.title || item.topic}</h2>
                       <p className="mt-2 text-sm text-slate-600 line-clamp-3">{item.summary}</p>
@@ -306,6 +345,10 @@ export default function Mercurio() {
                 </Button>
               </div>
 
+              <div className="mt-3 text-xs text-slate-500">
+                Política de peso: Bird {data?.metadata?.weight_policy?.BIRD_NETWORK ?? 3} • RSS {data?.metadata?.weight_policy?.RSS ?? 2} • API {data?.metadata?.weight_policy?.API_NEWS ?? 1}
+              </div>
+
               <nav className="mt-4 flex flex-wrap gap-2">
                 {sublinks.map((link) => (
                   <a key={link.anchor} href={`#${link.anchor}`} className="rounded-full px-3 py-1.5 text-xs font-bold bg-[#2442d5]/10 text-[#2442d5] hover:bg-[#2442d5]/20">
@@ -323,7 +366,8 @@ export default function Mercurio() {
                 <h2 className="mt-2 text-3xl font-black text-[#112155] leading-tight">{hero?.title || "Panorama estratégico do dia no ecossistema BIRD"}</h2>
                 <p className="mt-3 text-slate-700">{hero?.summary || "Acompanhe a cobertura integral do Mercúrio com análise própria e contexto social em tempo real."}</p>
                 {hero && (
-                  <div className="mt-5 flex flex-wrap gap-2">
+                  <div className="mt-5 flex flex-wrap gap-2 items-center">
+                    <OriginPill origin={hero.origin} weight={hero.weight} />
                     <Link to={`${basePath}/noticia/${getTrendSlug(hero)}`} className="rounded-xl bg-[#e42313] px-4 py-2 text-sm text-white font-bold hover:bg-[#cc1f11]">
                       Ler matéria completa
                     </Link>
@@ -339,6 +383,7 @@ export default function Mercurio() {
               {sideHighlights.map((item) => (
                 <GlassCard key={item.id} className="rounded-2xl">
                   <CardContent className="p-4">
+                    <div className="mb-1"><OriginPill origin={item.origin} weight={item.weight} /></div>
                     <p className={`text-xs font-black uppercase ${categoryStyle[item.category] || "text-[#e42313]"}`}>{item.category || "Mercúrio"}</p>
                     <h3 className="mt-1 text-base font-bold text-slate-900 leading-tight">{item.title || item.topic}</h3>
                     <div className="mt-3 flex gap-2">
@@ -368,6 +413,7 @@ export default function Mercurio() {
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {trends.slice(0, 8).map((item) => (
                     <Link key={item.id} to={`${basePath}/noticia/${getTrendSlug(item)}`} className="rounded-2xl border border-white/60 bg-white/60 p-3 hover:bg-white/80">
+                      <div className="mb-1"><OriginPill origin={item.origin} weight={item.weight} /></div>
                       <p className={`text-[11px] font-black uppercase ${categoryStyle[item.category] || "text-[#e42313]"}`}>{item.category || "Mercúrio"}</p>
                       <p className="text-sm font-bold text-slate-900 mt-1 line-clamp-2">{item.title || item.topic}</p>
                     </Link>
@@ -382,6 +428,7 @@ export default function Mercurio() {
                 <div className="mt-3 space-y-3">
                   {news.slice(0, 8).map((item, index) => (
                     <Link key={`${item.title}-${index}`} to={`${basePath}/boletim/${getNewsSlug(item, index)}`} className="block border-b border-slate-200/70 pb-2 last:border-0 hover:opacity-80">
+                      <div className="mb-1"><OriginPill origin={item.origin} weight={item.weight} /></div>
                       <p className="text-[11px] font-bold text-slate-500">Mercúrio • {item.source || "Radar"}</p>
                       <p className="text-sm font-semibold text-slate-900">{item.title}</p>
                     </Link>
@@ -418,6 +465,7 @@ function EditoriaColumn({
         <div className="space-y-3">
           {items.map((item) => (
             <article key={item.id} className="rounded-2xl bg-white/55 border border-white/70 p-3">
+              <div className="mb-1"><OriginPill origin={item.origin} weight={item.weight} /></div>
               <p className={`text-[11px] font-black uppercase ${color}`}>{item.category || title}</p>
               <h4 className="mt-1 text-sm font-bold text-slate-900 leading-tight">{item.title || item.topic}</h4>
               <div className="mt-2 flex gap-2 text-xs font-bold">
