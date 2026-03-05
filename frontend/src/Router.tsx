@@ -14,7 +14,6 @@ import PostView from "./pages/PostView";
 import ThalamusAdmin from "./pages/ThalamusAdmin";
 import Mercurio from "./pages/Mercurio"; 
 import Feed from "./pages/Feed";
-import News from "./pages/News";
 
 const router = createBrowserRouter([
   {
@@ -86,12 +85,12 @@ const router = createBrowserRouter([
    element: <Mercurio />
   },
   {
-    path: "/news", // 
+    path: "/news",
     element: <Mercurio />,
   },
   {
-   path: "/news/*",
-   element: <News />
+    path: "/news/*",
+    element: <Mercurio />,
   },
   {
     path: "*",
