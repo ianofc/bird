@@ -171,6 +171,27 @@ export default function Mercurio() {
                 </div>
               </CardContent>
             </GlassCard>
+
+            <GlassCard className="rounded-3xl">
+              <CardContent className="p-5">
+                <h2 className="text-sm font-black uppercase text-[#2442d5] tracking-wide">Mais da cobertura Mercúrio</h2>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {trends
+                    .filter((t) => t.id !== activeTrend.id)
+                    .slice(0, 6)
+                    .map((t) => (
+                      <Link
+                        key={t.id}
+                        to={`${basePath}/noticia/${getTrendSlug(t)}`}
+                        className="rounded-2xl border border-white/70 bg-white/60 p-3 hover:bg-white/85 transition-colors"
+                      >
+                        <p className={`text-[11px] font-black uppercase ${categoryStyle[t.category] || "text-[#e42313]"}`}>{t.category || "Mercúrio"}</p>
+                        <p className="mt-1 text-sm font-bold text-slate-900 leading-snug">{t.title || t.topic}</p>
+                      </Link>
+                    ))}
+                </div>
+              </CardContent>
+            </GlassCard>
           </div>
         </div>
       </BirdLayout>
@@ -372,7 +393,7 @@ function EditoriaColumn({
   getTagHref: (tag: string) => string;
 }) {
   return (
-    <GlassCard className="rounded-3xl">
+    <GlassCard className="rounded-3xl" >
       <CardContent className="p-4" id={id}>
         <h3 className={`text-lg font-black mb-3 ${color}`}>{title}</h3>
         <div className="space-y-3">
