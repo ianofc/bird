@@ -102,12 +102,21 @@ def toggle_follow(request, username):
     if Connection:
         conn = Connection.objects.filter(follower=request.user, target=target_user).first()
 
-        if conn:
+        if conn and conn.status == 'active':
             conn.delete()
+            messages.info(request, f"Você deixou de seguir @{target_user.username}.")
         else:
-            Connection.objects.create(follower=request.user, target=target_user, status='active')
+            if conn:
+                conn.status = 'active'
+                conn.save(update_fields=['status'])
+            else:
+                Connection.objects.create(follower=request.user, target=target_user, status='active')
             _create_notification(target_user, f"@{request.user.username} começou a seguir você.")
+            messages.success(request, f"Agora você segue @{target_user.username}.")
 
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect('profile_detail', username=username)
 
 
