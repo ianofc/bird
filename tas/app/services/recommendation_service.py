@@ -23,10 +23,19 @@ class RecommendationService:
 
         # Orçamentos por estágio (ms): podem ser ajustados via env sem alterar código.
         self.budget_ms = {
-            "thalamus": int(os.getenv("TAS_BUDGET_THALAMUS_MS", "15")),
-            "sara": int(os.getenv("TAS_BUDGET_SARA_MS", "45")),
-            "accumbens": int(os.getenv("TAS_BUDGET_ACCUMBENS_MS", "25")),
+            "thalamus": self._budget_from_env("TAS_BUDGET_THALAMUS_MS", 15),
+            "sara": self._budget_from_env("TAS_BUDGET_SARA_MS", 45),
+            "accumbens": self._budget_from_env("TAS_BUDGET_ACCUMBENS_MS", 25),
         }
+
+    @staticmethod
+    def _budget_from_env(env_name: str, default: int) -> int:
+        raw_value = os.getenv(env_name)
+        try:
+            parsed = int(raw_value) if raw_value is not None else default
+        except (TypeError, ValueError):
+            return default
+        return max(parsed, 1)
 
     @staticmethod
 
@@ -55,24 +64,28 @@ class RecommendationService:
         if not topic_token and not hashtag_token:
             return {"related_posts_count": 0, "related_news_count": 0}
 
-        like_terms = []
+        post_like_terms = []
+        comment_like_terms = []
         params: Dict[str, str] = {}
         if topic_token:
-            like_terms.append("lower(content) LIKE lower(:topic_pattern)")
+            post_like_terms.append("lower(b.content) LIKE lower(:topic_pattern)")
+            comment_like_terms.append("lower(c.content) LIKE lower(:topic_pattern)")
             params["topic_pattern"] = f"%{topic_token}%"
         if hashtag_token:
-            like_terms.append("lower(content) LIKE lower(:hashtag_pattern)")
+            post_like_terms.append("lower(b.content) LIKE lower(:hashtag_pattern)")
+            comment_like_terms.append("lower(c.content) LIKE lower(:hashtag_pattern)")
             params["hashtag_pattern"] = f"%#{hashtag_token}%"
 
-        where_clause = " OR ".join(like_terms) if like_terms else "1=0"
+        post_where_clause = " OR ".join(post_like_terms) if post_like_terms else "1=0"
+        comment_where_clause = " OR ".join(comment_like_terms) if comment_like_terms else "1=0"
 
-        posts_sql = text(f"SELECT COUNT(*) FROM core_bird WHERE {where_clause}")
+        posts_sql = text(f"SELECT COUNT(*) FROM core_bird b WHERE {post_where_clause}")
         comments_sql = text(
             f"""
             SELECT COUNT(*)
             FROM core_comment c
             JOIN core_bird b ON b.id = c.bird_id
-            WHERE ({where_clause}) OR ({where_clause.replace('content', 'c.content')})
+            WHERE ({post_where_clause}) OR ({comment_where_clause})
             """
         )
 
@@ -181,12 +194,21 @@ class RecommendationService:
                 if tag:
                     tag_counter[str(tag).strip().lower()] += 1
 
-        for idx, (tag, freq) in enumerate(tag_counter.most_common(limit)):
+        top_tags = tag_counter.most_common(limit)
+        prepared_trends = []
+        for idx, (tag, freq) in enumerate(top_tags):
             topic = tag.replace("_", " ").title()
-
             hashtag = self._to_hashtag(topic)
-            counters = await self._load_bird_counts(topic, hashtag)
+            prepared_trends.append((idx, tag, topic, hashtag, freq))
 
+        if prepared_trends:
+            counters_by_trend = await asyncio.gather(
+                *(self._load_bird_counts(topic, hashtag) for _, _, topic, hashtag, _ in prepared_trends)
+            )
+        else:
+            counters_by_trend = []
+
+        for (idx, tag, topic, hashtag, freq), counters in zip(prepared_trends, counters_by_trend):
             trends.append(
                 {
                     "id": f"trend_{idx + 1}",
