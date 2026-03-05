@@ -115,6 +115,49 @@ def _parse_numeric(value: Any) -> float:
     return 0.0
 
 
+def _extract_media_urls(payload: Dict[str, Any]) -> Dict[str, Any]:
+    media_urls: List[str] = []
+
+    direct_keys = [
+        "image", "image_url", "thumbnail", "thumb", "photo", "photo_url",
+        "cover", "cover_image", "video", "video_url", "media_url",
+    ]
+    list_keys = ["media", "media_urls", "images", "videos", "gallery", "attachments"]
+
+    for key in direct_keys:
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            media_urls.append(value.strip())
+
+    for key in list_keys:
+        value = payload.get(key)
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, str) and item.strip():
+                    media_urls.append(item.strip())
+                elif isinstance(item, dict):
+                    for dict_key in ("url", "src", "href", "image", "video"):
+                        dict_value = item.get(dict_key)
+                        if isinstance(dict_value, str) and dict_value.strip():
+                            media_urls.append(dict_value.strip())
+
+    dedup: List[str] = []
+    seen = set()
+    for url in media_urls:
+        if url not in seen:
+            seen.add(url)
+            dedup.append(url)
+
+    video_url = next((url for url in dedup if any(token in url.lower() for token in ("youtube.com", "youtu.be", "vimeo.com", ".mp4", ".webm", ".m3u8"))), "")
+    image_url = next((url for url in dedup if any(token in url.lower() for token in (".jpg", ".jpeg", ".png", ".webp", ".gif", "image", "img"))), "")
+
+    return {
+        "media": dedup,
+        "video_url": video_url,
+        "image_url": image_url,
+    }
+
+
 def _infer_external_origin(data: Dict[str, Any]) -> str:
     explicit = str(data.get("origin", "")).upper().strip()
     if explicit in {"BIRD_NETWORK", "RSS", "API_NEWS"}:
@@ -169,6 +212,7 @@ def _normalize_tas_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
             hashtag = f"#{hashtag}"
 
         topic = trend.get("topic", "Sem descrição")
+        media = _extract_media_urls(trend)
         normalized.append(
             {
                 "id": trend.get("id", f"tas_{idx + 1}"),
@@ -182,6 +226,9 @@ def _normalize_tas_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "hashtag": hashtag,
                 "volume": trend.get("engagement", trend.get("volume", "N/A")),
                 "link": trend.get("link") or _topic_path_for_tag(hashtag),
+                "media": media["media"],
+                "image_url": media["image_url"],
+                "video_url": media["video_url"],
                 "bird_signal": {
                     **_build_bird_signal(topic),
                     "posts_count": int(trend.get("related_posts_count", 0) or 0),
@@ -202,6 +249,7 @@ def _normalize_iris_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
 
         topic = trend.get("topic", "Sem descrição")
         origin = _infer_external_origin(trend)
+        media = _extract_media_urls(trend)
         normalized.append(
             {
                 "id": trend.get("id", f"iris_{idx + 1}"),
@@ -215,6 +263,9 @@ def _normalize_iris_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "hashtag": hashtag,
                 "volume": trend.get("momentum", trend.get("volume", "N/A")),
                 "link": trend.get("link") or _topic_path_for_tag(hashtag),
+                "media": media["media"],
+                "image_url": media["image_url"],
+                "video_url": media["video_url"],
                 "bird_signal": {
                     **_build_bird_signal(topic),
                     "posts_count": int(trend.get("related_posts_count", 0) or 0),
@@ -237,6 +288,7 @@ def _normalize_news_items(news_payload: Any) -> List[Dict[str, Any]]:
         source = str(item.get("source", "Mercurio"))
         link = str(item.get("link", ""))
         origin = _infer_external_origin({"origin": item.get("origin"), "source": source, "link": link})
+        media = _extract_media_urls(item)
         normalized.append(
             {
                 "source": source,
@@ -245,6 +297,9 @@ def _normalize_news_items(news_payload: Any) -> List[Dict[str, Any]]:
                 "published": item.get("published", "N/A"),
                 "origin": origin,
                 "weight": _weight_for_origin(origin),
+                "media": media["media"],
+                "image_url": media["image_url"],
+                "video_url": media["video_url"],
             }
         )
 

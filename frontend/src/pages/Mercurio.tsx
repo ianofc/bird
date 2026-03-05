@@ -17,6 +17,9 @@ interface Trend {
   link: string;
   origin?: string;
   weight?: number;
+  media?: string[];
+  image_url?: string;
+  video_url?: string;
 }
 
 interface NewsItem {
@@ -26,6 +29,9 @@ interface NewsItem {
   published: string;
   origin?: string;
   weight?: number;
+  media?: string[];
+  image_url?: string;
+  video_url?: string;
 }
 
 interface MercurioData {
@@ -59,6 +65,54 @@ const normalizeSlug = (text: string) =>
 const tagToSlug = (tag: string) => normalizeSlug(tag.replace("#", ""));
 const getTrendSlug = (trend: Trend) => `${normalizeSlug(trend.title || trend.topic)}-${trend.id}`;
 const getNewsSlug = (item: NewsItem, index: number) => `${normalizeSlug(item.title || `boletim-${index + 1}`)}-${index}`;
+
+
+const toYouTubeEmbed = (url: string) => {
+  if (!url) return "";
+  if (url.includes("youtube.com/embed/")) return url;
+  const watch = url.match(/[?&]v=([^&]+)/);
+  if (watch) return `https://www.youtube.com/embed/${watch[1]}`;
+  const short = url.match(/youtu\.be\/([^?&]+)/);
+  if (short) return `https://www.youtube.com/embed/${short[1]}`;
+  return "";
+};
+
+const collectTrendMedia = (trend: Trend) => {
+  const pool = [
+    ...(trend.media || []),
+    trend.video_url || "",
+    trend.image_url || "",
+  ].filter(Boolean) as string[];
+
+  const dedup = Array.from(new Set(pool));
+  const video = dedup.find((url) => toYouTubeEmbed(url) || /\.(mp4|webm|m3u8)(\?|$)/i.test(url)) || "";
+  const image = dedup.find((url) => /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(url) || /image|img/i.test(url)) || "";
+  return { dedup, video, image };
+};
+
+const buildArticleParagraphs = (summary: string, topic: string) => {
+  const clean = (summary || "").trim();
+  if (!clean) {
+    return [
+      `A redação Mercúrio acompanha os desdobramentos de ${topic} com monitoramento contínuo de sinais da rede BIRD.`,
+      "A atualização desta cobertura combina contexto editorial, repercussão social e análise de impacto em tempo real.",
+      "Novas informações serão incorporadas conforme a evolução dos fatos e a validação dos dados por nossas camadas de curadoria.",
+    ];
+  }
+
+  const parts = clean
+    .split(/(?<=[.!?])\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 3) return parts;
+
+  return [
+    clean,
+    `Segundo o monitoramento do Mercúrio, o tema ${topic} segue em alta e concentra grande volume de interações qualificadas.`,
+    "A equipe editorial mantém a cobertura em regime de atualização para consolidar contexto, origem e confiabilidade das informações.",
+  ];
+};
 
 function originLabel(origin?: string) {
   if (origin === "BIRD_NETWORK") return "Bird";
@@ -183,59 +237,122 @@ export default function Mercurio() {
   if (activeBulletinSlug && !activeBulletin) return <NotFoundContent title="Boletim não encontrado" basePath={basePath} />;
 
   if (activeTrend) {
+    const paragraphs = buildArticleParagraphs(activeTrend.summary, activeTrend.topic || activeTrend.title);
+    const relatedArticles = trends.filter((t) => t.id !== activeTrend.id).slice(0, 6);
+
     return (
       <BirdLayout>
         <div className="min-h-screen bg-transparent px-4 py-6 pb-24">
-          <div className="mx-auto max-w-5xl space-y-5">
-            <GlassCard className="rounded-3xl">
-              <CardContent className="p-5 sm:p-7">
-                <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 rounded-full text-[#2442d5] hover:bg-[#2442d5]/10">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
-                </Button>
+          <article className="mx-auto max-w-5xl">
+            <div className="rounded-3xl border border-white/70 bg-white/70 backdrop-blur-xl shadow-[0_10px_35px_rgba(80,93,255,0.12)] p-5 sm:p-8">
+              <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 rounded-full text-[#2442d5] hover:bg-[#2442d5]/10">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+              </Button>
 
-                <p className={`text-xs font-black tracking-wide uppercase ${categoryStyle[activeTrend.category] || "text-[#e42313]"}`}>
-                  Redação Mercúrio • {activeTrend.category || "Destaque"}
+              <p className={`text-xs font-black tracking-wide uppercase ${categoryStyle[activeTrend.category] || "text-[#e42313]"}`}>
+                Redação Mercúrio • {activeTrend.category || "Geral"}
+              </p>
+
+              <h1 className="mt-2 text-3xl sm:text-5xl font-black leading-[1.1] text-[#112155]">
+                {activeTrend.title || activeTrend.topic}
+              </h1>
+
+              <p className="mt-4 text-lg text-slate-700 leading-relaxed">
+                {paragraphs[0]}
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <OriginPill origin={activeTrend.origin} weight={activeTrend.weight} />
+                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-black bg-slate-100 text-slate-700">
+                  Fonte: {activeTrend.source || "Mercúrio"}
+                </span>
+              </div>
+
+              <div className="mt-6 border-y border-slate-200 py-4">
+                {(() => {
+                  const media = collectTrendMedia(activeTrend);
+                  const embed = toYouTubeEmbed(media.video);
+
+                  if (embed) {
+                    return (
+                      <iframe
+                        src={embed}
+                        title={activeTrend.title || activeTrend.topic}
+                        className="aspect-video w-full rounded-xl"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    );
+                  }
+
+                  if (media.video) {
+                    return (
+                      <video className="aspect-video w-full rounded-xl bg-black" controls preload="metadata">
+                        <source src={media.video} />
+                      </video>
+                    );
+                  }
+
+                  if (media.image) {
+                    return <img src={media.image} alt={activeTrend.title || activeTrend.topic} className="aspect-video w-full rounded-xl object-cover" />;
+                  }
+
+                  return (
+                    <div className="aspect-video w-full rounded-xl bg-slate-200/70 flex items-center justify-center text-slate-500 font-bold">
+                      Mídia da cobertura Mercúrio
+                    </div>
+                  );
+                })()}
+                <p className="mt-2 text-xs text-slate-500">Atualização visual da redação • contexto de {activeTrend.topic || activeTrend.title}</p>
+              </div>
+
+              <div className="mt-6 space-y-4 text-[17px] leading-8 text-slate-800">
+                {paragraphs.slice(1).map((paragraph, idx) => (
+                  <p key={idx}>{paragraph}</p>
+                ))}
+              </div>
+
+              <div className="mt-7 rounded-2xl border border-white/70 bg-gradient-to-br from-[#2442d5]/10 to-[#5ec8ff]/15 p-4">
+                <p className="text-sm font-semibold text-[#18317d]">Conteúdo proprietário Mercúrio</p>
+                <p className="text-sm text-slate-700 mt-1">
+                  Esta matéria segue o padrão editorial Mercúrio: sinal social + contexto verificado + priorização por relevância na rede BIRD.
                 </p>
-                <h1 className="mt-2 text-3xl sm:text-4xl font-black leading-tight text-[#112155]">{activeTrend.title || activeTrend.topic}</h1>
-                <p className="mt-4 text-base text-slate-700 leading-relaxed">{activeTrend.summary}</p>
+              </div>
 
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <OriginPill origin={activeTrend.origin} weight={activeTrend.weight} />
-                  <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-black bg-slate-100 text-slate-700">Fonte: {activeTrend.source || "Mercúrio"}</span>
-                </div>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Link to={getTagHref(activeTrend.hashtag)} className="inline-flex items-center rounded-full px-3 py-1.5 text-sm font-bold text-[#2442d5] bg-[#2442d5]/10 hover:bg-[#2442d5]/20">
+                  <Hash className="w-4 h-4 mr-1" />
+                  {activeTrend.hashtag.startsWith("#") ? activeTrend.hashtag : `#${activeTrend.hashtag}`}
+                </Link>
+              </div>
+            </div>
 
-                <div className="mt-5 rounded-2xl border border-white/70 bg-gradient-to-br from-[#2442d5]/10 to-[#5ec8ff]/15 p-4">
-                  <p className="text-sm font-semibold text-[#18317d]">Conteúdo proprietário Mercúrio</p>
-                  <p className="text-sm text-slate-700 mt-1">Matéria editorial consolidada no núcleo Mercúrio, com linguagem própria da redação BIRD.</p>
-                </div>
-
-                <div className="mt-6 flex flex-wrap gap-2">
-                  <Link to={getTagHref(activeTrend.hashtag)} className="inline-flex items-center rounded-full px-3 py-1.5 text-sm font-bold text-[#2442d5] bg-[#2442d5]/10 hover:bg-[#2442d5]/20">
-                    <Hash className="w-4 h-4 mr-1" />
-                    {activeTrend.hashtag.startsWith("#") ? activeTrend.hashtag : `#${activeTrend.hashtag}`}
+            <div className="mt-6 rounded-3xl border border-white/70 bg-white/65 backdrop-blur-xl shadow-[0_10px_35px_rgba(80,93,255,0.12)] p-5 sm:p-6">
+              <h2 className="text-sm font-black uppercase text-[#2442d5] tracking-wide">Veja também</h2>
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {relatedArticles.map((t) => (
+                  <Link key={t.id} to={`${basePath}/noticia/${getTrendSlug(t)}`} className="rounded-2xl border border-white/70 bg-white/60 p-3 hover:bg-white/85 transition-colors">
+                    <div className="flex items-center gap-2 mb-1"><OriginPill origin={t.origin} weight={t.weight} /></div>
+                    <p className={`text-[11px] font-black uppercase ${categoryStyle[t.category] || "text-[#e42313]"}`}>{t.category || "Mercúrio"}</p>
+                    <p className="mt-1 text-sm font-bold text-slate-900 leading-snug">{t.title || t.topic}</p>
                   </Link>
-                </div>
-              </CardContent>
-            </GlassCard>
+                ))}
+              </div>
+            </div>
 
-            <GlassCard className="rounded-3xl">
-              <CardContent className="p-5">
-                <h2 className="text-sm font-black uppercase text-[#2442d5] tracking-wide">Mais da cobertura Mercúrio</h2>
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {trends
-                    .filter((t) => t.id !== activeTrend.id)
-                    .slice(0, 6)
-                    .map((t) => (
-                      <Link key={t.id} to={`${basePath}/noticia/${getTrendSlug(t)}`} className="rounded-2xl border border-white/70 bg-white/60 p-3 hover:bg-white/85 transition-colors">
-                        <div className="flex items-center gap-2 mb-1"><OriginPill origin={t.origin} weight={t.weight} /></div>
-                        <p className={`text-[11px] font-black uppercase ${categoryStyle[t.category] || "text-[#e42313]"}`}>{t.category || "Mercúrio"}</p>
-                        <p className="mt-1 text-sm font-bold text-slate-900 leading-snug">{t.title || t.topic}</p>
-                      </Link>
-                    ))}
-                </div>
-              </CardContent>
-            </GlassCard>
-          </div>
+            <div className="mt-6 rounded-3xl border border-white/70 bg-white/65 backdrop-blur-xl shadow-[0_10px_35px_rgba(80,93,255,0.12)] p-5 sm:p-6">
+              <h2 className="text-sm font-black uppercase text-[#2442d5] tracking-wide">Mais da editoria</h2>
+              <div className="mt-4 space-y-3">
+                {news.slice(0, 6).map((item, index) => (
+                  <Link key={`${item.title}-${index}`} to={`${basePath}/boletim/${getNewsSlug(item, index)}`} className="block border-b border-slate-200/70 pb-3 last:border-0">
+                    <div className="mb-1"><OriginPill origin={item.origin} weight={item.weight} /></div>
+                    <p className="text-xs text-slate-500 font-semibold">{item.source || "Mercúrio"}</p>
+                    <p className="text-sm font-bold text-slate-900">{item.title}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </article>
         </div>
       </BirdLayout>
     );
