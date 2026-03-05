@@ -1,32 +1,7 @@
 import { BirdLayout } from "@/components/bird/BirdLayout";
-import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  RefreshCw,
-  TrendingUp,
-  Radio,
-  ExternalLink,
-  Activity,
-  Users,
-  MessageCircle,
-  Newspaper,
-  Hash,
-  ArrowRight
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ExternalLink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-
-// Descomente caso já tenha o componente criado
-// import { IrisCard } from "@/components/bird/IrisCard";
-
-interface BirdSignal {
-  posts_count: number;
-  comments_count: number;
-  hotspots: string[];
-  top_authors: string[];
-}
 
 interface Trend {
   id: string;
@@ -38,7 +13,6 @@ interface Trend {
   hashtag: string;
   volume: string | number;
   link: string;
-  bird_signal?: BirdSignal;
 }
 
 interface NewsItem {
@@ -53,11 +27,20 @@ interface MercurioData {
   news: NewsItem[];
 }
 
+const categoryColors: Record<string, string> = {
+  Jornalismo: "text-red-600",
+  Esportes: "text-green-600",
+  Entretenimento: "text-orange-500",
+  Política: "text-red-700",
+  Economia: "text-blue-600",
+  Mundo: "text-red-500",
+};
+
+const adBanner = "https://placehold.co/970x90/ffe000/0f172a?text=Publicidade";
+
 export default function Mercurio() {
   const [data, setData] = useState<MercurioData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const selectedTrend = searchParams.get("trend")?.toLowerCase() || "";
 
   const fetchData = async () => {
     setLoading(true);
@@ -66,7 +49,8 @@ export default function Mercurio() {
       const json = await response.json();
       setData(json);
     } catch (error) {
-      console.error("Erro ao carregar Central Mercurio:", error);
+      console.error("Erro ao carregar Mercúrio:", error);
+      setData({ trends: [], news: [] });
     } finally {
       setLoading(false);
     }
@@ -76,230 +60,176 @@ export default function Mercurio() {
     fetchData();
   }, []);
 
-  const orderedTrends = [...(data?.trends || [])].sort((a, b) => {
-    if (!selectedTrend) return 0;
-    const aHit = `${a.hashtag} ${a.title} ${a.topic}`.toLowerCase().includes(selectedTrend);
-    const bHit = `${b.hashtag} ${b.title} ${b.topic}`.toLowerCase().includes(selectedTrend);
-    if (aHit && !bHit) return -1;
-    if (!aHit && bHit) return 1;
-    return 0;
-  });
+  const trends = data?.trends || [];
+  const hero = trends[0];
+  const sideHighlights = trends.slice(1, 5);
+  const threeColumns = useMemo(() => {
+    return {
+      jornalismo: trends.slice(5, 12),
+      esporte: trends.slice(12, 19),
+      entretenimento: trends.slice(19, 26),
+    };
+  }, [trends]);
 
-  const mainHeadline = orderedTrends[0];
-  const secondaryNews = orderedTrends.slice(1);
+  const lineColor = (category: string) => categoryColors[category] || "text-red-600";
 
   return (
     <BirdLayout>
-      <div className="w-full max-w-7xl p-4 pb-20 mx-auto space-y-6">
-        
-        {/* CABEÇALHO */}
-        <div className="flex flex-col gap-2 p-8 rounded-[2.5rem] bg-white/40 backdrop-blur-md border border-white/50 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 -mt-20 -mr-20 rounded-full bg-indigo-500/10 blur-3xl -z-10" />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 shadow-lg bg-gradient-to-br from-indigo-600 to-sky-400 rounded-2xl shadow-indigo-500/20">
-                <Radio className="w-8 h-8 text-white animate-pulse" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tighter text-gray-900">Central Mercúrio</h1>
-                <p className="flex items-center gap-2 mt-1 text-xs font-bold tracking-widest text-indigo-600 uppercase">
-                  <Activity className="w-3 h-3" /> Panorama Jornalístico + Pulso Social BIRD
-                </p>
-              </div>
+      <div className="min-h-screen bg-white">
+        <header className="border-b border-slate-200">
+          <div className="bg-[#083d9c] text-white text-xs">
+            <div className="mx-auto max-w-6xl px-4 py-1 flex items-center justify-between">
+              <span>globo.com</span>
+              <span className="opacity-80">Mercúrio • BIRD</span>
             </div>
-            <Button variant="outline" onClick={fetchData} disabled={loading} className="font-bold transition-all rounded-2xl bg-white/50 backdrop-blur-sm border-white/80 hover:bg-white text-indigo-900">
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-              Sincronizar
-            </Button>
           </div>
-        </div>
 
-        {/* GRID ESTILO PORTAL G1 (12 Colunas) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* COLUNA ESQUERDA - EDITORIAS (2 Cols) */}
-          <aside className="hidden lg:block lg:col-span-2 space-y-4">
-            <div className="p-5 rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-lg sticky top-4">
-              <h3 className="text-xs font-black uppercase tracking-widest text-indigo-500 mb-5 flex items-center gap-2">
-                <Newspaper className="w-4 h-4" /> Editorias
-              </h3>
-              <ul className="space-y-3 text-sm font-bold text-gray-600">
-                <li className="hover:text-indigo-600 cursor-pointer transition-colors flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 opacity-0 transition-opacity" /> Mundo
-                </li>
-                <li className="hover:text-indigo-600 cursor-pointer transition-colors flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 opacity-0 transition-opacity" /> Tecnologia
-                </li>
-                <li className="hover:text-indigo-600 cursor-pointer transition-colors flex items-center gap-2 text-indigo-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 opacity-100" /> BIRD Ecosystem
-                </li>
-                <li className="hover:text-indigo-600 cursor-pointer transition-colors flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 opacity-0 transition-opacity" /> Educação
-                </li>
-              </ul>
+          <div className="border-b border-slate-200">
+            <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
+              <h1 className="text-4xl font-black text-red-600 leading-none">g1</h1>
+              <Button onClick={fetchData} disabled={loading} variant="outline" className="rounded-full">
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                Atualizar
+              </Button>
             </div>
-          </aside>
+          </div>
 
-          {/* COLUNA CENTRAL - NOTÍCIAS PRINCIPAIS (7 Cols) */}
-          <main className="lg:col-span-7 space-y-6">
-            {loading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-[400px] w-full rounded-[2rem] bg-white/50" />
-                <div className="grid grid-cols-2 gap-4">
-                  <Skeleton className="h-48 w-full rounded-2xl bg-white/50" />
-                  <Skeleton className="h-48 w-full rounded-2xl bg-white/50" />
-                </div>
+          <nav className="mx-auto max-w-6xl px-4 py-3 text-sm font-semibold text-slate-700 flex gap-6 overflow-auto">
+            <a href="#" className="text-red-600">Últimas notícias</a>
+            <a href="#">Mercúrio Agora</a>
+            <a href="#">Jornalismo</a>
+            <a href="#">Esporte</a>
+            <a href="#">Entretenimento</a>
+            <a href="#">Vídeos</a>
+          </nav>
+        </header>
+
+        <main className="mx-auto max-w-6xl px-4 py-6 space-y-10">
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 border-b border-slate-200 pb-8">
+            <article className="lg:col-span-7">
+              <div className="rounded-xl overflow-hidden">
+                <img src="https://placehold.co/900x500/dbeafe/0f172a?text=Manchete+Principal" alt="Destaque principal" className="w-full h-64 object-cover" />
               </div>
-            ) : (
-              <>
-                {/* MANCHETÃO PRINCIPAL */}
-                {mainHeadline && (
-                  <section className="group overflow-hidden rounded-[2rem] bg-white/60 backdrop-blur-lg border border-white/50 shadow-xl transition-all hover:shadow-2xl hover:border-indigo-300">
-                    {/* Placeholder para foto de capa com Glassmorphism */}
-                    <div className="h-48 sm:h-64 w-full bg-gradient-to-br from-indigo-500/10 to-sky-400/10 relative flex items-center justify-center border-b border-white/30">
-                      <div className="absolute inset-0 bg-[url('/icons3d/newspaper.png')] bg-center bg-no-repeat bg-contain opacity-10 mix-blend-overlay"></div>
-                      <Radio className="w-16 h-16 text-indigo-300/40" />
-                    </div>
-                    
-                    <div className="p-8">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none text-[10px] font-black tracking-widest px-3 py-1">
-                          {mainHeadline.category}
-                        </Badge>
-                        <span className="text-xs font-black text-gray-400 uppercase">
-                          Destaque Principal
-                        </span>
-                      </div>
-                      
-                      <Link to={`/explore?q=${encodeURIComponent(mainHeadline.hashtag)}`}>
-                        <h2 className="text-3xl sm:text-4xl font-black leading-[1.1] text-gray-900 group-hover:text-indigo-600 transition-colors mb-3">
-                          {mainHeadline.title || mainHeadline.topic}
-                        </h2>
-                      </Link>
-                      
-                      <p className="text-gray-600 font-medium text-lg leading-relaxed mb-6">
-                        {mainHeadline.summary}
-                      </p>
+              <p className="text-xs text-red-600 font-bold mt-3">MERCÚRIO</p>
+              <h2 className="text-4xl font-black leading-tight mt-1 text-slate-900">
+                {hero?.title || "Brasil avança por nova corrida de blocos econômicos e integração digital"}
+              </h2>
+              <p className="text-slate-600 mt-3 text-lg">
+                {hero?.summary || "Portal com visual inspirado no G1 para leitura rápida, hierarquia editorial e destaque de manchetes em tempo real."}
+              </p>
+            </article>
 
-                      <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-gray-200/50">
-                        <Button className="h-11 rounded-xl bg-gray-900 hover:bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-500/20" asChild>
-                          <Link to={`/explore?q=${encodeURIComponent(mainHeadline.hashtag)}`}>
-                            <MessageCircle className="w-4 h-4 mr-2" /> Ver repercussão no BIRD
-                          </Link>
-                        </Button>
-                        <Button variant="ghost" className="h-11 rounded-xl font-bold text-gray-600 hover:text-indigo-700" asChild>
-                          <a href={mainHeadline.link} target="_blank" rel="noopener noreferrer">
-                            Matéria original <ExternalLink className="w-4 h-4 ml-2" />
-                          </a>
-                        </Button>
-                      </div>
-                    </div>
-                  </section>
-                )}
-
-                {/* GRID DE NOTÍCIAS SECUNDÁRIAS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {secondaryNews.map((trend) => (
-                    <article key={trend.id} className="flex flex-col p-5 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/50 hover:bg-white/80 transition-all shadow-sm hover:shadow-md group">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-[10px] font-black text-indigo-500 tracking-wider uppercase">{trend.category}</span>
-                      </div>
-                      
-                      <h3 className="font-bold text-lg leading-snug text-gray-900 group-hover:text-indigo-600 transition-colors mb-2 line-clamp-3">
-                        {trend.title || trend.topic}
-                      </h3>
-                      
-                      <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-grow">
-                        {trend.summary}
-                      </p>
-                      
-                      <div className="flex items-center gap-2 mt-auto">
-                        <Button variant="secondary" size="sm" className="rounded-lg font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 w-full" asChild>
-                          <Link to={`/explore?q=${encodeURIComponent(trend.hashtag)}`}>Repercussão</Link>
-                        </Button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </>
-            )}
-          </main>
-
-          {/* COLUNA DIREITA - HUB DE IA E TRENDS (3 Cols) */}
-          <aside className="lg:col-span-3 space-y-6">
-            <div className="sticky top-4 space-y-6">
-              
-              {/* COMPONENTE IRIS (Seu Hub de IA) */}
-              <div className="p-1 rounded-[1.5rem] bg-gradient-to-b from-indigo-500/20 to-transparent">
-                <div className="p-5 rounded-[1.4rem] bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl">
-                  <h3 className="flex items-center gap-2 font-black text-gray-900 mb-4">
-                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping relative">
-                      <span className="absolute inset-0 w-full h-full bg-indigo-500 rounded-full" />
-                    </span>
-                    IRIS Intelligence
-                  </h3>
-                  {/* <IrisCard variant="mercurio" /> */}
-                  <div className="h-32 bg-white/40 rounded-xl border border-white/50 flex items-center justify-center">
-                    <span className="text-xs font-bold text-gray-400">Analisando o fluxo neural...</span>
+            <aside className="lg:col-span-5 space-y-4">
+              {sideHighlights.map((item) => (
+                <article key={item.id} className="grid grid-cols-[120px_1fr] gap-3 border-b border-slate-200 pb-3">
+                  <img src="https://placehold.co/240x140/e2e8f0/334155?text=thumb" alt={item.title} className="w-full h-[76px] rounded-md object-cover" />
+                  <div>
+                    <p className={`text-xs font-bold ${lineColor(item.category)}`}>{item.category || "Notícia"}</p>
+                    <h3 className="text-base font-bold leading-tight text-slate-900">{item.title || item.topic}</h3>
                   </div>
-                </div>
-              </div>
+                </article>
+              ))}
+            </aside>
+          </section>
 
-              {/* MAIS LIDAS / EM ALTA NO BIRD */}
-              <Card className="rounded-[1.5rem] bg-white/40 backdrop-blur-md border border-white/50 shadow-lg">
-                <CardContent className="p-5">
-                  <h4 className="text-sm font-black text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-wide">
-                    <TrendingUp className="w-4 h-4 text-indigo-500" /> Em Alta no Hub
-                  </h4>
-                  <ul className="space-y-4">
-                    {orderedTrends.slice(0, 5).map((t, i) => (
-                      <li key={i} className="flex items-start gap-3 group">
-                        <span className="text-2xl font-black text-indigo-200 group-hover:text-indigo-500 transition-colors leading-none">
-                          {i + 1}
-                        </span>
-                        <div>
-                          <Link to={`/explore?q=${encodeURIComponent(t.hashtag)}`} className="text-sm font-bold text-gray-700 group-hover:text-indigo-700 transition-colors line-clamp-2 leading-tight">
-                            {t.title || t.topic}
-                          </Link>
-                          <p className="text-[10px] font-bold text-gray-400 mt-1 flex items-center gap-1">
-                            <Hash className="w-3 h-3" /> {t.hashtag.replace('#', '')}
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+          <section>
+            <img src={adBanner} alt="Publicidade" className="w-full rounded-md border border-slate-200" />
+          </section>
 
-              {/* ÚLTIMAS NOTÍCIAS RÁPIDAS */}
-              {!!data?.news?.length && (
-                <Card className="rounded-[1.5rem] bg-white/40 backdrop-blur-md border border-white/50 shadow-lg">
-                  <CardContent className="p-5">
-                    <h4 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-wide">
-                      Últimas do Radar
-                    </h4>
-                    <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-1.5 before:w-px before:bg-indigo-100">
-                      {data.news.slice(0, 4).map((item, i) => (
-                        <div key={i} className="relative pl-5">
-                          <span className="absolute left-0 top-1.5 w-3 h-3 rounded-full border-2 border-white bg-indigo-400 z-10" />
-                          <a href={item.link} target="_blank" rel="noopener noreferrer" className="block group">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-0.5">{item.source}</p>
-                            <p className="text-xs font-bold text-gray-700 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                              {item.title}
-                            </p>
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <ColumnBlock title="Jornalismo" color="text-red-600" items={threeColumns.jornalismo} />
+            <ColumnBlock title="Esporte" color="text-green-600" items={threeColumns.esporte} />
+            <ColumnBlock title="Entretenimento" color="text-orange-500" items={threeColumns.entretenimento} />
+          </section>
 
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 rounded-lg bg-black p-4">
+              <div className="h-72 bg-slate-900 rounded-md flex items-center justify-center text-white text-6xl">▶</div>
+              <p className="text-white text-sm mt-3">Em alta no BIRD 24h</p>
             </div>
-          </aside>
+            <div className="rounded-lg border border-slate-200 p-4 space-y-3">
+              <h3 className="text-sm uppercase font-black text-slate-800">Últimas</h3>
+              {(data?.news || []).slice(0, 6).map((item, index) => (
+                <a key={`${item.link}-${index}`} href={item.link} target="_blank" rel="noreferrer" className="block border-b border-slate-100 pb-2">
+                  <p className="text-[11px] text-slate-500 font-semibold">{item.source}</p>
+                  <p className="text-sm font-bold text-slate-900 hover:text-red-600">{item.title}</p>
+                </a>
+              ))}
+            </div>
+          </section>
 
-        </div>
+          <section>
+            <h3 className="text-xl font-black text-[#083d9c] mb-4">Top Globo</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <TopList title="jornalismo" color="text-red-600" items={trends.slice(0, 5)} />
+              <TopList title="esporte" color="text-green-600" items={trends.slice(5, 10)} />
+              <TopList title="entretenimento" color="text-orange-500" items={trends.slice(10, 15)} />
+            </div>
+          </section>
+
+          <footer className="mt-16 border-t border-slate-200 pt-8 text-xs text-slate-500">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+              {Array.from({ length: 24 }).map((_, i) => (
+                <span key={i}>link institucional {i + 1}</span>
+              ))}
+            </div>
+            <div className="mt-8 bg-[#083d9c] text-white px-4 py-3 rounded">© Mercúrio • Interface inspirada no portal G1</div>
+          </footer>
+        </main>
       </div>
     </BirdLayout>
+  );
+}
+
+function ColumnBlock({
+  title,
+  color,
+  items,
+}: {
+  title: string;
+  color: string;
+  items: Trend[];
+}) {
+  return (
+    <div>
+      <h3 className={`text-xl font-black mb-4 ${color}`}>{title}</h3>
+      <div className="space-y-4">
+        {items.map((item) => (
+          <article key={item.id} className="grid grid-cols-[96px_1fr] gap-3">
+            <img src="https://placehold.co/180x110/e2e8f0/334155?text=foto" alt={item.title} className="w-full h-16 rounded object-cover" />
+            <div>
+              <p className={`text-[11px] font-bold ${color}`}>{item.category || title}</p>
+              <h4 className="text-sm font-bold leading-tight text-slate-900">{item.title || item.topic}</h4>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TopList({
+  title,
+  color,
+  items,
+}: {
+  title: string;
+  color: string;
+  items: Trend[];
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 p-4">
+      <h4 className={`font-black uppercase mb-3 ${color}`}>{title}</h4>
+      <ol className="space-y-2">
+        {items.map((item, index) => (
+          <li key={item.id} className="text-sm leading-tight flex gap-2">
+            <span className={`font-black ${color}`}>{index + 1}.</span>
+            <a href={item.link} target="_blank" rel="noreferrer" className="hover:underline">
+              {item.title || item.topic} <ExternalLink className="inline w-3 h-3" />
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
