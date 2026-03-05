@@ -1,7 +1,9 @@
 import { BirdLayout } from "@/components/bird/BirdLayout";
-import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, Hash, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface Trend {
   id: string;
@@ -27,20 +29,46 @@ interface MercurioData {
   news: NewsItem[];
 }
 
-const categoryColors: Record<string, string> = {
-  Jornalismo: "text-red-600",
-  Esportes: "text-green-600",
-  Entretenimento: "text-orange-500",
-  Política: "text-red-700",
-  Economia: "text-blue-600",
-  Mundo: "text-red-500",
+const categoryStyle: Record<string, string> = {
+  Jornalismo: "text-[#e42313]",
+  Esportes: "text-[#0ea64b]",
+  Entretenimento: "text-[#ff6a00]",
+  Política: "text-[#e42313]",
+  Economia: "text-[#2563eb]",
+  Mundo: "text-[#e42313]",
 };
 
-const adBanner = "https://placehold.co/970x90/ffe000/0f172a?text=Publicidade";
+const normalizeSlug = (text: string) =>
+  text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+
+const tagToSlug = (tag: string) => normalizeSlug(tag.replace("#", ""));
+
+const getTrendSlug = (trend: Trend) => `${normalizeSlug(trend.title || trend.topic)}-${trend.id}`;
+const getNewsSlug = (item: NewsItem, index: number) => `${normalizeSlug(item.title || `boletim-${index + 1}`)}-${index}`;
+
+function GlassCard({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <Card className={`bg-white/60 backdrop-blur-xl border border-white/70 shadow-[0_10px_35px_rgba(80,93,255,0.12)] ${className}`}>
+      {children}
+    </Card>
+  );
+}
 
 export default function Mercurio() {
   const [data, setData] = useState<MercurioData | null>(null);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const basePath = location.pathname.startsWith("/news") ? "/news" : "/mercurio";
+
+  const getTagHref = (tag: string) => `${basePath}/topico/${tagToSlug(tag)}`;
 
   const fetchData = async () => {
     setLoading(true);
@@ -61,175 +89,330 @@ export default function Mercurio() {
   }, []);
 
   const trends = data?.trends || [];
-  const hero = trends[0];
-  const sideHighlights = trends.slice(1, 5);
-  const threeColumns = useMemo(() => {
-    return {
-      jornalismo: trends.slice(5, 12),
-      esporte: trends.slice(12, 19),
-      entretenimento: trends.slice(19, 26),
-    };
+  const news = data?.news || [];
+
+  const trendsBySlug = useMemo(() => {
+    const map = new Map<string, Trend>();
+    trends.forEach((trend) => map.set(getTrendSlug(trend), trend));
+    return map;
   }, [trends]);
 
-  const lineColor = (category: string) => categoryColors[category] || "text-red-600";
+  const newsBySlug = useMemo(() => {
+    const map = new Map<string, NewsItem>();
+    news.forEach((item, index) => map.set(getNewsSlug(item, index), item));
+    return map;
+  }, [news]);
+
+  const activeTrend = useMemo(() => {
+    const match = location.pathname.match(/\/(mercurio|news)\/noticia\/([^/]+)/);
+    if (!match) return null;
+    return trendsBySlug.get(match[2]) || null;
+  }, [location.pathname, trendsBySlug]);
+
+  const activeBulletin = useMemo(() => {
+    const match = location.pathname.match(/\/(mercurio|news)\/boletim\/([^/]+)/);
+    if (!match) return null;
+    return newsBySlug.get(match[2]) || null;
+  }, [location.pathname, newsBySlug]);
+
+  const activeTopicSlug = useMemo(() => {
+    const match = location.pathname.match(/\/(mercurio|news)\/topico\/([^/]+)/);
+    return match?.[2] || null;
+  }, [location.pathname]);
+
+  const topicTrends = useMemo(() => {
+    if (!activeTopicSlug) return [];
+    return trends.filter((trend) => tagToSlug(trend.hashtag) === activeTopicSlug);
+  }, [activeTopicSlug, trends]);
+
+  const hero = trends[0];
+  const sideHighlights = trends.slice(1, 5);
+  const editorias = {
+    Jornalismo: trends.slice(5, 12),
+    Esportes: trends.slice(12, 19),
+    Entretenimento: trends.slice(19, 26),
+  };
+
+  const sublinks = [
+    { label: "Últimas", anchor: "ultimas" },
+    { label: "Jornalismo", anchor: "jornalismo" },
+    { label: "Esportes", anchor: "esportes" },
+    { label: "Entretenimento", anchor: "entretenimento" },
+    { label: "Top Mercúrio", anchor: "top-mercurio" },
+  ];
+
+  if (activeTrend) {
+    return (
+      <BirdLayout>
+        <div className="min-h-screen bg-transparent px-4 py-6 pb-24">
+          <div className="mx-auto max-w-5xl space-y-5">
+            <GlassCard className="rounded-3xl">
+              <CardContent className="p-5 sm:p-7">
+                <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 rounded-full text-[#2442d5] hover:bg-[#2442d5]/10">
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+                </Button>
+
+                <p className={`text-xs font-black tracking-wide uppercase ${categoryStyle[activeTrend.category] || "text-[#e42313]"}`}>
+                  Redação Mercúrio • {activeTrend.category || "Destaque"}
+                </p>
+                <h1 className="mt-2 text-3xl sm:text-4xl font-black leading-tight text-[#112155]">{activeTrend.title || activeTrend.topic}</h1>
+                <p className="mt-4 text-base text-slate-700 leading-relaxed">{activeTrend.summary}</p>
+
+                <div className="mt-5 rounded-2xl border border-white/70 bg-gradient-to-br from-[#2442d5]/10 to-[#5ec8ff]/15 p-4">
+                  <p className="text-sm font-semibold text-[#18317d]">Conteúdo proprietário Mercúrio</p>
+                  <p className="text-sm text-slate-700 mt-1">Matéria editorial consolidada no núcleo Mercúrio, com linguagem própria da redação BIRD.</p>
+                </div>
+
+                <div className="mt-6 flex flex-wrap gap-2">
+                  <Link to={getTagHref(activeTrend.hashtag)} className="inline-flex items-center rounded-full px-3 py-1.5 text-sm font-bold text-[#2442d5] bg-[#2442d5]/10 hover:bg-[#2442d5]/20">
+                    <Hash className="w-4 h-4 mr-1" />
+                    {activeTrend.hashtag.startsWith("#") ? activeTrend.hashtag : `#${activeTrend.hashtag}`}
+                  </Link>
+                </div>
+              </CardContent>
+            </GlassCard>
+
+            <GlassCard className="rounded-3xl">
+              <CardContent className="p-5">
+                <h2 className="text-sm font-black uppercase text-[#2442d5] tracking-wide">Mais da cobertura Mercúrio</h2>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {trends
+                    .filter((t) => t.id !== activeTrend.id)
+                    .slice(0, 6)
+                    .map((t) => (
+                      <Link
+                        key={t.id}
+                        to={`${basePath}/noticia/${getTrendSlug(t)}`}
+                        className="rounded-2xl border border-white/70 bg-white/60 p-3 hover:bg-white/85 transition-colors"
+                      >
+                        <p className={`text-[11px] font-black uppercase ${categoryStyle[t.category] || "text-[#e42313]"}`}>{t.category || "Mercúrio"}</p>
+                        <p className="mt-1 text-sm font-bold text-slate-900 leading-snug">{t.title || t.topic}</p>
+                      </Link>
+                    ))}
+                </div>
+              </CardContent>
+            </GlassCard>
+          </div>
+        </div>
+      </BirdLayout>
+    );
+  }
+
+  if (activeBulletin) {
+    return (
+      <BirdLayout>
+        <div className="min-h-screen bg-transparent px-4 py-6 pb-24">
+          <div className="mx-auto max-w-5xl space-y-5">
+            <GlassCard className="rounded-3xl">
+              <CardContent className="p-5 sm:p-7">
+                <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 rounded-full text-[#2442d5] hover:bg-[#2442d5]/10">
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+                </Button>
+                <p className="text-xs font-black tracking-wide uppercase text-[#2442d5]">Boletim Mercúrio</p>
+                <h1 className="mt-2 text-3xl sm:text-4xl font-black leading-tight text-[#112155]">{activeBulletin.title}</h1>
+                <p className="mt-4 text-base text-slate-700 leading-relaxed">
+                  Conteúdo próprio do Mercúrio publicado em boletim interno com curadoria editorial e distribuição no ecossistema BIRD.
+                </p>
+              </CardContent>
+            </GlassCard>
+          </div>
+        </div>
+      </BirdLayout>
+    );
+  }
+
+  if (activeTopicSlug) {
+    const topicLabel = topicTrends[0]?.hashtag?.replace("#", "") || activeTopicSlug.replaceAll("-", " ");
+
+    return (
+      <BirdLayout>
+        <div className="min-h-screen bg-transparent px-4 py-6 pb-24">
+          <div className="mx-auto max-w-6xl space-y-5">
+            <GlassCard className="rounded-3xl">
+              <CardContent className="p-5 sm:p-7">
+                <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 rounded-full text-[#2442d5] hover:bg-[#2442d5]/10">
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+                </Button>
+                <p className="text-xs font-black tracking-wide uppercase text-[#2442d5]">Tópico Mercúrio</p>
+                <h1 className="mt-2 text-3xl sm:text-4xl font-black leading-tight text-[#112155]">#{topicLabel}</h1>
+                <p className="mt-3 text-slate-700">Todas as matérias e sinais relacionados a este tópico dentro do Mercúrio.</p>
+              </CardContent>
+            </GlassCard>
+
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {topicTrends.length ? (
+                topicTrends.map((item) => (
+                  <GlassCard key={item.id} className="rounded-2xl">
+                    <CardContent className="p-4">
+                      <p className={`text-[11px] font-black uppercase ${categoryStyle[item.category] || "text-[#e42313]"}`}>{item.category || "Mercúrio"}</p>
+                      <h2 className="mt-1 text-base font-bold text-slate-900 leading-tight">{item.title || item.topic}</h2>
+                      <p className="mt-2 text-sm text-slate-600 line-clamp-3">{item.summary}</p>
+                      <Link to={`${basePath}/noticia/${getTrendSlug(item)}`} className="mt-3 inline-block text-xs font-bold text-[#2442d5] hover:underline">
+                        Ler matéria
+                      </Link>
+                    </CardContent>
+                  </GlassCard>
+                ))
+              ) : (
+                <GlassCard className="rounded-2xl md:col-span-2 lg:col-span-3">
+                  <CardContent className="p-6 text-sm text-slate-700">Nenhuma matéria encontrada para este tópico no momento.</CardContent>
+                </GlassCard>
+              )}
+            </section>
+          </div>
+        </div>
+      </BirdLayout>
+    );
+  }
 
   return (
     <BirdLayout>
-      <div className="min-h-screen bg-white">
-        <header className="border-b border-slate-200">
-          <div className="bg-[#083d9c] text-white text-xs">
-            <div className="mx-auto max-w-6xl px-4 py-1 flex items-center justify-between">
-              <span>globo.com</span>
-              <span className="opacity-80">Mercúrio • BIRD</span>
+      <div className="min-h-screen bg-transparent px-4 py-6 pb-24">
+        <div className="mx-auto max-w-6xl space-y-6">
+          <GlassCard className="rounded-3xl overflow-hidden">
+            <div className="bg-gradient-to-r from-[#2442d5] to-[#4e7bff] text-white text-xs px-4 py-2 flex items-center justify-between">
+              <span className="font-semibold">Mercúrio • BIRD</span>
+              <span className="opacity-90">Aurora Clean • Light</span>
             </div>
-          </div>
 
-          <div className="border-b border-slate-200">
-            <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
-              <h1 className="text-4xl font-black text-red-600 leading-none">g1</h1>
-              <Button onClick={fetchData} disabled={loading} variant="outline" className="rounded-full">
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                Atualizar
-              </Button>
-            </div>
-          </div>
-
-          <nav className="mx-auto max-w-6xl px-4 py-3 text-sm font-semibold text-slate-700 flex gap-6 overflow-auto">
-            <a href="#" className="text-red-600">Últimas notícias</a>
-            <a href="#">Mercúrio Agora</a>
-            <a href="#">Jornalismo</a>
-            <a href="#">Esporte</a>
-            <a href="#">Entretenimento</a>
-            <a href="#">Vídeos</a>
-          </nav>
-        </header>
-
-        <main className="mx-auto max-w-6xl px-4 py-6 space-y-10">
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 border-b border-slate-200 pb-8">
-            <article className="lg:col-span-7">
-              <div className="rounded-xl overflow-hidden">
-                <img src="https://placehold.co/900x500/dbeafe/0f172a?text=Manchete+Principal" alt="Destaque principal" className="w-full h-64 object-cover" />
+            <CardContent className="p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#2442d5] font-bold">Portal de notícias Mercúrio</p>
+                  <h1 className="text-3xl sm:text-4xl font-black text-[#e42313] leading-none">Mercúrio</h1>
+                </div>
+                <Button onClick={fetchData} disabled={loading} variant="outline" className="rounded-full border-[#2442d5]/30 text-[#2442d5]">
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                  Atualizar
+                </Button>
               </div>
-              <p className="text-xs text-red-600 font-bold mt-3">MERCÚRIO</p>
-              <h2 className="text-4xl font-black leading-tight mt-1 text-slate-900">
-                {hero?.title || "Brasil avança por nova corrida de blocos econômicos e integração digital"}
-              </h2>
-              <p className="text-slate-600 mt-3 text-lg">
-                {hero?.summary || "Portal com visual inspirado no G1 para leitura rápida, hierarquia editorial e destaque de manchetes em tempo real."}
-              </p>
-            </article>
 
-            <aside className="lg:col-span-5 space-y-4">
-              {sideHighlights.map((item) => (
-                <article key={item.id} className="grid grid-cols-[120px_1fr] gap-3 border-b border-slate-200 pb-3">
-                  <img src="https://placehold.co/240x140/e2e8f0/334155?text=thumb" alt={item.title} className="w-full h-[76px] rounded-md object-cover" />
-                  <div>
-                    <p className={`text-xs font-bold ${lineColor(item.category)}`}>{item.category || "Notícia"}</p>
-                    <h3 className="text-base font-bold leading-tight text-slate-900">{item.title || item.topic}</h3>
+              <nav className="mt-4 flex flex-wrap gap-2">
+                {sublinks.map((link) => (
+                  <a key={link.anchor} href={`#${link.anchor}`} className="rounded-full px-3 py-1.5 text-xs font-bold bg-[#2442d5]/10 text-[#2442d5] hover:bg-[#2442d5]/20">
+                    {link.label}
+                  </a>
+                ))}
+              </nav>
+            </CardContent>
+          </GlassCard>
+
+          <section id="ultimas" className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <GlassCard className="lg:col-span-7 rounded-3xl">
+              <CardContent className="p-5 sm:p-6">
+                <p className="text-xs font-black uppercase tracking-wide text-[#e42313]">Destaque Mercúrio</p>
+                <h2 className="mt-2 text-3xl font-black text-[#112155] leading-tight">{hero?.title || "Panorama estratégico do dia no ecossistema BIRD"}</h2>
+                <p className="mt-3 text-slate-700">{hero?.summary || "Acompanhe a cobertura integral do Mercúrio com análise própria e contexto social em tempo real."}</p>
+                {hero && (
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Link to={`${basePath}/noticia/${getTrendSlug(hero)}`} className="rounded-xl bg-[#e42313] px-4 py-2 text-sm text-white font-bold hover:bg-[#cc1f11]">
+                      Ler matéria completa
+                    </Link>
+                    <Link to={getTagHref(hero.hashtag)} className="rounded-xl bg-[#2442d5]/10 px-4 py-2 text-sm text-[#2442d5] font-bold hover:bg-[#2442d5]/20">
+                      Abrir #{hero.hashtag.replace("#", "")} no Mercúrio
+                    </Link>
                   </div>
-                </article>
-              ))}
-            </aside>
-          </section>
+                )}
+              </CardContent>
+            </GlassCard>
 
-          <section>
-            <img src={adBanner} alt="Publicidade" className="w-full rounded-md border border-slate-200" />
-          </section>
-
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <ColumnBlock title="Jornalismo" color="text-red-600" items={threeColumns.jornalismo} />
-            <ColumnBlock title="Esporte" color="text-green-600" items={threeColumns.esporte} />
-            <ColumnBlock title="Entretenimento" color="text-orange-500" items={threeColumns.entretenimento} />
-          </section>
-
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 rounded-lg bg-black p-4">
-              <div className="h-72 bg-slate-900 rounded-md flex items-center justify-center text-white text-6xl">▶</div>
-              <p className="text-white text-sm mt-3">Em alta no BIRD 24h</p>
-            </div>
-            <div className="rounded-lg border border-slate-200 p-4 space-y-3">
-              <h3 className="text-sm uppercase font-black text-slate-800">Últimas</h3>
-              {(data?.news || []).slice(0, 6).map((item, index) => (
-                <a key={`${item.link}-${index}`} href={item.link} target="_blank" rel="noreferrer" className="block border-b border-slate-100 pb-2">
-                  <p className="text-[11px] text-slate-500 font-semibold">{item.source}</p>
-                  <p className="text-sm font-bold text-slate-900 hover:text-red-600">{item.title}</p>
-                </a>
+            <div className="lg:col-span-5 space-y-4">
+              {sideHighlights.map((item) => (
+                <GlassCard key={item.id} className="rounded-2xl">
+                  <CardContent className="p-4">
+                    <p className={`text-xs font-black uppercase ${categoryStyle[item.category] || "text-[#e42313]"}`}>{item.category || "Mercúrio"}</p>
+                    <h3 className="mt-1 text-base font-bold text-slate-900 leading-tight">{item.title || item.topic}</h3>
+                    <div className="mt-3 flex gap-2">
+                      <Link to={`${basePath}/noticia/${getTrendSlug(item)}`} className="text-xs font-bold text-[#2442d5] hover:underline">
+                        Abrir matéria
+                      </Link>
+                      <Link to={getTagHref(item.hashtag)} className="text-xs font-bold text-[#e42313] hover:underline">
+                        Ver #{item.hashtag.replace("#", "")}
+                      </Link>
+                    </div>
+                  </CardContent>
+                </GlassCard>
               ))}
             </div>
           </section>
 
-          <section>
-            <h3 className="text-xl font-black text-[#083d9c] mb-4">Top Globo</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <TopList title="jornalismo" color="text-red-600" items={trends.slice(0, 5)} />
-              <TopList title="esporte" color="text-green-600" items={trends.slice(5, 10)} />
-              <TopList title="entretenimento" color="text-orange-500" items={trends.slice(10, 15)} />
-            </div>
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <EditoriaColumn id="jornalismo" title="Jornalismo" color="text-[#e42313]" items={editorias.Jornalismo} basePath={basePath} getTagHref={getTagHref} />
+            <EditoriaColumn id="esportes" title="Esportes" color="text-[#0ea64b]" items={editorias.Esportes} basePath={basePath} getTagHref={getTagHref} />
+            <EditoriaColumn id="entretenimento" title="Entretenimento" color="text-[#ff6a00]" items={editorias.Entretenimento} basePath={basePath} getTagHref={getTagHref} />
           </section>
 
-          <footer className="mt-16 border-t border-slate-200 pt-8 text-xs text-slate-500">
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              {Array.from({ length: 24 }).map((_, i) => (
-                <span key={i}>link institucional {i + 1}</span>
-              ))}
-            </div>
-            <div className="mt-8 bg-[#083d9c] text-white px-4 py-3 rounded">© Mercúrio • Interface inspirada no portal G1</div>
-          </footer>
-        </main>
+          <section id="top-mercurio" className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <GlassCard className="lg:col-span-2 rounded-3xl">
+              <CardContent className="p-5">
+                <h3 className="text-sm uppercase font-black text-[#2442d5] tracking-wide">Radar Mercúrio agora</h3>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {trends.slice(0, 8).map((item) => (
+                    <Link key={item.id} to={`${basePath}/noticia/${getTrendSlug(item)}`} className="rounded-2xl border border-white/60 bg-white/60 p-3 hover:bg-white/80">
+                      <p className={`text-[11px] font-black uppercase ${categoryStyle[item.category] || "text-[#e42313]"}`}>{item.category || "Mercúrio"}</p>
+                      <p className="text-sm font-bold text-slate-900 mt-1 line-clamp-2">{item.title || item.topic}</p>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </GlassCard>
+
+            <GlassCard className="rounded-3xl">
+              <CardContent className="p-5">
+                <h3 className="text-sm uppercase font-black text-[#2442d5] tracking-wide">Últimas da redação</h3>
+                <div className="mt-3 space-y-3">
+                  {news.slice(0, 8).map((item, index) => (
+                    <Link key={`${item.title}-${index}`} to={`${basePath}/boletim/${getNewsSlug(item, index)}`} className="block border-b border-slate-200/70 pb-2 last:border-0 hover:opacity-80">
+                      <p className="text-[11px] font-bold text-slate-500">Mercúrio • {item.source || "Radar"}</p>
+                      <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </GlassCard>
+          </section>
+        </div>
       </div>
     </BirdLayout>
   );
 }
 
-function ColumnBlock({
+function EditoriaColumn({
+  id,
   title,
   color,
   items,
+  basePath,
+  getTagHref,
 }: {
+  id: string;
   title: string;
   color: string;
   items: Trend[];
+  basePath: string;
+  getTagHref: (tag: string) => string;
 }) {
   return (
-    <div>
-      <h3 className={`text-xl font-black mb-4 ${color}`}>{title}</h3>
-      <div className="space-y-4">
-        {items.map((item) => (
-          <article key={item.id} className="grid grid-cols-[96px_1fr] gap-3">
-            <img src="https://placehold.co/180x110/e2e8f0/334155?text=foto" alt={item.title} className="w-full h-16 rounded object-cover" />
-            <div>
-              <p className={`text-[11px] font-bold ${color}`}>{item.category || title}</p>
-              <h4 className="text-sm font-bold leading-tight text-slate-900">{item.title || item.topic}</h4>
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TopList({
-  title,
-  color,
-  items,
-}: {
-  title: string;
-  color: string;
-  items: Trend[];
-}) {
-  return (
-    <div className="rounded-lg border border-slate-200 p-4">
-      <h4 className={`font-black uppercase mb-3 ${color}`}>{title}</h4>
-      <ol className="space-y-2">
-        {items.map((item, index) => (
-          <li key={item.id} className="text-sm leading-tight flex gap-2">
-            <span className={`font-black ${color}`}>{index + 1}.</span>
-            <a href={item.link} target="_blank" rel="noreferrer" className="hover:underline">
-              {item.title || item.topic} <ExternalLink className="inline w-3 h-3" />
-            </a>
-          </li>
-        ))}
-      </ol>
-    </div>
+    <GlassCard className="rounded-3xl" >
+      <CardContent className="p-4" id={id}>
+        <h3 className={`text-lg font-black mb-3 ${color}`}>{title}</h3>
+        <div className="space-y-3">
+          {items.map((item) => (
+            <article key={item.id} className="rounded-2xl bg-white/55 border border-white/70 p-3">
+              <p className={`text-[11px] font-black uppercase ${color}`}>{item.category || title}</p>
+              <h4 className="mt-1 text-sm font-bold text-slate-900 leading-tight">{item.title || item.topic}</h4>
+              <div className="mt-2 flex gap-2 text-xs font-bold">
+                <Link to={`${basePath}/noticia/${getTrendSlug(item)}`} className="text-[#2442d5] hover:underline">
+                  Abrir
+                </Link>
+                <Link to={getTagHref(item.hashtag)} className="text-[#e42313] hover:underline">
+                  #{item.hashtag.replace("#", "")}
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      </CardContent>
+    </GlassCard>
   );
 }
