@@ -8,6 +8,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.services.recommendation_service import RecommendationService
 
 
+def test_budget_from_env_uses_default_for_invalid(monkeypatch):
+    monkeypatch.setenv("TAS_BUDGET_SARA_MS", "invalid")
+    service = RecommendationService()
+
+    assert service.budget_ms["sara"] == 45
+
+
+def test_budget_from_env_enforces_minimum_positive(monkeypatch):
+    monkeypatch.setenv("TAS_BUDGET_THALAMUS_MS", "0")
+    service = RecommendationService()
+
+    assert service.budget_ms["thalamus"] == 1
+
+
 def test_get_feed_with_meta_without_degradation(monkeypatch):
     service = RecommendationService()
 

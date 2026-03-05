@@ -118,6 +118,7 @@ export default function Mercurio() {
   const navigate = useNavigate();
 
   const basePath = location.pathname.startsWith("/news") ? "/news" : "/mercurio";
+
   const getTagHref = (tag: string) => `${basePath}/topico/${tagToSlug(tag)}`;
 
   const fetchData = async () => {
@@ -191,6 +192,7 @@ export default function Mercurio() {
                 <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 rounded-full text-[#2442d5] hover:bg-[#2442d5]/10">
                   <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
                 </Button>
+
                 <p className={`text-xs font-black tracking-wide uppercase ${categoryStyle[activeTrend.category] || "text-[#e42313]"}`}>
                   Redação Mercúrio • {activeTrend.category || "Destaque"}
                 </p>
