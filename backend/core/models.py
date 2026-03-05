@@ -2,6 +2,7 @@
 import uuid
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -69,6 +70,34 @@ class Connection(models.Model):
     target = models.ForeignKey(User, related_name='followers', on_delete=models.CASCADE)
     status = models.CharField(max_length=20, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['follower', 'target'], name='unique_connection_pair'),
+            models.CheckConstraint(check=~models.Q(follower=models.F('target')), name='prevent_self_connection'),
+        ]
+        indexes = [
+            models.Index(fields=['target', 'status']),
+            models.Index(fields=['follower', 'status']),
+        ]
+
+    def clean(self):
+        if self.follower_id == self.target_id:
+            raise ValidationError('Não é permitido seguir a si mesmo.')
+
+
+class SavedPost(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_posts')
+    post = models.ForeignKey(Bird, on_delete=models.CASCADE, related_name='saved_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'post'], name='unique_saved_post_per_user'),
+        ]
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+        ]
 
 class SocialBond(models.Model):
     requester = models.ForeignKey(User, related_name='bond_requests_sent', on_delete=models.CASCADE)

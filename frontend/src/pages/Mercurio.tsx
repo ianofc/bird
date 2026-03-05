@@ -172,6 +172,7 @@ export default function Mercurio() {
   const navigate = useNavigate();
 
   const basePath = location.pathname.startsWith("/news") ? "/news" : "/mercurio";
+
   const getTagHref = (tag: string) => `${basePath}/topico/${tagToSlug(tag)}`;
 
   const fetchData = async () => {

@@ -23,6 +23,8 @@ urlpatterns = [
     path('profile/<str:username>/follow/', interactions.toggle_follow, name='toggle_follow'),
     path('bird/<int:bird_id>/like/', interactions.toggle_like, name='toggle_like'),
     path('bird/<int:bird_id>/comment/', interactions.add_comment, name='add_comment'),
+    path('bird/<int:bird_id>/save/', interactions.toggle_save, name='toggle_save'),
+    path('bird/<int:bird_id>/share/', interactions.share_post, name='share_post'),
     path('comment/<int:comment_id>/delete/', interactions.delete_comment, name='delete_comment'),
 
     # Chat

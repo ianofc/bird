@@ -115,8 +115,6 @@ def _parse_numeric(value: Any) -> float:
     return 0.0
 
 
-
-
 def _extract_media_urls(payload: Dict[str, Any]) -> Dict[str, Any]:
     media_urls: List[str] = []
 
@@ -158,6 +156,7 @@ def _extract_media_urls(payload: Dict[str, Any]) -> Dict[str, Any]:
         "video_url": video_url,
         "image_url": image_url,
     }
+
 
 def _infer_external_origin(data: Dict[str, Any]) -> str:
     explicit = str(data.get("origin", "")).upper().strip()
