@@ -1,32 +1,9 @@
 import { BirdLayout } from "@/components/bird/BirdLayout";
-import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  RefreshCw,
-  TrendingUp,
-  Radio,
-  ExternalLink,
-  Activity,
-  Users,
-  MessageCircle,
-  Newspaper,
-  Hash,
-  ArrowRight
-} from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, Hash, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-
-// Descomente caso já tenha o componente criado
-// import { IrisCard } from "@/components/bird/IrisCard";
-
-interface BirdSignal {
-  posts_count: number;
-  comments_count: number;
-  hotspots: string[];
-  top_authors: string[];
-}
+import { Card, CardContent } from "@/components/ui/card";
 
 interface Trend {
   id: string;
@@ -38,7 +15,6 @@ interface Trend {
   hashtag: string;
   volume: string | number;
   link: string;
-  bird_signal?: BirdSignal;
 }
 
 interface NewsItem {
@@ -53,11 +29,43 @@ interface MercurioData {
   news: NewsItem[];
 }
 
+const categoryStyle: Record<string, string> = {
+  Jornalismo: "text-[#e42313]",
+  Esportes: "text-[#0ea64b]",
+  Entretenimento: "text-[#ff6a00]",
+  Política: "text-[#e42313]",
+  Economia: "text-[#2563eb]",
+  Mundo: "text-[#e42313]",
+};
+
+const normalizeSlug = (text: string) =>
+  text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+
+const getTrendSlug = (trend: Trend) => `${normalizeSlug(trend.title || trend.topic)}-${trend.id}`;
+
+const getTagHref = (tag: string) => `/explore?q=${encodeURIComponent(tag.startsWith("#") ? tag : `#${tag}`)}`;
+
+function GlassCard({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <Card
+      className={`bg-white/60 backdrop-blur-xl border border-white/70 shadow-[0_10px_35px_rgba(80,93,255,0.12)] ${className}`}
+    >
+      {children}
+    </Card>
+  );
+}
+
 export default function Mercurio() {
   const [data, setData] = useState<MercurioData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const selectedTrend = searchParams.get("trend")?.toLowerCase() || "";
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const fetchData = async () => {
     setLoading(true);
@@ -66,7 +74,8 @@ export default function Mercurio() {
       const json = await response.json();
       setData(json);
     } catch (error) {
-      console.error("Erro ao carregar Central Mercurio:", error);
+      console.error("Erro ao carregar Mercúrio:", error);
+      setData({ trends: [], news: [] });
     } finally {
       setLoading(false);
     }
@@ -76,230 +85,273 @@ export default function Mercurio() {
     fetchData();
   }, []);
 
-  const orderedTrends = [...(data?.trends || [])].sort((a, b) => {
-    if (!selectedTrend) return 0;
-    const aHit = `${a.hashtag} ${a.title} ${a.topic}`.toLowerCase().includes(selectedTrend);
-    const bHit = `${b.hashtag} ${b.title} ${b.topic}`.toLowerCase().includes(selectedTrend);
-    if (aHit && !bHit) return -1;
-    if (!aHit && bHit) return 1;
-    return 0;
-  });
+  const trends = data?.trends || [];
 
-  const mainHeadline = orderedTrends[0];
-  const secondaryNews = orderedTrends.slice(1);
+  const trendsBySlug = useMemo(() => {
+    const map = new Map<string, Trend>();
+    trends.forEach((trend) => {
+      map.set(getTrendSlug(trend), trend);
+    });
+    return map;
+  }, [trends]);
+
+  const activeTrend = useMemo(() => {
+    const match = location.pathname.match(/\/(mercurio|news)\/noticia\/([^/]+)/);
+    if (!match) return null;
+    return trendsBySlug.get(match[2]) || null;
+  }, [location.pathname, trendsBySlug]);
+
+  const hero = trends[0];
+  const sideHighlights = trends.slice(1, 5);
+  const editorias = {
+    Jornalismo: trends.slice(5, 12),
+    Esportes: trends.slice(12, 19),
+    Entretenimento: trends.slice(19, 26),
+  };
+
+  const sublinks = [
+    { label: "Últimas", anchor: "ultimas" },
+    { label: "Jornalismo", anchor: "jornalismo" },
+    { label: "Esportes", anchor: "esportes" },
+    { label: "Entretenimento", anchor: "entretenimento" },
+    { label: "Top Mercúrio", anchor: "top-mercurio" },
+  ];
+
+  if (activeTrend) {
+    return (
+      <BirdLayout>
+        <div className="min-h-screen bg-transparent px-4 py-6 pb-24">
+          <div className="mx-auto max-w-5xl space-y-5">
+            <GlassCard className="rounded-3xl">
+              <CardContent className="p-5 sm:p-7">
+                <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 rounded-full text-[#2442d5] hover:bg-[#2442d5]/10">
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+                </Button>
+
+                <p className={`text-xs font-black tracking-wide uppercase ${categoryStyle[activeTrend.category] || "text-[#e42313]"}`}>
+                  Redação Mercúrio • {activeTrend.category || "Destaque"}
+                </p>
+                <h1 className="mt-2 text-3xl sm:text-4xl font-black leading-tight text-[#112155]">
+                  {activeTrend.title || activeTrend.topic}
+                </h1>
+                <p className="mt-4 text-base text-slate-700 leading-relaxed">
+                  {activeTrend.summary}
+                </p>
+
+                <div className="mt-5 rounded-2xl border border-white/70 bg-gradient-to-br from-[#2442d5]/10 to-[#5ec8ff]/15 p-4">
+                  <p className="text-sm font-semibold text-[#18317d]">Conteúdo proprietário Mercúrio</p>
+                  <p className="text-sm text-slate-700 mt-1">
+                    Esta cobertura foi consolidada pela curadoria editorial do Mercúrio com base no radar de sinais do ecossistema BIRD.
+                  </p>
+                </div>
+
+                <div className="mt-6 flex flex-wrap gap-2">
+                  <Link
+                    to={getTagHref(activeTrend.hashtag)}
+                    className="inline-flex items-center rounded-full px-3 py-1.5 text-sm font-bold text-[#2442d5] bg-[#2442d5]/10 hover:bg-[#2442d5]/20"
+                  >
+                    <Hash className="w-4 h-4 mr-1" />
+                    {activeTrend.hashtag.startsWith("#") ? activeTrend.hashtag : `#${activeTrend.hashtag}`}
+                  </Link>
+                </div>
+              </CardContent>
+            </GlassCard>
+
+            <GlassCard className="rounded-3xl">
+              <CardContent className="p-5">
+                <h2 className="text-sm font-black uppercase text-[#2442d5] tracking-wide">Mais da cobertura Mercúrio</h2>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {trends
+                    .filter((t) => t.id !== activeTrend.id)
+                    .slice(0, 6)
+                    .map((t) => (
+                      <Link
+                        key={t.id}
+                        to={`/mercurio/noticia/${getTrendSlug(t)}`}
+                        className="rounded-2xl border border-white/70 bg-white/60 p-3 hover:bg-white/85 transition-colors"
+                      >
+                        <p className={`text-[11px] font-black uppercase ${categoryStyle[t.category] || "text-[#e42313]"}`}>{t.category || "Mercúrio"}</p>
+                        <p className="mt-1 text-sm font-bold text-slate-900 leading-snug">{t.title || t.topic}</p>
+                      </Link>
+                    ))}
+                </div>
+              </CardContent>
+            </GlassCard>
+          </div>
+        </div>
+      </BirdLayout>
+    );
+  }
 
   return (
     <BirdLayout>
-      <div className="w-full max-w-7xl p-4 pb-20 mx-auto space-y-6">
-        
-        {/* CABEÇALHO */}
-        <div className="flex flex-col gap-2 p-8 rounded-[2.5rem] bg-white/40 backdrop-blur-md border border-white/50 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 -mt-20 -mr-20 rounded-full bg-indigo-500/10 blur-3xl -z-10" />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 shadow-lg bg-gradient-to-br from-indigo-600 to-sky-400 rounded-2xl shadow-indigo-500/20">
-                <Radio className="w-8 h-8 text-white animate-pulse" />
+      <div className="min-h-screen bg-transparent px-4 py-6 pb-24">
+        <div className="mx-auto max-w-6xl space-y-6">
+          <GlassCard className="rounded-3xl overflow-hidden">
+            <div className="bg-gradient-to-r from-[#2442d5] to-[#4e7bff] text-white text-xs px-4 py-2 flex items-center justify-between">
+              <span className="font-semibold">Mercúrio • BIRD</span>
+              <span className="opacity-90">Aurora Clean • Light</span>
+            </div>
+
+            <CardContent className="p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#2442d5] font-bold">Portal de notícias Mercúrio</p>
+                  <h1 className="text-3xl sm:text-4xl font-black text-[#e42313] leading-none">Mercúrio</h1>
+                </div>
+                <Button onClick={fetchData} disabled={loading} variant="outline" className="rounded-full border-[#2442d5]/30 text-[#2442d5]">
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                  Atualizar
+                </Button>
               </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tighter text-gray-900">Central Mercúrio</h1>
-                <p className="flex items-center gap-2 mt-1 text-xs font-bold tracking-widest text-indigo-600 uppercase">
-                  <Activity className="w-3 h-3" /> Panorama Jornalístico + Pulso Social BIRD
+
+              <nav className="mt-4 flex flex-wrap gap-2">
+                {sublinks.map((link) => (
+                  <a
+                    key={link.anchor}
+                    href={`#${link.anchor}`}
+                    className="rounded-full px-3 py-1.5 text-xs font-bold bg-[#2442d5]/10 text-[#2442d5] hover:bg-[#2442d5]/20"
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </nav>
+            </CardContent>
+          </GlassCard>
+
+          <section id="ultimas" className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <GlassCard className="lg:col-span-7 rounded-3xl">
+              <CardContent className="p-5 sm:p-6">
+                <p className="text-xs font-black uppercase tracking-wide text-[#e42313]">Destaque Mercúrio</p>
+                <h2 className="mt-2 text-3xl font-black text-[#112155] leading-tight">
+                  {hero?.title || "Panorama estratégico do dia no ecossistema BIRD"}
+                </h2>
+                <p className="mt-3 text-slate-700">
+                  {hero?.summary || "Acompanhe a cobertura integral do Mercúrio com análise própria e contexto social em tempo real."}
                 </p>
-              </div>
-            </div>
-            <Button variant="outline" onClick={fetchData} disabled={loading} className="font-bold transition-all rounded-2xl bg-white/50 backdrop-blur-sm border-white/80 hover:bg-white text-indigo-900">
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-              Sincronizar
-            </Button>
-          </div>
-        </div>
-
-        {/* GRID ESTILO PORTAL G1 (12 Colunas) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* COLUNA ESQUERDA - EDITORIAS (2 Cols) */}
-          <aside className="hidden lg:block lg:col-span-2 space-y-4">
-            <div className="p-5 rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-lg sticky top-4">
-              <h3 className="text-xs font-black uppercase tracking-widest text-indigo-500 mb-5 flex items-center gap-2">
-                <Newspaper className="w-4 h-4" /> Editorias
-              </h3>
-              <ul className="space-y-3 text-sm font-bold text-gray-600">
-                <li className="hover:text-indigo-600 cursor-pointer transition-colors flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 opacity-0 transition-opacity" /> Mundo
-                </li>
-                <li className="hover:text-indigo-600 cursor-pointer transition-colors flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 opacity-0 transition-opacity" /> Tecnologia
-                </li>
-                <li className="hover:text-indigo-600 cursor-pointer transition-colors flex items-center gap-2 text-indigo-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 opacity-100" /> BIRD Ecosystem
-                </li>
-                <li className="hover:text-indigo-600 cursor-pointer transition-colors flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 opacity-0 transition-opacity" /> Educação
-                </li>
-              </ul>
-            </div>
-          </aside>
-
-          {/* COLUNA CENTRAL - NOTÍCIAS PRINCIPAIS (7 Cols) */}
-          <main className="lg:col-span-7 space-y-6">
-            {loading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-[400px] w-full rounded-[2rem] bg-white/50" />
-                <div className="grid grid-cols-2 gap-4">
-                  <Skeleton className="h-48 w-full rounded-2xl bg-white/50" />
-                  <Skeleton className="h-48 w-full rounded-2xl bg-white/50" />
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* MANCHETÃO PRINCIPAL */}
-                {mainHeadline && (
-                  <section className="group overflow-hidden rounded-[2rem] bg-white/60 backdrop-blur-lg border border-white/50 shadow-xl transition-all hover:shadow-2xl hover:border-indigo-300">
-                    {/* Placeholder para foto de capa com Glassmorphism */}
-                    <div className="h-48 sm:h-64 w-full bg-gradient-to-br from-indigo-500/10 to-sky-400/10 relative flex items-center justify-center border-b border-white/30">
-                      <div className="absolute inset-0 bg-[url('/icons3d/newspaper.png')] bg-center bg-no-repeat bg-contain opacity-10 mix-blend-overlay"></div>
-                      <Radio className="w-16 h-16 text-indigo-300/40" />
-                    </div>
-                    
-                    <div className="p-8">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none text-[10px] font-black tracking-widest px-3 py-1">
-                          {mainHeadline.category}
-                        </Badge>
-                        <span className="text-xs font-black text-gray-400 uppercase">
-                          Destaque Principal
-                        </span>
-                      </div>
-                      
-                      <Link to={`/explore?q=${encodeURIComponent(mainHeadline.hashtag)}`}>
-                        <h2 className="text-3xl sm:text-4xl font-black leading-[1.1] text-gray-900 group-hover:text-indigo-600 transition-colors mb-3">
-                          {mainHeadline.title || mainHeadline.topic}
-                        </h2>
-                      </Link>
-                      
-                      <p className="text-gray-600 font-medium text-lg leading-relaxed mb-6">
-                        {mainHeadline.summary}
-                      </p>
-
-                      <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-gray-200/50">
-                        <Button className="h-11 rounded-xl bg-gray-900 hover:bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-500/20" asChild>
-                          <Link to={`/explore?q=${encodeURIComponent(mainHeadline.hashtag)}`}>
-                            <MessageCircle className="w-4 h-4 mr-2" /> Ver repercussão no BIRD
-                          </Link>
-                        </Button>
-                        <Button variant="ghost" className="h-11 rounded-xl font-bold text-gray-600 hover:text-indigo-700" asChild>
-                          <a href={mainHeadline.link} target="_blank" rel="noopener noreferrer">
-                            Matéria original <ExternalLink className="w-4 h-4 ml-2" />
-                          </a>
-                        </Button>
-                      </div>
-                    </div>
-                  </section>
-                )}
-
-                {/* GRID DE NOTÍCIAS SECUNDÁRIAS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {secondaryNews.map((trend) => (
-                    <article key={trend.id} className="flex flex-col p-5 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/50 hover:bg-white/80 transition-all shadow-sm hover:shadow-md group">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-[10px] font-black text-indigo-500 tracking-wider uppercase">{trend.category}</span>
-                      </div>
-                      
-                      <h3 className="font-bold text-lg leading-snug text-gray-900 group-hover:text-indigo-600 transition-colors mb-2 line-clamp-3">
-                        {trend.title || trend.topic}
-                      </h3>
-                      
-                      <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-grow">
-                        {trend.summary}
-                      </p>
-                      
-                      <div className="flex items-center gap-2 mt-auto">
-                        <Button variant="secondary" size="sm" className="rounded-lg font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 w-full" asChild>
-                          <Link to={`/explore?q=${encodeURIComponent(trend.hashtag)}`}>Repercussão</Link>
-                        </Button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </>
-            )}
-          </main>
-
-          {/* COLUNA DIREITA - HUB DE IA E TRENDS (3 Cols) */}
-          <aside className="lg:col-span-3 space-y-6">
-            <div className="sticky top-4 space-y-6">
-              
-              {/* COMPONENTE IRIS (Seu Hub de IA) */}
-              <div className="p-1 rounded-[1.5rem] bg-gradient-to-b from-indigo-500/20 to-transparent">
-                <div className="p-5 rounded-[1.4rem] bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl">
-                  <h3 className="flex items-center gap-2 font-black text-gray-900 mb-4">
-                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping relative">
-                      <span className="absolute inset-0 w-full h-full bg-indigo-500 rounded-full" />
-                    </span>
-                    IRIS Intelligence
-                  </h3>
-                  {/* <IrisCard variant="mercurio" /> */}
-                  <div className="h-32 bg-white/40 rounded-xl border border-white/50 flex items-center justify-center">
-                    <span className="text-xs font-bold text-gray-400">Analisando o fluxo neural...</span>
+                {hero && (
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Link
+                      to={`/mercurio/noticia/${getTrendSlug(hero)}`}
+                      className="rounded-xl bg-[#e42313] px-4 py-2 text-sm text-white font-bold hover:bg-[#cc1f11]"
+                    >
+                      Ler matéria completa
+                    </Link>
+                    <Link
+                      to={getTagHref(hero.hashtag)}
+                      className="rounded-xl bg-[#2442d5]/10 px-4 py-2 text-sm text-[#2442d5] font-bold hover:bg-[#2442d5]/20"
+                    >
+                      Abrir #{hero.hashtag.replace("#", "")} no feed
+                    </Link>
                   </div>
-                </div>
-              </div>
+                )}
+              </CardContent>
+            </GlassCard>
 
-              {/* MAIS LIDAS / EM ALTA NO BIRD */}
-              <Card className="rounded-[1.5rem] bg-white/40 backdrop-blur-md border border-white/50 shadow-lg">
-                <CardContent className="p-5">
-                  <h4 className="text-sm font-black text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-wide">
-                    <TrendingUp className="w-4 h-4 text-indigo-500" /> Em Alta no Hub
-                  </h4>
-                  <ul className="space-y-4">
-                    {orderedTrends.slice(0, 5).map((t, i) => (
-                      <li key={i} className="flex items-start gap-3 group">
-                        <span className="text-2xl font-black text-indigo-200 group-hover:text-indigo-500 transition-colors leading-none">
-                          {i + 1}
-                        </span>
-                        <div>
-                          <Link to={`/explore?q=${encodeURIComponent(t.hashtag)}`} className="text-sm font-bold text-gray-700 group-hover:text-indigo-700 transition-colors line-clamp-2 leading-tight">
-                            {t.title || t.topic}
-                          </Link>
-                          <p className="text-[10px] font-bold text-gray-400 mt-1 flex items-center gap-1">
-                            <Hash className="w-3 h-3" /> {t.hashtag.replace('#', '')}
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-
-              {/* ÚLTIMAS NOTÍCIAS RÁPIDAS */}
-              {!!data?.news?.length && (
-                <Card className="rounded-[1.5rem] bg-white/40 backdrop-blur-md border border-white/50 shadow-lg">
-                  <CardContent className="p-5">
-                    <h4 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-wide">
-                      Últimas do Radar
-                    </h4>
-                    <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-1.5 before:w-px before:bg-indigo-100">
-                      {data.news.slice(0, 4).map((item, i) => (
-                        <div key={i} className="relative pl-5">
-                          <span className="absolute left-0 top-1.5 w-3 h-3 rounded-full border-2 border-white bg-indigo-400 z-10" />
-                          <a href={item.link} target="_blank" rel="noopener noreferrer" className="block group">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-0.5">{item.source}</p>
-                            <p className="text-xs font-bold text-gray-700 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                              {item.title}
-                            </p>
-                          </a>
-                        </div>
-                      ))}
+            <div className="lg:col-span-5 space-y-4">
+              {sideHighlights.map((item) => (
+                <GlassCard key={item.id} className="rounded-2xl">
+                  <CardContent className="p-4">
+                    <p className={`text-xs font-black uppercase ${categoryStyle[item.category] || "text-[#e42313]"}`}>
+                      {item.category || "Mercúrio"}
+                    </p>
+                    <h3 className="mt-1 text-base font-bold text-slate-900 leading-tight">{item.title || item.topic}</h3>
+                    <div className="mt-3 flex gap-2">
+                      <Link
+                        to={`/mercurio/noticia/${getTrendSlug(item)}`}
+                        className="text-xs font-bold text-[#2442d5] hover:underline"
+                      >
+                        Abrir matéria
+                      </Link>
+                      <Link to={getTagHref(item.hashtag)} className="text-xs font-bold text-[#e42313] hover:underline">
+                        Ver #{item.hashtag.replace("#", "")}
+                      </Link>
                     </div>
                   </CardContent>
-                </Card>
-              )}
-
+                </GlassCard>
+              ))}
             </div>
-          </aside>
+          </section>
 
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <EditoriaColumn id="jornalismo" title="Jornalismo" color="text-[#e42313]" items={editorias.Jornalismo} />
+            <EditoriaColumn id="esportes" title="Esportes" color="text-[#0ea64b]" items={editorias.Esportes} />
+            <EditoriaColumn id="entretenimento" title="Entretenimento" color="text-[#ff6a00]" items={editorias.Entretenimento} />
+          </section>
+
+          <section id="top-mercurio" className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <GlassCard className="lg:col-span-2 rounded-3xl">
+              <CardContent className="p-5">
+                <h3 className="text-sm uppercase font-black text-[#2442d5] tracking-wide">Radar Mercúrio agora</h3>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {trends.slice(0, 8).map((item) => (
+                    <Link
+                      key={item.id}
+                      to={`/mercurio/noticia/${getTrendSlug(item)}`}
+                      className="rounded-2xl border border-white/60 bg-white/60 p-3 hover:bg-white/80"
+                    >
+                      <p className={`text-[11px] font-black uppercase ${categoryStyle[item.category] || "text-[#e42313]"}`}>
+                        {item.category || "Mercúrio"}
+                      </p>
+                      <p className="text-sm font-bold text-slate-900 mt-1 line-clamp-2">{item.title || item.topic}</p>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </GlassCard>
+
+            <GlassCard className="rounded-3xl">
+              <CardContent className="p-5">
+                <h3 className="text-sm uppercase font-black text-[#2442d5] tracking-wide">Últimas da redação</h3>
+                <div className="mt-3 space-y-3">
+                  {(data?.news || []).slice(0, 8).map((item, index) => (
+                    <div key={`${item.title}-${index}`} className="border-b border-slate-200/70 pb-2 last:border-0">
+                      <p className="text-[11px] font-bold text-slate-500">Mercúrio • {item.source || "Radar"}</p>
+                      <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </GlassCard>
+          </section>
         </div>
       </div>
     </BirdLayout>
+  );
+}
+
+function EditoriaColumn({
+  id,
+  title,
+  color,
+  items,
+}: {
+  id: string;
+  title: string;
+  color: string;
+  items: Trend[];
+}) {
+  return (
+    <GlassCard className="rounded-3xl" >
+      <CardContent className="p-4" id={id}>
+        <h3 className={`text-lg font-black mb-3 ${color}`}>{title}</h3>
+        <div className="space-y-3">
+          {items.map((item) => (
+            <article key={item.id} className="rounded-2xl bg-white/55 border border-white/70 p-3">
+              <p className={`text-[11px] font-black uppercase ${color}`}>{item.category || title}</p>
+              <h4 className="mt-1 text-sm font-bold text-slate-900 leading-tight">{item.title || item.topic}</h4>
+              <div className="mt-2 flex gap-2 text-xs font-bold">
+                <Link to={`/mercurio/noticia/${getTrendSlug(item)}`} className="text-[#2442d5] hover:underline">
+                  Abrir
+                </Link>
+                <Link to={getTagHref(item.hashtag)} className="text-[#e42313] hover:underline">
+                  #{item.hashtag.replace("#", "")}
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      </CardContent>
+    </GlassCard>
   );
 }
