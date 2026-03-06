@@ -2,13 +2,14 @@
 
 <div class="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-sm mb-6 border border-gray-100 dark:border-gray-700">
     <form hx-post="{% url 'create_bird' %}" 
-          hx-target="#feed-list" 
+          hx-target="#{{ post_target_id|default:'feed-list' }}" 
           hx-swap="afterbegin" 
           hx-encoding="multipart/form-data"
           enctype="multipart/form-data"
           id="create-bird-form">
         
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
         
         <div class="flex gap-4">
             <div class="shrink-0 hidden sm:block">
@@ -26,7 +27,7 @@
                           rows="2" 
                           class="w-full bg-transparent border-none p-2 text-lg text-gray-800 dark:text-white placeholder-gray-400 focus:ring-0 resize-none" 
                           placeholder="O que está a acontecer?"
-                          required></textarea>
+                          ></textarea>
 
                 <div id="media-preview-area" class="hidden mt-3 relative rounded-xl overflow-hidden bg-gray-100 dark:bg-black max-h-[400px] border border-gray-200 dark:border-gray-700">
                     <button type="button" onclick="clearPostMedia()" class="absolute top-2 right-2 z-10 bg-black/60 hover:bg-black/80 text-white w-8 h-8 rounded-full flex items-center justify-center transition backdrop-blur-sm">

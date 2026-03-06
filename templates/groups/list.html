@@ -24,7 +24,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for group in meus_grupos %}
-                <a href="{% url 'group_detail' group.slug %}" class="group relative flex flex-col overflow-hidden rounded-[2rem] border border-white/50 bg-white/60 backdrop-blur-xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 hover:bg-white/80">
+                <a href="{% url 'group_detail' group.id %}" class="group relative flex flex-col overflow-hidden rounded-[2rem] border border-white/50 bg-white/60 backdrop-blur-xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 hover:bg-white/80">
                     
                     <div class="relative h-28 overflow-hidden bg-slate-100">
                         {% if group.capa %}
@@ -96,7 +96,7 @@
                         <p class="text-xs text-slate-500 mt-0.5">{{ group.members.count }} membros</p>
                     </div>
 
-                    <a href="{% url 'group_detail' group.slug %}" class="shrink-0 px-4 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-600 hover:text-white transition-colors">
+                    <a href="{% url 'group_detail' group.id %}" class="shrink-0 px-4 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-600 hover:text-white transition-colors">
                         Ver
                     </a>
                 </div>

@@ -102,12 +102,21 @@ def toggle_follow(request, username):
     if Connection:
         conn = Connection.objects.filter(follower=request.user, target=target_user).first()
 
-        if conn:
+        if conn and conn.status == 'active':
             conn.delete()
+            messages.info(request, f"Você deixou de seguir @{target_user.username}.")
         else:
-            Connection.objects.create(follower=request.user, target=target_user, status='active')
+            if conn:
+                conn.status = 'active'
+                conn.save(update_fields=['status'])
+            else:
+                Connection.objects.create(follower=request.user, target=target_user, status='active')
             _create_notification(target_user, f"@{request.user.username} começou a seguir você.")
+            messages.success(request, f"Agora você segue @{target_user.username}.")
 
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect('profile_detail', username=username)
 
 
@@ -142,10 +151,18 @@ def toggle_save(request, bird_id):
         else:
             messages.success(request, "Item salvo!")
 
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 
 @login_required
 def share_post(request, bird_id):
-    messages.success(request, "Link copiado para a área de transferência! (Simulado)")
+    bird = get_object_or_404(Bird, id=bird_id)
+    share_url = request.build_absolute_uri(reverse('bird_detail', args=[bird.id]))
+    messages.success(request, f"Link da publicação: {share_url}")
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect(request.META.get('HTTP_REFERER', 'home'))
