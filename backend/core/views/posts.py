@@ -36,6 +36,9 @@ def create_bird(request):
             if not request.headers.get('HX-Request'):
                 messages.warning(request, "O post não pode estar vazio.")
             
+    next_url = request.POST.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect('home')
 
 @login_required

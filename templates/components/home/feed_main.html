@@ -17,7 +17,7 @@
         </div>
 
         {% for story in stories %}
-        <a href="{% url 'profile_detail' story.author.username %}" class="flex flex-col items-center space-y-1 min-w-[70px] cursor-pointer group">
+        <a href="{% url 'bird_detail' story.id %}" class="flex flex-col items-center space-y-1 min-w-[70px] cursor-pointer group">
             <div class="h-[70px] w-[70px] rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-rose-500 to-purple-600">
                 <div class="h-full w-full rounded-full bg-white p-[2px]">
                     <img src="{{ story.author.profile.avatar.url|default:'https://i.pravatar.cc/150' }}" class="h-full w-full rounded-full object-cover transition group-hover:scale-105">

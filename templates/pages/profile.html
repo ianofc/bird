@@ -34,7 +34,7 @@
             {% endif %}
 
             {% if is_own_profile %}
-                <button onclick="document.getElementById('cover-input').click()" class="absolute top-6 right-6 px-5 py-2.5 bg-black/20 hover:bg-black/40 backdrop-blur-xl border border-white/30 rounded-full text-white text-xs font-bold uppercase tracking-wider transition flex items-center gap-2 cursor-pointer z-20">
+                <button type="button" onclick="document.getElementById('cover-input').click()" class="absolute top-6 right-6 px-5 py-2.5 bg-black/20 hover:bg-black/40 backdrop-blur-xl border border-white/30 rounded-full text-white text-xs font-bold uppercase tracking-wider transition flex items-center gap-2 cursor-pointer z-20">
                     <i class="fas fa-camera"></i> <span>Alterar Vibe</span>
                 </button>
             {% endif %}
@@ -52,12 +52,12 @@
                         {% endif %}
 
                         {% if is_own_profile %}
-                        <div onclick="document.getElementById('avatar-input').click()" class="absolute inset-0 bg-black/30 rounded-full opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center cursor-pointer transition backdrop-blur-sm z-20">
+                        <button type="button" onclick="document.getElementById('avatar-input').click()" class="absolute inset-0 bg-black/30 rounded-full opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center cursor-pointer transition backdrop-blur-sm z-20">
                             <i class="fas fa-camera text-white text-2xl drop-shadow-md"></i>
-                        </div>
+                        </button>
                         {% endif %}
                     </div>
-                    <div class="absolute bottom-2 right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl shadow-lg border border-slate-100 cursor-default hover:scale-110 transition">⚡</div>
+                    
                 </div>
 
                 <div class="flex-1 w-full text-center md:text-left">
@@ -68,6 +68,11 @@
                         {% if profile.is_verified %}<i class="fas fa-certificate text-blue-500 text-xl ml-1 align-middle drop-shadow-sm"></i>{% endif %}
                     </div>
                     <p class="text-slate-500 font-medium text-lg mb-4 font-mono text-sm tracking-tight">@{{ profile_user.username }}</p>
+                    <div class="flex flex-wrap gap-4 mb-4 text-sm">
+                        <a href="#people-followers" class="font-semibold text-slate-700 hover:text-indigo-600"><strong>{{ stats.followers }}</strong> Seguidores</a>
+                        <a href="#people-following" class="font-semibold text-slate-700 hover:text-indigo-600"><strong>{{ stats.following }}</strong> Seguindo</a>
+                        <a href="#people-friends" class="font-semibold text-slate-700 hover:text-indigo-600"><strong>{{ stats.friends_count }}</strong> Amigos</a>
+                    </div>
                     
                     {% if profile.interests %}
                     <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-6">
@@ -130,8 +135,6 @@
                     </div>
                 </div>
 
-                
-
             </div>
 
             <div class="lg:col-span-8 min-h-[500px]">
@@ -142,7 +145,7 @@
                      x-transition:enter-end="opacity-100 translate-y-0">
                     
                     {% if is_own_profile %}
-                        {% include 'components/home/post_form.html' %}
+                        {% with post_target_id='profile-feed-list' %}{% include 'components/home/post_form.html' %}{% endwith %}
                     {% endif %}
 
                     <div class="space-y-6 mt-6" id="profile-feed-list">
@@ -169,7 +172,11 @@
                     </div>
                     {% endif %}
 
-                    <h3 class="text-xl font-black text-slate-800 mb-4 px-2">Fotos</h3>
+                    <div class="flex items-center justify-between mb-4 px-2">
+                        <h3 class="text-xl font-black text-slate-800">Fotos</h3>
+                        <button type="button" @click="currentTab = 'photos'" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">Ver galeria completa</button>
+                    </div>
+                    
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {% for bird in photo_posts %}
                             {% if bird.image %}
@@ -210,6 +217,21 @@
 
     </div>
 </div>
+
+    <div class="max-w-6xl mx-auto px-4 pb-12 space-y-8">
+        <section id="people-followers" class="bg-white/60 border border-white/70 rounded-3xl p-6">
+            <h3 class="font-black text-lg text-slate-800 mb-4">Seguidores</h3>
+            <div class="grid md:grid-cols-3 gap-3">{% for person in followers_list %}<a href="{% url 'profile_detail' person.username %}" class="p-3 rounded-xl bg-white border border-slate-100 hover:border-indigo-200">@{{ person.username }}</a>{% empty %}<p class="text-slate-500">Sem seguidores.</p>{% endfor %}</div>
+        </section>
+        <section id="people-following" class="bg-white/60 border border-white/70 rounded-3xl p-6">
+            <h3 class="font-black text-lg text-slate-800 mb-4">Seguindo</h3>
+            <div class="grid md:grid-cols-3 gap-3">{% for person in following_list %}<a href="{% url 'profile_detail' person.username %}" class="p-3 rounded-xl bg-white border border-slate-100 hover:border-indigo-200">@{{ person.username }}</a>{% empty %}<p class="text-slate-500">Não segue ninguém.</p>{% endfor %}</div>
+        </section>
+        <section id="people-friends" class="bg-white/60 border border-white/70 rounded-3xl p-6">
+            <h3 class="font-black text-lg text-slate-800 mb-4">Amigos</h3>
+            <div class="grid md:grid-cols-3 gap-3">{% for person in friends_list %}<a href="{% url 'profile_detail' person.username %}" class="p-3 rounded-xl bg-white border border-slate-100 hover:border-indigo-200">@{{ person.username }}</a>{% empty %}<p class="text-slate-500">Sem amizades mútuas.</p>{% endfor %}</div>
+        </section>
+    </div>
 
 <style>
     @keyframes gradient-xy {
