@@ -135,8 +135,6 @@
                     </div>
                 </div>
 
-                
-
             </div>
 
             <div class="lg:col-span-8 min-h-[500px]">
@@ -174,7 +172,11 @@
                     </div>
                     {% endif %}
 
-                    <div class="flex items-center justify-between mb-4 px-2"><h3 class="text-xl font-black text-slate-800">Fotos</h3><button type="button" @click="currentTab = 'photos'" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">Ver galeria completa</button></div>
+                    <div class="flex items-center justify-between mb-4 px-2">
+                        <h3 class="text-xl font-black text-slate-800">Fotos</h3>
+                        <button type="button" @click="currentTab = 'photos'" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">Ver galeria completa</button>
+                    </div>
+                    
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {% for bird in photo_posts %}
                             {% if bird.image %}

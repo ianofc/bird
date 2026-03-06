@@ -33,7 +33,10 @@ def profile_view(request, username):
         'followers': len(follower_ids),
         'following': len(following_ids),
         'posts_count': Bird.objects.filter(author=profile_user).count(),
-        'friends_count': len(friend_ids),
+        'friends_count': SocialBond.objects.filter(
+            (Q(requester=profile_user) | Q(target=profile_user)),
+            status='active',
+        ).count(),
     }
 
     relationship = {'is_following': False}
@@ -50,6 +53,7 @@ def profile_view(request, username):
     followers_list = User.objects.filter(id__in=follower_ids).select_related('profile').order_by('username')
     following_list = User.objects.filter(id__in=following_ids).select_related('profile').order_by('username')
     friends_list = User.objects.filter(id__in=friend_ids).select_related('profile').order_by('username')
+    friends_preview = friends_list[:6]
 
     saved_post_ids = set(SavedPost.objects.filter(user=request.user).values_list('post_id', flat=True))
 
@@ -59,7 +63,7 @@ def profile_view(request, username):
         'stats': stats,
         'posts': posts,
         'photo_posts': photo_posts,
-        'friends_preview': friends_list[:6],
+        'friends_preview': friends_preview,
         'followers_list': followers_list,
         'following_list': following_list,
         'friends_list': friends_list,
