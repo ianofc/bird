@@ -2,81 +2,113 @@
 {% load static %}
 
 {% block main_content %}
-<div class="flex-1 h-full overflow-y-auto no-scrollbar" x-data="{ activeTab: 'bonds' }">
-    
-    <div class="bg-white border-b border-slate-100 sticky top-0 z-20">
-        <div class="px-6 py-5 flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-black text-slate-800">Minha Rede</h1>
-                <p class="text-slate-500 text-sm">Gerencie suas conexões e relacionamentos.</p>
-            </div>
-            
-            <div class="flex gap-3">
-                <a href="{% url 'network_suggestions' %}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-bold text-sm transition flex items-center gap-2">
-                    <i class="fas fa-search"></i> <span class="hidden md:inline">Descobrir</span>
-                </a>
-                <a href="{% url 'network_requests' %}" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full font-bold text-sm transition flex items-center gap-2 relative">
-                    <i class="fas fa-user-clock"></i> <span class="hidden md:inline">Solicitações</span>
-                    </a>
-            </div>
-        </div>
+<div class="relative flex-1 h-full overflow-y-auto no-scrollbar" x-data="{ activeTab: 'bonds' }">
 
-        <div class="flex px-6 gap-8 overflow-x-auto no-scrollbar">
-            <button @click="activeTab = 'bonds'" 
-                    class="pb-4 font-bold text-sm transition border-b-2 whitespace-nowrap flex items-center gap-2"
-                    :class="activeTab === 'bonds' ? 'text-indigo-600 border-indigo-600' : 'text-slate-500 border-transparent hover:text-slate-800'">
-                <i class="fas fa-heart text-xs"></i> Família & Amigos
-                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs">{{ bonds|length }}</span>
-            </button>
-            <button @click="activeTab = 'following'" 
-                    class="pb-4 font-bold text-sm transition border-b-2 whitespace-nowrap flex items-center gap-2"
-                    :class="activeTab === 'following' ? 'text-indigo-600 border-indigo-600' : 'text-slate-500 border-transparent hover:text-slate-800'">
-                <i class="fas fa-user-check text-xs"></i> Seguindo
-                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs">{{ following|length }}</span>
-            </button>
-            <button @click="activeTab = 'followers'" 
-                    class="pb-4 font-bold text-sm transition border-b-2 whitespace-nowrap flex items-center gap-2"
-                    :class="activeTab === 'followers' ? 'text-indigo-600 border-indigo-600' : 'text-slate-500 border-transparent hover:text-slate-800'">
-                <i class="fas fa-users text-xs"></i> Seguidores
-                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-xs">{{ followers|length }}</span>
-            </button>
-        </div>
+    <div class="fixed inset-0 -z-10 pointer-events-none">
+        <div class="absolute top-8 right-[8%] h-72 w-72 rounded-full bg-indigo-300/20 blur-3xl"></div>
+        <div class="absolute bottom-12 left-[10%] h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl"></div>
     </div>
 
-    <div class="p-6 pb-20 max-w-7xl mx-auto">
-        
-        <div x-show="activeTab === 'bonds'" class="space-y-6">
+    <section class="w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
+
+        <header class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-xl shadow-sm px-5 md:px-8 py-6 md:py-7">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+                <div>
+                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold uppercase tracking-wide">
+                        <i class="fas fa-satellite-dish text-[10px]"></i> Aurora Clean
+                    </span>
+                    <h1 class="mt-3 text-3xl md:text-4xl font-black tracking-tight text-slate-800">Minha Rede</h1>
+                    <p class="mt-2 text-slate-500 font-medium">Seu espaço para conexões, vínculos e expansão da comunidade.</p>
+                </div>
+
+                <div class="flex flex-wrap gap-2.5">
+                    <a href="{% url 'network_suggestions' %}" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold text-sm transition hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50/50 inline-flex items-center gap-2">
+                        <i class="fas fa-search"></i>
+                        <span>Descobrir</span>
+                    </a>
+                    <a href="{% url 'network_requests' %}" class="px-4 py-2.5 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-lg shadow-slate-900/10 transition hover:bg-indigo-600 inline-flex items-center gap-2">
+                        <i class="fas fa-user-clock"></i>
+                        <span>Solicitações</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <article class="rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3">
+                    <p class="text-xs uppercase tracking-wide font-bold text-slate-400">Laços</p>
+                    <p class="text-xl font-black text-slate-800 mt-1">{{ bonds|length }}</p>
+                </article>
+                <article class="rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3">
+                    <p class="text-xs uppercase tracking-wide font-bold text-slate-400">Seguindo</p>
+                    <p class="text-xl font-black text-slate-800 mt-1">{{ following|length }}</p>
+                </article>
+                <article class="rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3">
+                    <p class="text-xs uppercase tracking-wide font-bold text-slate-400">Seguidores</p>
+                    <p class="text-xl font-black text-slate-800 mt-1">{{ followers|length }}</p>
+                </article>
+            </div>
+        </header>
+
+        <div class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-xl shadow-sm p-2 md:p-3">
+            <nav class="flex flex-wrap gap-2" aria-label="Abas da rede">
+                <button @click="activeTab = 'bonds'"
+                        class="px-4 py-2.5 rounded-2xl font-bold text-sm transition flex items-center gap-2"
+                        :class="activeTab === 'bonds' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'">
+                    <i class="fas fa-heart text-xs"></i> Família & Amigos
+                    <span class="px-2 py-0.5 rounded-lg text-[11px] font-black"
+                          :class="activeTab === 'bonds' ? 'bg-white/20 text-indigo-100' : 'bg-slate-200 text-slate-600'">{{ bonds|length }}</span>
+                </button>
+
+                <button @click="activeTab = 'following'"
+                        class="px-4 py-2.5 rounded-2xl font-bold text-sm transition flex items-center gap-2"
+                        :class="activeTab === 'following' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'">
+                    <i class="fas fa-user-check text-xs"></i> Seguindo
+                    <span class="px-2 py-0.5 rounded-lg text-[11px] font-black"
+                          :class="activeTab === 'following' ? 'bg-white/20 text-indigo-100' : 'bg-slate-200 text-slate-600'">{{ following|length }}</span>
+                </button>
+
+                <button @click="activeTab = 'followers'"
+                        class="px-4 py-2.5 rounded-2xl font-bold text-sm transition flex items-center gap-2"
+                        :class="activeTab === 'followers' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'">
+                    <i class="fas fa-users text-xs"></i> Seguidores
+                    <span class="px-2 py-0.5 rounded-lg text-[11px] font-black"
+                          :class="activeTab === 'followers' ? 'bg-white/20 text-indigo-100' : 'bg-slate-200 text-slate-600'">{{ followers|length }}</span>
+                </button>
+            </nav>
+        </div>
+
+        <section x-show="activeTab === 'bonds'" class="space-y-6" x-cloak>
             {% if bonds %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {% for bond in bonds %}
-                        {% with friend=bond.requester|yesno:bond.target|yesno:bond.target|default:bond.requester %}
-                            {% if bond.requester == user %}
-                                {% with person=bond.target role=bond.get_type_display icon="heart" %}
-                                    {% include 'components/cards/user_card_network.html' %}
-                                {% endwith %}
-                            {% else %}
-                                {% with person=bond.requester role=bond.get_type_display icon="heart" %}
-                                    {% include 'components/cards/user_card_network.html' %}
-                                {% endwith %}
-                            {% endif %}
-                        {% endwith %}
+                        {% if bond.requester == user %}
+                            {% with person=bond.target role=bond.get_type_display icon="heart" %}
+                                {% include 'components/cards/user_card_network.html' %}
+                            {% endwith %}
+                        {% else %}
+                            {% with person=bond.requester role=bond.get_type_display icon="heart" %}
+                                {% include 'components/cards/user_card_network.html' %}
+                            {% endwith %}
+                        {% endif %}
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="text-center py-20">
-                    <div class="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-300">
-                        <i class="fas fa-heart-broken text-3xl"></i>
+                <div class="text-center py-16 px-6 rounded-3xl border border-dashed border-slate-200 bg-white/70 backdrop-blur-md">
+                    <div class="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-rose-300">
+                        <i class="fas fa-heart-broken text-2xl"></i>
                     </div>
                     <h3 class="font-bold text-slate-800 text-lg">Sem laços profundos ainda.</h3>
-                    <p class="text-slate-500 mb-6">Conecte-se com sua família, namorada(o) ou melhores amigos.</p>
-                    <a href="{% url 'network_suggestions' %}" class="text-indigo-600 font-bold hover:underline">Buscar pessoas</a>
+                    <p class="text-slate-500 mb-6">Conecte-se com família, amigos e pessoas especiais para fortalecer sua rede.</p>
+                    <a href="{% url 'network_suggestions' %}" class="inline-flex items-center gap-2 text-indigo-600 font-bold hover:underline">
+                        <i class="fas fa-arrow-right"></i> Buscar pessoas
+                    </a>
                 </div>
             {% endif %}
-        </div>
+        </section>
 
-        <div x-show="activeTab === 'following'" style="display: none;">
+        <section x-show="activeTab === 'following'" style="display: none;" class="space-y-6" x-cloak>
             {% if following %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {% for conn in following %}
                         {% with person=conn.target role="Seguindo" icon="check" %}
                             {% include 'components/cards/user_card_network.html' %}
@@ -84,16 +116,16 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="text-center py-20">
+                <div class="text-center py-16 px-6 rounded-3xl border border-dashed border-slate-200 bg-white/70 backdrop-blur-md">
                     <p class="text-slate-500">Você ainda não segue ninguém.</p>
-                    <a href="{% url 'explore' %}" class="text-indigo-600 font-bold hover:underline">Explorar feed</a>
+                    <a href="{% url 'explore' %}" class="mt-2 inline-block text-indigo-600 font-bold hover:underline">Explorar feed</a>
                 </div>
             {% endif %}
-        </div>
+        </section>
 
-        <div x-show="activeTab === 'followers'" style="display: none;">
+        <section x-show="activeTab === 'followers'" style="display: none;" class="space-y-6 pb-12" x-cloak>
             {% if followers %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {% for conn in followers %}
                         {% with person=conn.follower role="Te segue" icon="user" %}
                             {% include 'components/cards/user_card_network.html' %}
@@ -101,16 +133,11 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="text-center py-20">
-                    <p class="text-slate-500">Ainda sem seguidores. Continue postando!</p>
+                <div class="text-center py-16 px-6 rounded-3xl border border-dashed border-slate-200 bg-white/70 backdrop-blur-md">
+                    <p class="text-slate-500">Ainda sem seguidores. Continue postando para crescer sua comunidade.</p>
                 </div>
             {% endif %}
-        </div>
-
-    </div>
+        </section>
+    </section>
 </div>
-
-<script type="text/ng-template" id="card-template">
-    </script>
-
 {% endblock %}

@@ -2,65 +2,72 @@
 {% load static %}
 
 {% block main_content %}
-<div class="relative min-h-full w-full overflow-y-auto no-scrollbar font-sans text-slate-800" x-data="{ currentTab: 'account' }">
+<div class="relative min-h-full w-full overflow-y-auto no-scrollbar text-slate-800" x-data="{ currentTab: 'account' }">
 
-    <div class="fixed inset-0 -z-10 bg-[#F5F7FA]">
-        <div class="absolute top-[10%] right-[10%] w-[400px] h-[400px] bg-emerald-300/20 rounded-full blur-[100px] animate-pulse"></div>
-        <div class="absolute bottom-[10%] left-[5%] w-[500px] h-[500px] bg-blue-300/20 rounded-full blur-[120px] animate-pulse delay-1000"></div>
+    <div class="fixed inset-0 -z-10 bg-[#F5F7FA] pointer-events-none">
+        <div class="absolute top-[8%] right-[8%] w-[380px] h-[380px] bg-violet-300/20 rounded-full blur-[110px]"></div>
+        <div class="absolute bottom-[10%] left-[8%] w-[420px] h-[420px] bg-cyan-300/20 rounded-full blur-[120px]"></div>
     </div>
 
-    <div class="max-w-5xl mx-auto px-4 py-8 pb-32">
+    <section class="max-w-6xl mx-auto px-4 py-8 pb-24 space-y-6">
 
-        <div class="flex items-center gap-4 mb-8">
-            <a href="{% url 'profile_detail' user.username %}" class="w-10 h-10 rounded-full bg-white/60 backdrop-blur-md border border-white/60 flex items-center justify-center text-slate-600 hover:bg-white transition shadow-sm">
-                <i class="fas fa-arrow-left"></i>
-            </a>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Ajustes & Privacidade</h1>
-        </div>
+        <header class="rounded-3xl border border-white/60 bg-white/70 backdrop-blur-xl shadow-sm px-5 md:px-8 py-6 md:py-7">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <a href="{% url 'profile_detail' user.username %}" class="w-10 h-10 rounded-2xl bg-white/70 backdrop-blur-md border border-white/80 flex items-center justify-center text-slate-600 hover:bg-white transition shadow-sm">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <div>
+                        <p class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold uppercase tracking-wide">
+                            <i class="fas fa-sliders-h text-[10px]"></i> Aurora Clean
+                        </p>
+                        <h1 class="mt-2 text-3xl font-black text-slate-800 tracking-tight">Ajustes & Privacidade</h1>
+                        <p class="text-slate-500 text-sm font-medium mt-1">Theme light com foco em clareza, segurança e controle da sua conta.</p>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-            <div class="lg:col-span-3">
-                <div class="bg-white/60 backdrop-blur-xl border border-white/60 rounded-[2rem] p-4 shadow-sm sticky top-24 space-y-1">
-                    
-                    <button @click="currentTab = 'account'" 
-                            class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 transition"
-                            :class="currentTab === 'account' ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-white/50'">
-                        <i class="fas fa-user-circle text-lg w-6"></i> Conta
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <aside class="lg:col-span-3">
+                <div class="sticky top-24 rounded-3xl border border-white/60 bg-white/70 backdrop-blur-xl shadow-sm p-3 space-y-1">
+                    <button @click="currentTab = 'account'"
+                            class="w-full text-left px-4 py-3 rounded-2xl font-bold text-sm flex items-center gap-3 transition"
+                            :class="currentTab === 'account' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'text-slate-600 hover:bg-slate-100'">
+                        <i class="fas fa-user-circle text-base w-5"></i> Conta
                     </button>
 
-                    <button @click="currentTab = 'security'" 
-                            class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 transition"
-                            :class="currentTab === 'security' ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-white/50'">
-                        <i class="fas fa-shield-alt text-lg w-6"></i> Segurança
+                    <button @click="currentTab = 'security'"
+                            class="w-full text-left px-4 py-3 rounded-2xl font-bold text-sm flex items-center gap-3 transition"
+                            :class="currentTab === 'security' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'text-slate-600 hover:bg-slate-100'">
+                        <i class="fas fa-shield-alt text-base w-5"></i> Segurança
                     </button>
 
-                    <button @click="currentTab = 'privacy'" 
-                            class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 transition"
-                            :class="currentTab === 'privacy' ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-white/50'">
-                        <i class="fas fa-lock text-lg w-6"></i> Privacidade
+                    <button @click="currentTab = 'privacy'"
+                            class="w-full text-left px-4 py-3 rounded-2xl font-bold text-sm flex items-center gap-3 transition"
+                            :class="currentTab === 'privacy' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'text-slate-600 hover:bg-slate-100'">
+                        <i class="fas fa-lock text-base w-5"></i> Privacidade
                     </button>
 
-                    <button @click="currentTab = 'display'" 
-                            class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 transition"
-                            :class="currentTab === 'display' ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-white/50'">
-                        <i class="fas fa-paint-brush text-lg w-6"></i> Aparência
+                    <button @click="currentTab = 'display'"
+                            class="w-full text-left px-4 py-3 rounded-2xl font-bold text-sm flex items-center gap-3 transition"
+                            :class="currentTab === 'display' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'text-slate-600 hover:bg-slate-100'">
+                        <i class="fas fa-paint-brush text-base w-5"></i> Aparência
                     </button>
 
                     <div class="h-px bg-slate-200/60 my-2"></div>
 
-                    <a href="{% url 'logout' %}" class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 text-red-500 hover:bg-red-50 transition">
-                        <i class="fas fa-sign-out-alt text-lg w-6"></i> Sair
+                    <a href="{% url 'logout' %}" class="w-full text-left px-4 py-3 rounded-2xl font-bold text-sm flex items-center gap-3 text-red-500 hover:bg-red-50 transition">
+                        <i class="fas fa-sign-out-alt text-base w-5"></i> Sair
                     </a>
-
                 </div>
-            </div>
+            </aside>
 
             <div class="lg:col-span-9">
-                <div class="bg-white/70 backdrop-blur-xl border border-white/80 rounded-[2.5rem] p-8 shadow-[0_8px_40px_rgb(0,0,0,0.04)] min-h-[500px]">
+                <div class="rounded-3xl border border-white/70 bg-white/75 backdrop-blur-xl shadow-sm p-6 md:p-8 min-h-[520px]">
 
-                    <div x-show="currentTab === 'account'" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
-                        <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+                    <div x-show="currentTab === 'account'" x-cloak x-transition.opacity.duration.200ms class="space-y-6">
+                        <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
                             <i class="fas fa-user-circle text-indigo-500"></i> Informações da Conta
                         </h2>
 
@@ -69,130 +76,103 @@
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nome de Usuário</label>
                                 <div class="relative">
                                     <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 font-bold">@</span>
-                                    <input type="text" value="{{ user.username }}" disabled class="w-full pl-8 pr-4 py-3 rounded-xl bg-slate-100 border-transparent text-slate-500 font-bold cursor-not-allowed">
+                                    <input type="text" value="{{ user.username }}" disabled class="w-full pl-8 pr-4 py-3 rounded-2xl bg-slate-100 border border-slate-200 text-slate-500 font-bold cursor-not-allowed">
                                 </div>
-                                <p class="text-xs text-slate-400 mt-1">O nome de usuário é sua identidade única e não pode ser alterado frequentemente.</p>
+                                <p class="text-xs text-slate-400 mt-1">Sua identidade na Bird.</p>
                             </div>
 
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Email Principal</label>
-                                <input type="email" value="{{ user.email }}" class="w-full px-4 py-3 rounded-xl border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 bg-white/50">
+                                <input type="email" value="{{ user.email }}" class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 bg-white/90">
                             </div>
 
-                            <div class="pt-6 border-t border-slate-200">
+                            <div class="pt-5 border-t border-slate-200">
                                 <h3 class="text-sm font-bold text-red-500 mb-2">Zona de Perigo</h3>
                                 <button type="button" class="text-red-600 text-sm font-bold hover:underline">Desativar minha conta temporariamente</button>
                                 <br>
-                                <button type="button" class="text-red-600 text-sm font-bold hover:underline mt-2">Excluir conta permanentemente</button>
-                            </div>
-
-                            <div class="pt-4 flex justify-end">
-                                <button type="button" class="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold shadow-lg shadow-slate-900/20 hover:scale-105 transition">Salvar Alterações</button>
+                                <button type="button" class="text-red-600 text-sm font-bold hover:underline mt-1">Excluir conta permanentemente</button>
                             </div>
                         </form>
                     </div>
 
-                    <div x-show="currentTab === 'security'" style="display: none;" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
-                        <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
-                            <i class="fas fa-shield-alt text-emerald-500"></i> Segurança & Login
+                    <div x-show="currentTab === 'security'" x-cloak style="display:none" x-transition.opacity.duration.200ms class="space-y-6 max-w-xl">
+                        <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-shield-alt text-emerald-500"></i> Segurança da Conta
                         </h2>
 
-                        <form class="space-y-6 max-w-xl">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Senha Atual</label>
-                                <input type="password" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 bg-white/50">
-                            </div>
+                        <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 space-y-2">
+                            <h4 class="font-bold text-slate-800 text-sm">Senha</h4>
+                            <p class="text-xs text-slate-500">Última alteração há 24 dias.</p>
+                            <button class="text-sm font-bold text-indigo-600 hover:underline">Alterar senha</button>
+                        </div>
 
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nova Senha</label>
-                                    <input type="password" class="w-full px-4 py-3 rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 bg-white/50">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Confirmar Senha</label>
-                                    <input type="password" class="w-full px-4 py-3 rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 bg-white/50">
-                                </div>
-                            </div>
-
-                            <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
-                                <i class="fas fa-info-circle text-blue-500 mt-1"></i>
-                                <div>
-                                    <h4 class="text-sm font-bold text-blue-800">Autenticação de Dois Fatores (2FA)</h4>
-                                    <p class="text-xs text-blue-600 mt-1">Adicione uma camada extra de segurança à sua conta.</p>
-                                    <button type="button" class="mt-2 text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">Configurar 2FA</button>
-                                </div>
-                            </div>
-
-                            <div class="pt-4 flex justify-end">
-                                <button type="button" class="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold shadow-lg shadow-slate-900/20 hover:scale-105 transition">Atualizar Senha</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div x-show="currentTab === 'privacy'" style="display: none;" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
-                        <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
-                            <i class="fas fa-lock text-purple-500"></i> Privacidade de Dados
-                        </h2>
-
-                        <div class="space-y-6 max-w-xl">
-                            
-                            <div class="flex items-center justify-between p-4 bg-white/50 border border-slate-100 rounded-2xl">
-                                <div>
-                                    <h4 class="font-bold text-slate-800 text-sm">Conta Privada</h4>
-                                    <p class="text-xs text-slate-500 mt-1">Apenas pessoas que você aprovar poderão ver suas fotos e vídeos.</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" value="" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                                </label>
-                            </div>
-
-                            <div class="flex items-center justify-between p-4 bg-white/50 border border-slate-100 rounded-2xl">
-                                <div>
-                                    <h4 class="font-bold text-slate-800 text-sm">Status de Atividade</h4>
-                                    <p class="text-xs text-slate-500 mt-1">Permitir que contas que você segue vejam quando você esteve online pela última vez.</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" value="" class="sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                                </label>
-                            </div>
-
-                            <div class="flex items-center justify-between p-4 bg-white/50 border border-slate-100 rounded-2xl">
-                                <div>
-                                    <h4 class="font-bold text-slate-800 text-sm">Permitir Compartilhamento</h4>
-                                    <p class="text-xs text-slate-500 mt-1">Deixar que outras pessoas compartilhem seus posts nos stories delas.</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" value="" class="sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                                </label>
-                            </div>
-
+                        <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 space-y-2">
+                            <h4 class="font-bold text-slate-800 text-sm">Autenticação em duas etapas</h4>
+                            <p class="text-xs text-slate-500">Adicione uma camada extra de proteção.</p>
+                            <button class="text-sm font-bold text-indigo-600 hover:underline">Configurar 2FA</button>
                         </div>
                     </div>
 
-                    <div x-show="currentTab === 'display'" style="display: none;" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
-                        <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
-                            <i class="fas fa-paint-brush text-pink-500"></i> Tema e Cores
+                    <div x-show="currentTab === 'privacy'" x-cloak style="display:none" x-transition.opacity.duration.200ms class="space-y-4 max-w-xl">
+                        <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-lock text-purple-500"></i> Privacidade de Dados
                         </h2>
 
-                        <div class="grid grid-cols-3 gap-4 mb-8">
-                            <div class="border-2 border-indigo-500 rounded-2xl p-4 bg-slate-50 cursor-pointer relative overflow-hidden">
+                        <div class="flex items-center justify-between p-4 bg-white/90 border border-slate-200 rounded-2xl">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">Conta Privada</h4>
+                                <p class="text-xs text-slate-500 mt-1">Somente pessoas aprovadas poderão ver seu conteúdo.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer">
+                                <span class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full"></span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 bg-white/90 border border-slate-200 rounded-2xl">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">Status de Atividade</h4>
+                                <p class="text-xs text-slate-500 mt-1">Permita que pessoas que você segue vejam seu status.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" checked>
+                                <span class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full"></span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 bg-white/90 border border-slate-200 rounded-2xl">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm">Permitir Compartilhamento</h4>
+                                <p class="text-xs text-slate-500 mt-1">Permitir que outras pessoas compartilhem seus posts.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" checked>
+                                <span class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div x-show="currentTab === 'display'" x-cloak style="display:none" x-transition.opacity.duration.200ms class="space-y-6">
+                        <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-paint-brush text-pink-500"></i> Aparência
+                        </h2>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <article class="border-2 border-indigo-500 rounded-2xl p-4 bg-white/90 cursor-pointer relative overflow-hidden">
                                 <div class="absolute top-2 right-2 text-indigo-600"><i class="fas fa-check-circle"></i></div>
                                 <div class="h-16 w-full bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200 rounded-xl mb-3"></div>
                                 <h4 class="font-bold text-slate-800 text-sm text-center">Aurora Light</h4>
-                            </div>
+                            </article>
 
-                            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50 cursor-pointer opacity-60 hover:opacity-100 transition">
+                            <article class="border border-slate-200 rounded-2xl p-4 bg-slate-50/80 cursor-pointer opacity-60 hover:opacity-100 transition">
                                 <div class="h-16 w-full bg-slate-800 rounded-xl mb-3"></div>
                                 <h4 class="font-bold text-slate-800 text-sm text-center">Midnight</h4>
-                            </div>
+                            </article>
 
-                            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50 cursor-pointer opacity-60 hover:opacity-100 transition">
+                            <article class="border border-slate-200 rounded-2xl p-4 bg-slate-50/80 cursor-pointer opacity-60 hover:opacity-100 transition">
                                 <div class="h-16 w-full bg-white border-2 border-black rounded-xl mb-3"></div>
                                 <h4 class="font-bold text-slate-800 text-sm text-center">Minimal</h4>
-                            </div>
+                            </article>
                         </div>
 
                         <p class="text-sm text-slate-500 text-center italic">Mais temas serão adicionados em breve.</p>
@@ -200,8 +180,7 @@
 
                 </div>
             </div>
-
         </div>
-    </div>
+    </section>
 </div>
 {% endblock %}
