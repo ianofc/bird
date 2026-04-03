@@ -1,0 +1,97 @@
+services:
+  # --- O Cérebro (Django) ---
+  backend:
+    build: ./backend
+    container_name: bird_backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - TAS_URL=http://tas:8001
+      - ZIOS_URL=http://zios:8002
+      - IRIS_URL=http://iris:8003
+      - MERCURIO_URL=http://mercurio:8004
+      - REDIS_URL=redis://redis:6379/0
+
+  # --- A Cara (React + Vite) ---
+  frontend:
+    build: ./frontend
+    container_name: bird_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "8080:8080"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+
+  # --- Inteligência Artificial (TAS) - Thalamus/Accumbens/Sara ---
+  tas:
+    build: ./tas
+    container_name: bird_tas
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ./tas:/app
+    ports:
+      - "8001:8001"
+    depends_on:
+      - redis
+
+  # --- Sistema Operativo de Vida (ZIOS) ---
+  zios:
+    build: ./zios
+    container_name: bird_zios
+    command: uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+    volumes:
+      - ./zios:/app
+    ports:
+      - "8002:8002"
+
+  # --- O Olho / Coletor (IRIS - SATTR) ---
+  iris:
+    build: ./iris
+    container_name: bird_iris
+    # Rodando na porta 8003 para não conflitar com o ZIOS (8002)
+    command: uvicorn main:app --host 0.0.0.0 --port 8003 --reload
+    volumes:
+      - ./iris:/app
+    ports:
+      - "8003:8003"
+    environment:
+      - CHROME_BIN=/usr/bin/chromium-browser
+      - CHROMEDRIVER_PATH=/usr/bin/chromedriver
+
+  # --- O Mensageiro (MERCURIO) ---
+  mercurio:
+    build: ./mercurio
+    container_name: bird_mercurio
+    command: python main.py
+    volumes:
+      - ./mercurio:/app
+    ports:
+      - "8004:8004"
+    depends_on:
+      - redis
+
+  # --- Infraestrutura ---
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=bird_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

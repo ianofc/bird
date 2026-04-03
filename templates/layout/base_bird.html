@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bird{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Reset e Utilitários */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        body {
+            background-color: #f8fafc; /* Slate-50 Base */
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        /* --- ANIMAÇÃO AURORA (BLOBS) --- */
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+    </style>
+
+    <script>
+        document.body.addEventListener('htmx:configRequest', (event) => {
+            event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+        });
+    </script>
+    </head>
+
+<body class="overflow-hidden h-screen w-screen flex text-slate-800 relative selection:bg-indigo-100 selection:text-indigo-700">
+
+    <div class="fixed inset-0 w-full h-full overflow-hidden -z-50 pointer-events-none">
+        <div class="absolute top-0 left-0 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        
+        <div class="absolute top-0 right-0 w-96 h-96 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        
+        <div class="absolute -bottom-32 left-20 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+        
+        <div class="absolute inset-0 bg-white/40 backdrop-blur-[1px]"></div>
+    </div>
+
+    {% include 'components/home/left_sidebar.html' %}
+
+    <main class="flex-1 flex w-full h-full relative z-10">
+        
+        <div class="hidden md:block w-[100px] lg:w-[150px] shrink-0"></div>
+
+        <div class="flex-1 flex justify-between h-full w-full">
+            {% block main_content %}
+            {% endblock %}
+        </div>
+    </main>
+
+</body>
+</html>

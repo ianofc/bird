@@ -1,0 +1,97 @@
+{% load static %}
+
+<div class="bg-white dark:bg-gray-800 p-0 rounded-2xl shadow-sm mb-6 border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in" id="bird-{{ bird.id }}">
+    <div class="p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'profile_detail' bird.author.username %}" class="block">
+                {% if bird.author.profile.avatar %}
+                    <img src="{{ bird.author.profile.avatar.url }}" class="w-10 h-10 rounded-full object-cover border border-gray-200">
+                {% else %}
+                    <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500"><i class="fas fa-user"></i></div>
+                {% endif %}
+            </a>
+            <div>
+                <a href="{% url 'profile_detail' bird.author.username %}" class="font-bold text-gray-900 dark:text-white text-sm hover:underline">
+                    {{ bird.author.profile.full_name|default:bird.author.username }}
+                </a>
+                <span class="block text-xs text-gray-500">{{ bird.created_at|timesince }} atrás</span>
+            </div>
+        </div>
+
+        {% if request.user == bird.author %}
+        <div class="relative group">
+            <button class="text-gray-400 hover:text-gray-600 p-2"><i class="fas fa-ellipsis-h"></i></button>
+            <div class="hidden group-hover:block absolute right-0 top-full bg-white shadow-lg rounded-lg border p-1 z-10 w-32">
+                <button hx-delete="{% url 'delete_bird' bird.id %}" hx-target="#bird-{{ bird.id }}" hx-swap="outerHTML" class="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded-md">
+                    <i class="fas fa-trash"></i> Apagar
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if bird.content %}
+    <div class="px-4 pb-3 text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-line">{{ bird.content|urlize }}</div>
+    {% endif %}
+
+    {% if bird.image %}
+        <div class="w-full bg-gray-100"><img src="{{ bird.image.url }}" class="w-full h-auto max-h-[600px] object-cover"></div>
+    {% endif %}
+
+    {% if bird.video %}
+        <div class="w-full bg-black">
+            <video controls class="w-full h-auto max-h-[600px]"><source src="{{ bird.video.url }}" type="video/mp4"></video>
+        </div>
+    {% endif %}
+
+    <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+        <div class="flex gap-6 items-center">
+            <button hx-post="{% url 'toggle_like' bird.id %}" hx-swap="outerHTML" class="flex items-center gap-2 group transition-colors">
+                <i class="{% if request.user in bird.likes.all %}fas text-rose-500{% else %}far text-gray-500 group-hover:text-rose-500{% endif %} fa-heart text-xl"></i>
+                {% if bird.likes.count > 0 %}<span class="text-sm font-medium text-gray-600">{{ bird.likes.count }}</span>{% endif %}
+            </button>
+
+            <a href="{% url 'bird_detail' bird.id %}" class="flex items-center gap-2 text-gray-500 hover:text-indigo-500 transition-colors">
+                <i class="far fa-comment text-xl"></i>
+                {% if bird.comments.count > 0 %}<span class="text-sm font-medium text-gray-600">{{ bird.comments.count }}</span>{% endif %}
+            </a>
+
+            <form method="POST" action="{% url 'share_post' bird.id %}" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="flex items-center gap-2 group transition-colors"><i class="far fa-paper-plane text-xl text-gray-500 group-hover:text-green-500"></i></button>
+            </form>
+        </div>
+
+        <form method="POST" action="{% url 'toggle_save' bird.id %}" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="text-gray-400 hover:text-yellow-500 transition">
+                <i class="{% if bird.id in saved_post_ids %}fas text-yellow-500{% else %}far{% endif %} fa-bookmark text-xl"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="px-4 pb-4 space-y-3">
+    <form method="POST" action="{% url 'add_comment' bird.id %}" class="flex gap-2">
+        {% csrf_token %}
+        <input name="content" required maxlength="280" placeholder="Comente neste post..." class="flex-1 rounded-full border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        <button type="submit" class="rounded-full bg-indigo-600 text-white px-4 py-2 text-sm font-semibold">Enviar</button>
+    </form>
+
+    {% if single_mode %}
+        {% for comment in bird.comments.all %}
+            <div class="text-sm"><span class="font-semibold text-gray-700">@{{ comment.author.username }}</span> <span class="text-gray-600">{{ comment.content }}</span></div>
+        {% empty %}
+            <p class="text-sm text-gray-400">Nenhum comentário ainda.</p>
+        {% endfor %}
+    {% else %}
+        {% for comment in bird.comments.all|slice:":3" %}
+            <div class="text-sm"><span class="font-semibold text-gray-700">@{{ comment.author.username }}</span> <span class="text-gray-600">{{ comment.content }}</span></div>
+        {% endfor %}
+        {% if bird.comments.count > 3 %}
+            <a href="{% url 'bird_detail' bird.id %}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Ver conversa completa ({{ bird.comments.count }} comentários)</a>
+        {% endif %}
+    {% endif %}
+</div>

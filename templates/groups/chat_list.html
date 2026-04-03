@@ -1,0 +1,68 @@
+{% extends 'layout/base_bird.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="bg-white dark:bg-gray-800 rounded-3xl shadow-sm min-h-[80vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700">
+    
+    <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Mensagens</h1>
+        <div class="flex gap-2">
+            <button class="w-10 h-10 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 transition">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-2 space-y-1">
+        {% for room in rooms %}
+            <a href="{% url 'chat_room' room.id %}" class="flex items-center gap-4 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group cursor-pointer relative">
+                
+                <div class="relative shrink-0">
+                    {% if room.chat_avatar %}
+                        <img src="{{ room.chat_avatar }}" class="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-gray-800 shadow-sm">
+                    {% else %}
+                        <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-400 to-indigo-500 flex items-center justify-center text-white text-xl font-bold shadow-md">
+                            {% if room.is_group %}
+                                <i class="fas fa-users"></i>
+                            {% else %}
+                                {{ room.chat_name|slice:":1" }}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    {% if room.is_online %}
+                        <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></span>
+                    {% endif %}
+                </div>
+                
+                <div class="flex-1 min-w-0 pr-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <h3 class="font-bold text-gray-900 dark:text-white truncate text-[15px]">{{ room.chat_name }}</h3>
+                        <span class="text-xs text-gray-400 whitespace-nowrap">{{ room.last_date|date:"H:i" }}</span>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
+                        {% if room.last_message %}
+                            {{ room.last_message|truncatechars:35 }}
+                        {% else %}
+                            <span class="italic text-indigo-400">Começar conversa...</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </a>
+        {% empty %}
+            <div class="flex flex-col items-center justify-center h-96 text-center">
+                <div class="w-24 h-24 bg-indigo-50 dark:bg-gray-700 rounded-full flex items-center justify-center text-indigo-300 dark:text-gray-500 mb-6 text-4xl animate-bounce-slow">
+                    <i class="far fa-paper-plane"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-700 dark:text-gray-200">As suas mensagens</h3>
+                <p class="text-gray-400 text-sm max-w-xs mt-2 leading-relaxed">
+                    Ainda não tem conversas ativas. Visite um perfil e envie uma mensagem privada.
+                </p>
+                <a href="{% url 'explore' %}" class="mt-8 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-bold shadow-lg shadow-indigo-200/50 transition transform hover:-translate-y-1">
+                    Procurar Pessoas
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

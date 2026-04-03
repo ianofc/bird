@@ -1,0 +1,42 @@
+<div id="action-buttons-{{ bird.id }}" class="flex flex-col w-full">
+    
+    <div class="flex justify-between items-center">
+        <div class="flex space-x-6 text-[22px] text-slate-700">
+            
+            <button hx-post="{% url 'like_bird' bird.id %}" 
+                    hx-target="#action-buttons-{{ bird.id }}" 
+                    hx-swap="outerHTML"
+                    class="group focus:outline-none transition-all duration-200 ease-out active:scale-75">
+                
+                {% if user in bird.likes.all %}
+                    <i class="fas fa-heart text-red-500 drop-shadow-sm scale-110"></i>
+                {% else %}
+                    <i class="far fa-heart group-hover:text-red-500 group-hover:scale-110 transition-transform"></i>
+                {% endif %}
+            </button>
+
+            <button class="hover:text-blue-500 hover:scale-110 transition-transform duration-200 active:scale-90">
+                <i class="far fa-comment"></i>
+            </button>
+            
+            <button class="hover:text-green-500 hover:scale-110 transition-transform duration-200 active:scale-90">
+                <i class="far fa-paper-plane"></i>
+            </button>
+        </div>
+
+        <button class="text-[22px] text-slate-700 hover:text-yellow-500 hover:scale-110 transition-transform duration-200 active:scale-90">
+            <i class="far fa-bookmark"></i>
+        </button>
+    </div>
+
+    <div class="mt-2.5 pl-0.5">
+        {% if bird.likes.count > 0 %}
+            <p class="text-sm font-bold text-slate-900 cursor-pointer hover:underline">
+                {{ bird.likes.count }} curtida{{ bird.likes.count|pluralize }}
+            </p>
+        {% else %}
+            <p class="text-xs text-slate-400">Seja o primeiro a curtir</p>
+        {% endif %}
+    </div>
+
+</div>

@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --radius: 1rem;
+  }
+  
+  body {
+    @apply font-sans antialiased text-gray-900;
+    background-color: #f8fafc;
+    /* Fundo padrão do Ecossistema Bird (Feed, Perfil, etc) */
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.10) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(244, 114, 182, 0.10) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);
+    background-attachment: fixed;
+    background-size: cover;
+  }
+}
+
+@layer utilities {
+  /* --- 🪟 EFEITOS GLASSMORPHISM --- */
+  .glass-panel { 
+    @apply border shadow-xl bg-white/30 backdrop-blur-xl border-white/40; 
+  }
+  .glass-card { 
+    @apply transition-all border shadow-sm bg-white/40 backdrop-blur-lg border-white/50 hover:bg-white/60; 
+  }
+
+  /* --- 🌌 GORJEIO: AURORA ENGINE --- */
+  .aurora-engine {
+    background: linear-gradient(-45deg, #a8edea, #00d2ff, #3a7bd5, #a8edea);
+    background-size: 400% 400%;
+    animation: aurora-shift 15s ease infinite;
+  }
+
+  @keyframes aurora-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* --- 🎨 COMPONENTES BASE --- */
+  .btn-aurora { 
+    @apply text-white transition-all border-none shadow-md bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:shadow-lg hover:opacity-90; 
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* --- ✨ MICROINTERAÇÕES & ANIMAÇÕES --- */
+  @keyframes heart-burst {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 0; }
+  }
+  .animate-heart-burst {
+    animation: heart-burst 0.8s ease-out forwards;
+  }
+
+  @keyframes scan-progress {
+    0% { width: 0%; opacity: 0.8; }
+    50% { width: 70%; opacity: 1; }
+    100% { width: 100%; opacity: 0.8; }
+  }
+  .animate-scan {
+    animation: scan-progress 8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}

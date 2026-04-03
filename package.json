@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "@vitejs/plugin-react-swc": "^4.2.3",
+    "@vitest/ui": "^4.0.18",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "framer-motion": "^12.38.0"
+  }
+}

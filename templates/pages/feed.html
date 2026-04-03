@@ -1,0 +1,15 @@
+{% extends 'layout/base_bird.html' %}
+
+{% block main_content %}
+    <div class="flex-1 flex justify-center h-full overflow-y-auto no-scrollbar scroll-smooth" id="main-scroll-container">
+        <section class="w-full max-w-[640px] min-h-full pb-24 md:py-6">
+            
+            {% include 'components/home/feed_main.html' %}
+            
+        </section>
+    </div>
+
+    <aside class="hidden xl:flex w-[380px] h-full py-6 px-4 overflow-y-auto no-scrollbar shrink-0 border-l border-transparent">
+        {% include 'components/home/right_sidebar.html' %}
+    </aside>
+{% endblock %}
