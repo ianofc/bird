@@ -1,14 +1,14 @@
-<div id="action-buttons-{{ bird.id }}" class="flex flex-col w-full">
+<div id="action-buttons-{{ lyv.id }}" class="flex flex-col w-full">
     
     <div class="flex justify-between items-center">
         <div class="flex space-x-6 text-[22px] text-slate-700">
             
-            <button hx-post="{% url 'like_bird' bird.id %}" 
-                    hx-target="#action-buttons-{{ bird.id }}" 
+            <button hx-post="{% url 'like_lyv' lyv.id %}" 
+                    hx-target="#action-buttons-{{ lyv.id }}" 
                     hx-swap="outerHTML"
                     class="group focus:outline-none transition-all duration-200 ease-out active:scale-75">
                 
-                {% if user in bird.likes.all %}
+                {% if user in lyv.likes.all %}
                     <i class="fas fa-heart text-red-500 drop-shadow-sm scale-110"></i>
                 {% else %}
                     <i class="far fa-heart group-hover:text-red-500 group-hover:scale-110 transition-transform"></i>
@@ -30,9 +30,9 @@
     </div>
 
     <div class="mt-2.5 pl-0.5">
-        {% if bird.likes.count > 0 %}
+        {% if lyv.likes.count > 0 %}
             <p class="text-sm font-bold text-slate-900 cursor-pointer hover:underline">
-                {{ bird.likes.count }} curtida{{ bird.likes.count|pluralize }}
+                {{ lyv.likes.count }} curtida{{ lyv.likes.count|pluralize }}
             </p>
         {% else %}
             <p class="text-xs text-slate-400">Seja o primeiro a curtir</p>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { useBird } from "@/contexts/BirdContext";
+import { useLyv } from "@/contexts/LyvContext";
 import { 
   User, Lock, Mail, AtSign, Loader2, AlertCircle, Eye, EyeOff, 
   ShieldCheck, Sparkles, Heart, MessageCircle, Repeat, Share2, 
@@ -20,7 +20,7 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const BirdIcon = ({ className }: { className?: string }) => (
+const LyvIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M22 6c0-2.2-2-4-4-4-.8 0-2 .4-3 1-2-1-5-1-7 0a4 4 0 0 0-3-1 4 4 0 0 0-3 3 8 8 0 0 0 0 10c0 2.2 2 4 4 4 .8 0 2-.4 3-1 2 1 5 1 7 0a4 4 0 0 0 3-1 4 4 0 0 0 3-3V6z" />
     <path d="M14 9h.01" /><path d="M10 9h.01" /><path d="M12 14c1.5 0 2.5-.5 2.5-1.5" />
@@ -36,7 +36,7 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { signup } = useBird();
+  const { signup } = useLyv();
   const navigate = useNavigate();
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -58,7 +58,7 @@ export default function Signup() {
 
     try {
       if (signup) await signup(name, handle, password); 
-      toast.success("Conta criada com sucesso!", { description: "Bem-vindo ao ecossistema Bird." });
+      toast.success("Conta criada com sucesso!", { description: "Bem-vindo ao ecossistema Lyv." });
       setTimeout(() => navigate("/login"), 800);
     } catch (err: any) {
       let message = "Erro ao criar conta. Tente novamente.";
@@ -94,7 +94,7 @@ export default function Signup() {
              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-28 h-6 bg-slate-900 rounded-full z-30 shadow-inner"></div>
 
              <div className="relative z-10 pt-10 px-5 pb-3 flex items-center justify-between">
-                <h2 className="font-black text-slate-800 text-xl tracking-tight flex items-center gap-1">Bird</h2>
+                <h2 className="font-black text-slate-800 text-xl tracking-tight flex items-center gap-1">Lyv</h2>
                 <div className="flex gap-3 text-slate-600"><Heart className="w-5 h-5" /><MessageCircle className="w-5 h-5" /></div>
              </div>
 
@@ -112,11 +112,11 @@ export default function Signup() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Avatar className="w-10 h-10 border border-slate-100"><AvatarImage src="https://github.com/shadcn.png" /><AvatarFallback>B</AvatarFallback></Avatar>
-                        <div className="flex flex-col"><span className="font-bold text-[13px] text-slate-900 flex items-center gap-1">Sistema BIRD <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" /></span><span className="text-[10px] text-slate-500">@bird_admin • Agora</span></div>
+                        <div className="flex flex-col"><span className="font-bold text-[13px] text-slate-900 flex items-center gap-1">Sistema LYV <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" /></span><span className="text-[10px] text-slate-500">@lyv_admin • Agora</span></div>
                       </div>
                       <MoreHorizontal className="w-4 h-4 text-slate-400" />
                     </div>
-                    <p className="text-[13px] text-slate-700 leading-tight mb-3">O sistema BIRD está oficialmente operacional. Explorando as novas capacidades do layout em mosaico! 🦅 <span className="text-cyan-600 font-medium">#Soberania</span></p>
+                    <p className="text-[13px] text-slate-700 leading-tight mb-3">O sistema LYV está oficialmente operacional. Explorando as novas capacidades do layout em mosaico! 🦅 <span className="text-cyan-600 font-medium">#Soberania</span></p>
                     <div className="grid grid-cols-2 grid-rows-2 gap-1 rounded-xl overflow-hidden h-40 border border-slate-100">
                       <img src="https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=300&fit=crop" className="w-full h-full object-cover" /><img src="https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=300&fit=crop" className="w-full h-full object-cover" /><img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300&fit=crop" className="w-full h-full object-cover" /><img src="https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=300&fit=crop" className="w-full h-full object-cover" />
                     </div>
@@ -137,7 +137,7 @@ export default function Signup() {
 
             <div className="px-8 pt-8 pb-4 text-center relative z-10">
               <div className="relative inline-flex items-center justify-center w-14 h-14 mb-4 shadow-xl rounded-2xl bg-gradient-to-br from-purple-600 to-cyan-500 shadow-purple-500/30">
-                <BirdIcon className="relative z-10 w-7 h-7 text-white" />
+                <LyvIcon className="relative z-10 w-7 h-7 text-white" />
               </div>
               <h1 className="mb-1 text-2xl font-black text-slate-800 tracking-tight">Criar Identidade</h1>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">O Ecossistema da Nova Geração</p>

@@ -10,7 +10,7 @@ IRIS_SCAN_URL = os.getenv("IRIS_SCAN_URL", "http://iris:8003/scan/full")
 HEIMDALL_CHECK_URL = os.getenv("HEIMDALL_CHECK_URL", "http://zios:8002/v1/proactive/heimdall/check")
 
 # Política de priorização por origem
-MERCURIO_WEIGHT_BIRD = int(os.getenv("MERCURIO_WEIGHT_BIRD", "3"))
+MERCURIO_WEIGHT_LYV = int(os.getenv("MERCURIO_WEIGHT_LYV", "3"))
 MERCURIO_WEIGHT_RSS = int(os.getenv("MERCURIO_WEIGHT_RSS", "2"))
 MERCURIO_WEIGHT_API = int(os.getenv("MERCURIO_WEIGHT_API", "1"))
 

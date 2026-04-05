@@ -1,4 +1,4 @@
-// BIRD System - URLs e Endpoints
+// LYV System - URLs e Endpoints
 
 // URLs da aplicação (rotas internas)
 export const ROUTES = {
@@ -27,9 +27,9 @@ export const API_ENDPOINTS = {
 
 // URLs externas
 export const EXTERNAL_URLS = {
-  SUPPORT: 'https://support.bird.com',
-  DOCS: 'https://docs.bird.com',
-  PRIVACY: 'https://bird.com/privacy',
+  SUPPORT: 'https://support.lyv.com',
+  DOCS: 'https://docs.lyv.com',
+  PRIVACY: 'https://lyv.com/privacy',
 } as const;
 
 export default { ROUTES, API_ENDPOINTS, EXTERNAL_URLS };

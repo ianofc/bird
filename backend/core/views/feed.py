@@ -7,14 +7,14 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
-from core.models import Bird, Connection, SavedPost
+from core.models import Lyv, Connection, SavedPost
 
 
 HASHTAG_RE = re.compile(r"#([\w_]{2,40})", re.UNICODE)
 User = get_user_model()
 
 
-def _recommended_birds_from_ai(user):
+def _recommended_lyvs_from_ai(user):
     """Busca recomendações do motor externo e preserva a ordem devolvida."""
     recommend_url = f"http://tas-engine:8000/api/v1/recommend/?user_id={user.id}"
 
@@ -23,13 +23,13 @@ def _recommended_birds_from_ai(user):
         if response.status_code != 200:
             return []
 
-        bird_ids = response.json().get('recommendations', [])
-        if not bird_ids:
+        lyv_ids = response.json().get('recommendations', [])
+        if not lyv_ids:
             return []
 
-        birds_query = Bird.objects.filter(id__in=bird_ids).select_related('author', 'author__profile')
-        birds_dict = {bird.id: bird for bird in birds_query}
-        return [birds_dict[bird_id] for bird_id in bird_ids if bird_id in birds_dict]
+        lyvs_query = Lyv.objects.filter(id__in=lyv_ids).select_related('author', 'author__profile')
+        lyvs_dict = {lyv.id: lyv for lyv in lyvs_query}
+        return [lyvs_dict[lyv_id] for lyv_id in lyv_ids if lyv_id in lyvs_dict]
     except Exception:
         # Se o motor cair, a aplicação continua com ranking local.
         return []
@@ -42,13 +42,13 @@ def _build_local_feed(user, feed_mode='for_you', search=''):
         status='active',
     ).values_list('target_id', flat=True)
 
-    birds = Bird.objects.filter(visibility='public').select_related('author', 'author__profile')
+    lyvs = Lyv.objects.filter(visibility='public').select_related('author', 'author__profile')
 
     if feed_mode == 'following':
-        birds = birds.filter(author_id__in=following_ids)
+        lyvs = lyvs.filter(author_id__in=following_ids)
 
     if search:
-        birds = birds.filter(
+        lyvs = lyvs.filter(
             Q(content__icontains=search)
             | Q(author__username__icontains=search)
             | Q(author__profile__full_name__icontains=search)
@@ -57,7 +57,7 @@ def _build_local_feed(user, feed_mode='for_you', search=''):
     one_day_ago = timezone.now() - timedelta(days=1)
     two_hours_ago = timezone.now() - timedelta(hours=2)
 
-    return birds.annotate(
+    return lyvs.annotate(
         likes_count=Count('likes', distinct=True),
         comments_count=Count('comments', distinct=True),
         following_boost=Case(
@@ -79,13 +79,13 @@ def _build_local_feed(user, feed_mode='for_you', search=''):
     ).order_by('-following_boost', '-fresh_boost', '-recent_boost', '-engagement', '-created_at')[:50]
 
 
-def _extract_trends(birds, limit=5):
+def _extract_trends(lyvs, limit=5):
     trend_counter = {}
 
-    for bird in birds:
-        if not bird.content:
+    for lyv in lyvs:
+        if not lyv.content:
             continue
-        for tag in HASHTAG_RE.findall(bird.content.lower()):
+        for tag in HASHTAG_RE.findall(lyv.content.lower()):
             trend_counter[tag] = trend_counter.get(tag, 0) + 1
 
     trends = sorted(trend_counter.items(), key=lambda item: item[1], reverse=True)
@@ -143,24 +143,24 @@ def home_view(request):
 
     search = request.GET.get('q', '').strip()
 
-    feed_birds = []
+    feed_lyvs = []
     if feed_mode == 'for_you' and not search:
-        feed_birds = _recommended_birds_from_ai(user)
+        feed_lyvs = _recommended_lyvs_from_ai(user)
 
-    if not feed_birds:
-        feed_birds = _build_local_feed(user=user, feed_mode=feed_mode, search=search)
+    if not feed_lyvs:
+        feed_lyvs = _build_local_feed(user=user, feed_mode=feed_mode, search=search)
 
-    recent_public_birds = Bird.objects.filter(visibility='public').only('content').order_by('-created_at')[:150]
+    recent_public_lyvs = Lyv.objects.filter(visibility='public').only('content').order_by('-created_at')[:150]
 
     saved_post_ids = set(SavedPost.objects.filter(user=user).values_list('post_id', flat=True))
 
     context = {
-        'birds': feed_birds,
+        'lyvs': feed_lyvs,
         'feed_mode': feed_mode,
         'search_term': search,
-        'trending_topics': _extract_trends(recent_public_birds),
+        'trending_topics': _extract_trends(recent_public_lyvs),
         'suggested_users': _suggested_users(user),
-        'stories': Bird.objects.filter(post_type='story').select_related('author', 'author__profile').order_by('-created_at')[:15],
+        'stories': Lyv.objects.filter(post_type='story').select_related('author', 'author__profile').order_by('-created_at')[:15],
         'saved_post_ids': saved_post_ids,
     }
     return render(request, 'pages/feed.html', context)

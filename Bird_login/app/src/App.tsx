@@ -1,18 +1,18 @@
-// BIRD System - Componente Principal
+// LYV System - Componente Principal
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { BirdProvider } from '@/context/birdcontext';
+import { LyvProvider } from '@/context/lyvcontext';
 import AppRoutes from '@/routers';
 import { Toaster } from '@/components/ui/sonner';
 
 const App: React.FC = () => {
   return (
-    <BirdProvider>
+    <LyvProvider>
       <BrowserRouter>
         <AppRoutes />
         <Toaster position="top-right" />
       </BrowserRouter>
-    </BirdProvider>
+    </LyvProvider>
   );
 };
 

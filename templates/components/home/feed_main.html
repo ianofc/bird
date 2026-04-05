@@ -17,7 +17,7 @@
         </div>
 
         {% for story in stories %}
-        <a href="{% url 'bird_detail' story.id %}" class="flex flex-col items-center space-y-1 min-w-[70px] cursor-pointer group">
+        <a href="{% url 'lyv_detail' story.id %}" class="flex flex-col items-center space-y-1 min-w-[70px] cursor-pointer group">
             <div class="h-[70px] w-[70px] rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-rose-500 to-purple-600">
                 <div class="h-full w-full rounded-full bg-white p-[2px]">
                     <img src="{{ story.author.profile.avatar.url|default:'https://i.pravatar.cc/150' }}" class="h-full w-full rounded-full object-cover transition group-hover:scale-105">
@@ -42,7 +42,7 @@
 
 <div class="px-4 md:px-0 mb-8" x-data="postCreator()">
     <div class="bg-white/80 backdrop-blur-xl border border-white/60 rounded-3xl shadow-sm p-4 relative overflow-hidden transition-all duration-300" :class="{'ring-2 ring-indigo-500/20 shadow-lg': isFocused}">
-        <form hx-post="{% url 'create_bird' %}" hx-target="#feed-list" hx-swap="afterbegin" hx-encoding="multipart/form-data" @htmx:after-request="resetForm()" class="relative z-10">
+        <form hx-post="{% url 'create_lyv' %}" hx-target="#feed-list" hx-swap="afterbegin" hx-encoding="multipart/form-data" @htmx:after-request="resetForm()" class="relative z-10">
             {% csrf_token %}
             <div class="flex gap-4">
                 <div class="shrink-0">
@@ -91,8 +91,8 @@
 </div>
 
 <div id="feed-list" class="px-4 md:px-0 pb-20 space-y-6">
-    {% for bird in birds %}
-        {% include 'components/bird_item.html' %}
+    {% for lyv in lyvs %}
+        {% include 'components/lyv_item.html' %}
     {% empty %}
         <div class="text-center py-20 opacity-60">
             <div class="bg-slate-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">

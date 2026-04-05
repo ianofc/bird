@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from core.models import Bird, Connection, Profile, SavedPost, SocialBond
+from core.models import Lyv, Connection, Profile, SavedPost, SocialBond
 
 User = get_user_model()
 
@@ -32,7 +32,7 @@ def profile_view(request, username):
     stats = {
         'followers': len(follower_ids),
         'following': len(following_ids),
-        'posts_count': Bird.objects.filter(author=profile_user).count(),
+        'posts_count': Lyv.objects.filter(author=profile_user).count(),
         'friends_count': SocialBond.objects.filter(
             (Q(requester=profile_user) | Q(target=profile_user)),
             status='active',
@@ -47,7 +47,7 @@ def profile_view(request, username):
             status='active',
         ).exists()
 
-    posts = Bird.objects.filter(author=profile_user).select_related('author', 'author__profile').order_by('-created_at')
+    posts = Lyv.objects.filter(author=profile_user).select_related('author', 'author__profile').order_by('-created_at')
     photo_posts = posts.exclude(image='').exclude(image__isnull=True)[:18]
 
     followers_list = User.objects.filter(id__in=follower_ids).select_related('profile').order_by('username')

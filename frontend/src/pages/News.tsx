@@ -1,5 +1,5 @@
-import { BirdLayout } from "@/components/bird/BirdLayout";
-import { PostCard } from "@/components/bird/PostCard";
+import { LyvLayout } from "@/components/lyv/LyvLayout";
+import { PostCard } from "@/components/lyv/PostCard";
 import { Newspaper, TrendingUp } from "lucide-react";
 
 export default function News() {
@@ -51,7 +51,7 @@ export default function News() {
   ];
 
   return (
-    <BirdLayout>
+    <LyvLayout>
       <div className="max-w-[600px] mx-auto pt-4">
         
         {/* Header da Página News */}
@@ -73,6 +73,6 @@ export default function News() {
           ))}
         </div>
       </div>
-    </BirdLayout>
+    </LyvLayout>
   );
 }

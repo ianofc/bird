@@ -1,4 +1,4 @@
-"""Heimdall: camada central de segurança para Bird e projetos relacionados."""
+"""Heimdall: camada central de segurança para Lyv e projetos relacionados."""
 
 from .audit import AuditLogger, SecurityEvent
 from .auth import PasswordGuard, hash_token, verify_token

@@ -1,5 +1,5 @@
 """
-Django settings for bird project.
+Django settings for lyv project.
 Version: Definitive Aurora 2.3 - Fix DisallowedHost (Docker Proxy)
 """
 
@@ -22,7 +22,7 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 # 🚨 CORREÇÃO AQUI: Adicionado 'backend' (nome do serviço no docker-compose)
 # Isso permite que o Django aceite requisições vindas do Proxy do Vite
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0,bird_backend,backend').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,0.0.0.0,lyv_backend,backend').split(',')
 
 # ==========================================
 # 🚨 SEÇÃO CRÍTICA: LOGIN & CORS
@@ -125,7 +125,7 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-ROOT_URLCONF = 'bird.urls'
+ROOT_URLCONF = 'lyv.urls'
 
 # ==========================================
 # 4. TEMPLATES
@@ -146,8 +146,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'bird.wsgi.application'
-ASGI_APPLICATION = 'bird.asgi.application'
+WSGI_APPLICATION = 'lyv.wsgi.application'
+ASGI_APPLICATION = 'lyv.asgi.application'
 
 # ==========================================
 # 5. DATABASE

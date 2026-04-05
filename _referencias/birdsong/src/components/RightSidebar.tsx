@@ -8,14 +8,14 @@ const RightSidebar = () => {
         <Search size={16} className="text-muted-foreground" />
         <input
           type="text"
-          placeholder="Buscar no Bird"
+          placeholder="Buscar no Lyv"
           className="bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground flex-1"
         />
       </div>
 
       {/* Premium */}
       <div className="bg-foreground text-primary-foreground rounded-2xl p-5">
-        <h3 className="font-bold text-lg">Bird Premium</h3>
+        <h3 className="font-bold text-lg">Lyv Premium</h3>
         <p className="text-sm opacity-80 mt-1">
           Desbloqueie o poder da IA e apoie seus criadores favoritos.
         </p>
@@ -70,7 +70,7 @@ const RightSidebar = () => {
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        Termos · Privacidade · © 2026 Bird
+        Termos · Privacidade · © 2026 Lyv
       </p>
     </div>
   );

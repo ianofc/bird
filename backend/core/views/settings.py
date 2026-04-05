@@ -22,7 +22,7 @@ audit_logger = logging.getLogger('audit')
 @login_required
 def create_subscription_payment(request):
     """
-    Inicia o checkout para Bird Premium.
+    Inicia o checkout para Lyv Premium.
     Implementa o Ponto 4 (Integração de Pagamentos).
     """
     if not settings.MERCADOPAGO_ACCESS_TOKEN:
@@ -37,7 +37,7 @@ def create_subscription_payment(request):
     preference_data = {
         "items": [
             {
-                "title": "Bird Premium - Soberania Digital Ativa",
+                "title": "Lyv Premium - Soberania Digital Ativa",
                 "quantity": 1,
                 "unit_price": 29.90,
                 "currency_id": "BRL",
@@ -220,7 +220,7 @@ def support_view(request):
         },
         {
             'q': 'Posso exportar meus dados?', 
-            'a': 'Sim. No painel de soberania, você pode solicitar um dump completo de seus Birds e interações.'
+            'a': 'Sim. No painel de soberania, você pode solicitar um dump completo de seus Lyvs e interações.'
         }
     ]
     return render(request, 'pages/support.html', {'faqs': faqs})

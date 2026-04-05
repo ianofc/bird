@@ -98,7 +98,7 @@ class SATTR:
 
         # Reddit JSON API
         try:
-            headers = {"User-Agent": "bird-iris/1.0"}
+            headers = {"User-Agent": "lyv-iris/1.0"}
             rd = requests.get(self.api_sources["reddit"], timeout=4, headers=headers)
             if rd.status_code == 200:
                 children = rd.json().get("data", {}).get("children", [])
@@ -122,7 +122,7 @@ class SATTR:
         semantic_words = [w for w in words if len(w) > 2]
         base_words = semantic_words[:4] if semantic_words else words[:4]
         while len(base_words) < 4:
-            base_words.append(["Bird", "Trend", "Agora", "Brasil"][len(base_words)])
+            base_words.append(["Lyv", "Trend", "Agora", "Brasil"][len(base_words)])
 
         tag = "".join(word.capitalize() for word in base_words[:4])
         return f"#{tag}" if tag else "#PentaIATrendAgoraBrasil"

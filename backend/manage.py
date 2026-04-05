@@ -17,14 +17,14 @@ def _run_offline_check() -> int:
     print("[offline-check] Django não está instalado; executando SOMENTE validações de sintaxe (compileall).")
 
     return subprocess.call(
-        [sys.executable, "-m", "compileall", "-q", "backend/bird", "backend/core"],
+        [sys.executable, "-m", "compileall", "-q", "backend/lyv", "backend/core"],
         cwd=os.path.dirname(os.path.dirname(__file__)),
     )
 
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "bird.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lyv.settings")
 
     if _has_django():
         from django.core.management import execute_from_command_line

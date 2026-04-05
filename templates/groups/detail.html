@@ -1,4 +1,4 @@
-{% extends 'layout/base_bird.html' %}
+{% extends 'layout/base_lyv.html' %}
 {% load static %}
 
 {% block main_content %}
@@ -148,8 +148,8 @@
                         {% endif %}
 
                         <div class="space-y-6">
-                            {% for bird in posts %}
-                                {% include 'components/bird_item.html' %}
+                            {% for lyv in posts %}
+                                {% include 'components/lyv_item.html' %}
                             {% empty %}
                                 <div class="text-center py-16 px-6 bg-white/60 backdrop-blur-xl rounded-[2.5rem] border border-white/50 border-dashed">
                                     <div class="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-300 text-3xl animate-bounce-slow">

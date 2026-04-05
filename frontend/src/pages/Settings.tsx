@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { BirdLayout } from "@/components/bird/BirdLayout";
-import { UserAvatar } from "@/components/bird/UserAvatar";
-import { useBird } from "@/contexts/BirdContext";
+import { LyvLayout } from "@/components/lyv/LyvLayout";
+import { UserAvatar } from "@/components/lyv/UserAvatar";
+import { useLyv } from "@/contexts/LyvContext";
 import { Switch } from "@/components/ui/switch";
 import { 
   User, Bell, Lock, ShieldCheck, Globe, Palette, 
@@ -11,7 +11,7 @@ import {
 import { toast } from "sonner";
 
 export default function Settings() {
-  const { currentUser, logout } = useBird();
+  const { currentUser, logout } = useLyv();
   
   // Estados para os Toggles rápidos
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -25,7 +25,7 @@ export default function Settings() {
   };
 
   return (
-    <BirdLayout>
+    <LyvLayout>
       {/* bg-transparent para a Aurora Global brilhar através do Glassmorphism */}
       <div className="w-full max-w-[800px] mx-auto min-h-screen pt-4 md:pt-8 pb-24 px-4 md:px-0 bg-transparent">
         
@@ -66,7 +66,7 @@ export default function Settings() {
                   <Wallet className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-bold text-amber-900 dark:text-amber-400">Bird Wallet & Pentaia</h3>
+                  <h3 className="font-bold text-amber-900 dark:text-amber-400">Lyv Wallet & Pentaia</h3>
                   <p className="text-sm text-amber-700/70 dark:text-amber-400/70">Saldo, Presentes (Lives) e Monetização</p>
                 </div>
               </div>
@@ -181,7 +181,7 @@ export default function Settings() {
               </div>
               <div className="text-left">
                 <h3 className="font-bold text-slate-900 dark:text-white">Central de Ajuda</h3>
-                <p className="text-xs text-slate-500">Perguntas e suporte Bird</p>
+                <p className="text-xs text-slate-500">Perguntas e suporte Lyv</p>
               </div>
             </button>
 
@@ -201,6 +201,6 @@ export default function Settings() {
 
         </div>
       </div>
-    </BirdLayout>
+    </LyvLayout>
   );
 }

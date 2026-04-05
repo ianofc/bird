@@ -21,7 +21,7 @@ class ThalamusFilter:
             if any(tag in illegal for tag in c.get("tags", [])):
                 continue
 
-            # 3. Filtro de Contexto (Bird vs Outros)
+            # 3. Filtro de Contexto (Lyv vs Outros)
             # Aceita variações de maiúsculas/minúsculas para evitar bypass acidental.
             context = str(getattr(request, "context", "")).upper()
             if context == "STUDY" and c.get("safety") != "safe":

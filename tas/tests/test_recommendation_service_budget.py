@@ -40,7 +40,7 @@ def test_get_feed_with_meta_without_degradation(monkeypatch):
     monkeypatch.setattr(service.sara, "align", ok_align)
     monkeypatch.setattr(service.accumbens, "rank", ok_rank)
 
-    request = SimpleNamespace(user_id="u1", context="BIRD")
+    request = SimpleNamespace(user_id="u1", context="LYV")
     ids, meta = asyncio.run(service.get_feed_with_meta(request))
 
     assert ids
@@ -66,7 +66,7 @@ def test_get_feed_with_meta_degrades_on_sara_timeout(monkeypatch):
     monkeypatch.setattr(service.sara, "align", slow_align)
     monkeypatch.setattr(service.accumbens, "rank", ok_rank)
 
-    request = SimpleNamespace(user_id="u1", context="BIRD")
+    request = SimpleNamespace(user_id="u1", context="LYV")
     ids, meta = asyncio.run(service.get_feed_with_meta(request))
 
     assert ids

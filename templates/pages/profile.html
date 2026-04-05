@@ -1,4 +1,4 @@
-{% extends 'layout/base_bird.html' %}
+{% extends 'layout/base_lyv.html' %}
 {% load static %}
 
 {% block main_content %}
@@ -149,8 +149,8 @@
                     {% endif %}
 
                     <div class="space-y-6 mt-6" id="profile-feed-list">
-                        {% for bird in posts %}
-                            {% include 'components/bird_item.html' %}
+                        {% for lyv in posts %}
+                            {% include 'components/lyv_item.html' %}
                         {% empty %}
                             <div class="bg-white/40 backdrop-blur-md border border-white/50 rounded-[2rem] p-10 text-center">
                                 <i class="fas fa-ghost text-4xl text-slate-300 mb-2"></i>
@@ -178,10 +178,10 @@
                     </div>
                     
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {% for bird in photo_posts %}
-                            {% if bird.image %}
-                                <a href="{% url 'bird_detail' bird.id %}" class="aspect-[4/5] bg-slate-100 rounded-3xl overflow-hidden relative group shadow-sm hover:shadow-xl transition border border-white/50 block">
-                                    <img src="{{ bird.image.url }}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
+                        {% for lyv in photo_posts %}
+                            {% if lyv.image %}
+                                <a href="{% url 'lyv_detail' lyv.id %}" class="aspect-[4/5] bg-slate-100 rounded-3xl overflow-hidden relative group shadow-sm hover:shadow-xl transition border border-white/50 block">
+                                    <img src="{{ lyv.image.url }}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
                                 </a>
                             {% endif %}
                         {% endfor %}

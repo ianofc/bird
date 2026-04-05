@@ -6,11 +6,11 @@ const Explore = () => {
     <MainLayout>
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold text-foreground mb-2">Explorar</h1>
-        <p className="text-muted-foreground mb-6">Descubra o que está em alta no Bird.</p>
+        <p className="text-muted-foreground mb-6">Descubra o que está em alta no Lyv.</p>
         
         <div className="space-y-3">
           {[
-            { category: "TECNOLOGIA", tag: "#AuroraDesign", posts: "54.2K", desc: "A nova tendência de design que está dominando o Bird" },
+            { category: "TECNOLOGIA", tag: "#AuroraDesign", posts: "54.2K", desc: "A nova tendência de design que está dominando o Lyv" },
             { category: "BRASIL", tag: "Django 5.0", posts: "12K", desc: "Nova versão do framework Python com novidades incríveis" },
             { category: "GAMES", tag: "#IndieDevs", posts: "8.3K", desc: "Desenvolvedores independentes compartilham seus projetos" },
             { category: "MÚSICA", tag: "#LoFiBeats", posts: "5.1K", desc: "As melhores playlists lo-fi para programar" },

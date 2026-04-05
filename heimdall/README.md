@@ -1,6 +1,6 @@
 # Heimdall
 
-`heimdall` é a fundação de segurança do ecossistema Bird. Ele foi desenhado para ser reutilizável entre projetos, cobrindo:
+`heimdall` é a fundação de segurança do ecossistema Lyv. Ele foi desenhado para ser reutilizável entre projetos, cobrindo:
 
 - login/registro (validação de senha e token);
 - controle de IP e listas de bloqueio;
@@ -31,7 +31,7 @@ app = FastAPI()
 attach_heimdall(app, service_name="meu-servico")
 ```
 
-## Integração no projeto Bird
+## Integração no projeto Lyv
 
 Serviços já integrados para usar Heimdall por padrão:
 

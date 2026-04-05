@@ -2,10 +2,10 @@ import subprocess
 import os
 from celery import shared_task
 from django.conf import settings
-from .models import Bird
+from .models import Lyv
 
 @shared_task
-def process_video_upload(bird_id):
+def process_video_upload(lyv_id):
     """
     Tarefa de Background (Worker):
     1. Recebe o ID do post.
@@ -14,25 +14,25 @@ def process_video_upload(bird_id):
     4. Atualiza o banco de dados e libera o post (is_processing=False).
     """
     try:
-        bird = Bird.objects.get(id=bird_id)
+        lyv = Lyv.objects.get(id=lyv_id)
         
         # Se por algum motivo o arquivo não existe ou não é vídeo, aborta
-        if not bird.video or not bird.video.path:
-            bird.is_processing = False
-            bird.save()
+        if not lyv.video or not lyv.video.path:
+            lyv.is_processing = False
+            lyv.save()
             return
 
-        video_path = bird.video.path
+        video_path = lyv.video.path
         
         # Define nomes e caminhos
         base_name = os.path.splitext(os.path.basename(video_path))[0]
         thumb_name = f"{base_name}_thumb.jpg"
         
         # Caminho Relativo (para salvar no Banco de Dados)
-        thumb_rel_path = f"posts/{bird.author.username}/thumbnails/{thumb_name}"
+        thumb_rel_path = f"posts/{lyv.author.username}/thumbnails/{thumb_name}"
         
         # Caminho Absoluto (para o Sistema Operacional salvar o arquivo)
-        thumb_full_path = os.path.join(settings.MEDIA_ROOT, 'posts', bird.author.username, 'thumbnails', thumb_name)
+        thumb_full_path = os.path.join(settings.MEDIA_ROOT, 'posts', lyv.author.username, 'thumbnails', thumb_name)
 
         # Garante que a pasta de thumbnails existe
         os.makedirs(os.path.dirname(thumb_full_path), exist_ok=True)
@@ -51,22 +51,22 @@ def process_video_upload(bird_id):
 
         # Verifica se o arquivo foi gerado com sucesso
         if os.path.exists(thumb_full_path):
-            bird.thumbnail.name = thumb_rel_path
+            lyv.thumbnail.name = thumb_rel_path
         
         # Finaliza o processamento
-        bird.is_processing = False
-        bird.save()
+        lyv.is_processing = False
+        lyv.save()
 
-    except Bird.DoesNotExist:
-        print(f"Erro: Post {bird_id} foi deletado antes do processamento.")
+    except Lyv.DoesNotExist:
+        print(f"Erro: Post {lyv_id} foi deletado antes do processamento.")
         
     except Exception as e:
-        print(f"Erro crítico ao processar vídeo {bird_id}: {str(e)}")
+        print(f"Erro crítico ao processar vídeo {lyv_id}: {str(e)}")
         
         # Em caso de erro, tentamos destravar o post para não ficar carregando eternamente
         try:
-            bird = Bird.objects.get(id=bird_id)
-            bird.is_processing = False
-            bird.save()
-        except Bird.DoesNotExist:
+            lyv = Lyv.objects.get(id=lyv_id)
+            lyv.is_processing = False
+            lyv.save()
+        except Lyv.DoesNotExist:
             pass

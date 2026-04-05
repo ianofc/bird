@@ -1,357 +1,207 @@
-import { BirdLayout } from "@/components/bird/BirdLayout";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Hash, RefreshCw, Radio, Globe2, Newspaper } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { toast } from "sonner";
-
-interface Trend {
-  id: string;
-  category: string;
-  title: string;
-  topic: string;
-  summary: string;
-  source: string;
-  hashtag: string;
-  volume: string | number;
-  link: string;
-  origin?: 'BIRD_NETWORK' | 'RSS' | 'API_NEWS';
-  weight?: number;
-  media?: string[];
-  image_url?: string;
-  video_url?: string;
-}
-
-interface NewsItem {
-  source: string;
-  title: string;
-  link: string;
-  published: string;
-  origin?: 'BIRD_NETWORK' | 'RSS' | 'API_NEWS';
-  weight?: number;
-}
-
-interface MercurioData {
-  trends: Trend[];
-  news: NewsItem[];
-  metadata?: {
-    weight_policy?: Record<string, number>;
-  };
-}
-
-// Estilo editorial mantido, mas otimizado para Dark/Light mode
-const categoryStyle: Record<string, string> = {
-  Jornalismo: "text-rose-600 dark:text-rose-400",
-  Esportes: "text-emerald-600 dark:text-emerald-400",
-  Entretenimento: "text-amber-600 dark:text-amber-400",
-  Política: "text-rose-600 dark:text-rose-400",
-  Economia: "text-blue-600 dark:text-blue-400",
-  Mundo: "text-indigo-600 dark:text-indigo-400",
-};
-
-const normalizeSlug = (text: string) =>
-  text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
-
-const tagToSlug = (tag: string) => normalizeSlug(tag.replace("#", ""));
-const getTrendSlug = (trend: Trend) => `${normalizeSlug(trend.title || trend.topic)}-${trend.id}`;
-const getNewsSlug = (item: NewsItem, index: number) => `${normalizeSlug(item.title || `boletim-${index + 1}`)}-${index}`;
-
-const toYouTubeEmbed = (url: string) => {
-  if (!url) return "";
-  if (url.includes("youtube.com/embed/")) return url;
-  const watch = url.match(/[?&]v=([^&]+)/);
-  if (watch) return `https://www.youtube.com/embed/${watch[1]}`;
-  const short = url.match(/youtu\.be\/([^?&]+)/);
-  if (short) return `https://www.youtube.com/embed/${short[1]}`;
-  return "";
-};
-
-function OriginPill({ origin, weight }: { origin?: string; weight?: number }) {
-  let config = { color: "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300", icon: Newspaper, label: "Mercúrio" };
-  
-  if (origin === "BIRD_NETWORK") config = { color: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20", icon: Radio, label: "Rede Bird" };
-  if (origin === "RSS") config = { color: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20", icon: Globe2, label: "Jornais/RSS" };
-  if (origin === "API_NEWS") config = { color: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20", icon: Newspaper, label: "Agências" };
-
-  const Icon = config.icon;
-
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${config.color}`}>
-      <Icon className="w-3 h-3" /> {config.label} {weight ? `• P${weight}` : ""}
-    </span>
-  );
-}
-
-function GlassCard({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <Card className={`bg-white/60 dark:bg-[#1E293B]/40 backdrop-blur-2xl border border-white/50 dark:border-white/10 shadow-xl transition-colors ${className}`}>
-      {children}
-    </Card>
-  );
-}
-
-// --- DADOS DE FALLBACK (CACHE REALISTA) ---
-// Quando a API falha, a rede injeta os últimos dados conhecidos de Jornais, Bird e APIs
-const generateFallbackData = (): MercurioData => {
-  const baseTrends: Trend[] = [
-    { id: '1', category: 'Tecnologia', title: 'PentaIA alcança marco histórico de processamento autônomo na rede Bird', topic: 'PentaIA', summary: 'A inteligência artificial proprietária do ecossistema demonstrou capacidade de curadoria 40x mais rápida.', source: 'Bird Radar', hashtag: '#PentaIA', volume: '145k', link: '#', origin: 'BIRD_NETWORK', weight: 3, image_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&fit=crop' },
-    { id: '2', category: 'Jornalismo', title: 'Mercados globais reagem às novas políticas de transição energética', topic: 'Economia Global', summary: 'Bolsas europeias e asiáticas abrem em alta após acordos assinados em Genebra.', source: 'Folha de S.Paulo', hashtag: '#Economia', volume: '89k', link: '#', origin: 'RSS', weight: 2, image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&fit=crop' },
-    { id: '3', category: 'Mundo', title: 'Avanços na fusão nuclear prometem energia limpa para a próxima década', topic: 'Ciência', summary: 'Laboratórios relatam ganho líquido de energia em reatores experimentais.', source: 'Reuters API', hashtag: '#Ciencia', volume: '50k', link: '#', origin: 'API_NEWS', weight: 1, image_url: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&fit=crop' },
-    { id: '4', category: 'Esportes', title: 'Finais do Campeonato Europeu quebram recordes de audiência', topic: 'Futebol', summary: 'A final transmitida ontem bateu o recorde histórico de espectadores simultâneos.', source: 'Globo Esporte', hashtag: '#Futebol', volume: '2M', link: '#', origin: 'RSS', weight: 2, image_url: 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800&fit=crop' },
-    { id: '5', category: 'Entretenimento', title: 'O retorno dos festivais presenciais: line-ups e polêmicas', topic: 'Música', summary: 'Produtoras anunciam calendários lotados, mas fãs reclamam dos preços dos ingressos.', source: 'Omelete', hashtag: '#Festivais', volume: '300k', link: '#', origin: 'API_NEWS', weight: 1, image_url: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&fit=crop' },
-  ];
-
-  // Gerador preenche o resto do grid para a página não ficar vazia
-  const fillerTrends: Trend[] = Array.from({ length: 25 }).map((_, i) => ({
-    id: `f-${i}`,
-    category: i % 3 === 0 ? 'Jornalismo' : i % 3 === 1 ? 'Esportes' : 'Entretenimento',
-    title: `Atualização de Radar Mercúrio #${i + 100}`,
-    topic: `Tópico Dinâmico ${i}`,
-    summary: `Monitoramento contínuo da rede detectou pico de menções sobre este assunto. A curadoria automática classificou o evento com relevância alta.`,
-    source: i % 2 === 0 ? 'G1 RSS' : 'Bird Network',
-    hashtag: `#trend${i}`,
-    volume: `${Math.floor(Math.random() * 50)}k`,
-    link: '#',
-    origin: i % 3 === 0 ? 'RSS' : i % 3 === 1 ? 'API_NEWS' : 'BIRD_NETWORK',
-  }));
-
-  const news: NewsItem[] = Array.from({ length: 10 }).map((_, i) => ({
-    source: i % 2 === 0 ? 'CNN Brasil' : 'Bird Radar',
-    title: `Giro de Notícias: Destaques da hora na editoria ${i % 2 === 0 ? 'Mundo' : 'Local'}`,
-    link: '#',
-    published: new Date(Date.now() - i * 3600000).toISOString(),
-    origin: i % 2 === 0 ? 'API_NEWS' : 'BIRD_NETWORK',
-  }));
-
-  return { trends: [...baseTrends, ...fillerTrends], news, metadata: { weight_policy: { BIRD_NETWORK: 3, RSS: 2, API_NEWS: 1 } } };
-};
-
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LyvLayout } from "@/components/lyv/LyvLayout";
+import { Newspaper, TrendingUp, Sparkles, Globe, ChevronRight, ExternalLink, Loader2, Clock, BookmarkPlus } from 'lucide-react';
+import { mercurioService, NewsItem } from '@/services/mercurio';
+import { toast } from 'sonner';
 
 export default function Mercurio() {
-  const [data, setData] = useState<MercurioData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const location = useLocation();
-  const navigate = useNavigate();
+  const [activeCategory, setActiveCategory] = useState('Últimas');
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [trends, setTrends] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const basePath = "/mercurio";
-  const getTagHref = (tag: string) => `${basePath}/topico/${tagToSlug(tag)}`;
+  const categories = ['Últimas', 'Tecnologia', 'Economia', 'Mundo', 'Inovação'];
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Tenta buscar da API real
-      const response = await fetch("/service/mercurio/api/v1/mercurio/bundle");
-      if (!response.ok) throw new Error("API Indisponível");
-      const json = await response.json();
-      setData(json);
-    } catch (error) {
-      // SISTEMA DE FALLBACK AUTOMÁTICO (Nunca deixa a tela em branco)
-      console.warn("Mercúrio API off. Injetando dados de cache/fallback via RSS e Pentaia.");
-      toast.info("Mercúrio operando em modo offline via cache.", { icon: <Radio className="w-4 h-4 text-cyan-500" />});
-      
-      // Delay simulado para fluidez de UI
-      await new Promise(r => setTimeout(r, 600));
-      setData(generateFallbackData());
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [newsData, trendsData] = await Promise.all([
+          mercurioService.getNews(activeCategory.toLowerCase()),
+          mercurioService.getTrending()
+        ]);
+        setNews(newsData);
+        setTrends(trendsData.slice(0, 5)); // Pegamos o Top 5 do TAS
+      } catch (error) {
+        toast.error("A Íris teve um problema ao buscar as notícias.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [activeCategory]);
 
-  useEffect(() => { fetchData(); }, []);
-
-  const trends = data?.trends || [];
-  const news = data?.news || [];
-
-  // Pega slugs da URL para abrir notícias específicas
-  const activeTrendSlug = useMemo(() => location.pathname.match(/\/(mercurio|news)\/noticia\/([^/]+)/)?.[2] || null, [location.pathname]);
-  const activeTrend = activeTrendSlug ? trends.find(t => getTrendSlug(t) === activeTrendSlug) || null : null;
-
-  if (loading && !data) {
-    return (
-      <BirdLayout>
-        <div className="min-h-screen bg-transparent px-4 py-8 flex flex-col items-center justify-center space-y-4">
-           <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-           <p className="text-slate-500 dark:text-slate-400 font-medium animate-pulse">O Mercúrio está compilando o mundo para você...</p>
-        </div>
-      </BirdLayout>
-    );
-  }
-
-  // --- TELA DE LEITURA DE MATÉRIA ESPECÍFICA ---
-  if (activeTrend) {
-    return (
-      <BirdLayout>
-        <div className="min-h-screen bg-transparent px-2 md:px-4 py-6 pb-24">
-          <article className="mx-auto max-w-4xl">
-            <GlassCard className="rounded-[2.5rem] p-6 md:p-10 border-0 md:border shadow-2xl">
-              <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
-                <ArrowLeft className="w-4 h-4 mr-2" /> Voltar para o Painel
-              </Button>
-
-              <div className="flex items-center gap-3 mb-4">
-                <OriginPill origin={activeTrend.origin} weight={activeTrend.weight} />
-                <span className={`text-xs font-black tracking-widest uppercase ${categoryStyle[activeTrend.category] || "text-cyan-500"}`}>
-                  {activeTrend.category}
-                </span>
-              </div>
-
-              <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white leading-tight md:leading-[1.1] mb-6">
-                {activeTrend.title}
-              </h1>
-
-              {activeTrend.image_url && (
-                <div className="w-full h-64 md:h-96 rounded-2xl overflow-hidden mb-8 shadow-lg border border-slate-200 dark:border-slate-800">
-                  <img src={activeTrend.image_url} alt="Capa" className="w-full h-full object-cover" />
-                </div>
-              )}
-
-              <p className="text-lg md:text-xl text-slate-700 dark:text-slate-300 leading-relaxed font-medium mb-6">
-                {activeTrend.summary}
-              </p>
-
-              <div className="mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
-                <p className="text-sm text-slate-500">
-                  Fonte de origem da matéria: <strong>{activeTrend.source}</strong>
-                </p>
-                <div className="mt-4">
-                  <Link to={getTagHref(activeTrend.hashtag)} className="inline-flex items-center rounded-full px-4 py-2 text-sm font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors">
-                    <Hash className="w-4 h-4 mr-1" /> {activeTrend.hashtag.replace("#", "")}
-                  </Link>
-                </div>
-              </div>
-            </GlassCard>
-          </article>
-        </div>
-      </BirdLayout>
-    );
-  }
-
-  // --- O PAINEL MERCÚRIO PRINCIPAL (DASHBOARD) ---
-  const hero = trends[0];
-  const sideHighlights = trends.slice(1, 5);
-  const editorias = {
-    Jornalismo: trends.slice(5, 11),
-    Esportes: trends.slice(11, 17),
-    Entretenimento: trends.slice(17, 23),
+  // Função para formatar tempo (ex: "há 2 horas")
+  const timeAgo = (dateString: string) => {
+    const hours = Math.abs(new Date().getTime() - new Date(dateString).getTime()) / 3600000;
+    if (hours < 1) return 'Agora mesmo';
+    if (hours < 24) return `Há ${Math.floor(hours)}h`;
+    return `Há ${Math.floor(hours / 24)}d`;
   };
 
   return (
-    <BirdLayout>
-      <div className="min-h-screen bg-transparent px-2 md:px-6 py-4 md:py-8 pb-24">
-        <div className="mx-auto max-w-[1400px] space-y-6">
+    <LyvLayout>
+      <div className="w-full max-w-[1200px] mx-auto min-h-screen pt-4 md:pt-8 pb-24 px-4 md:px-6">
+        
+        {/* HEADER MERCÚRIO */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600 flex items-center gap-3 drop-shadow-sm">
+              <Newspaper className="w-10 h-10 text-amber-500" /> Mercúrio
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-2 font-medium flex items-center gap-2">
+              Curadoria global em tempo real impulsionada pela <Sparkles className="w-4 h-4 text-purple-500" /> <span className="font-bold text-purple-600 dark:text-purple-400">Íris AI</span>
+            </p>
+          </div>
           
-          {/* TOPO: Header Editorial */}
-          <GlassCard className="rounded-[2rem] overflow-hidden border-0 md:border">
-            <div className="bg-gradient-to-r from-slate-900 to-slate-800 dark:from-black dark:to-slate-900 text-white text-xs px-6 py-2.5 flex items-center justify-between shadow-inner">
-              <span className="font-bold flex items-center gap-2"><Globe2 className="w-4 h-4 text-cyan-400" /> Mercúrio Hub</span>
-              <span className="opacity-70 font-medium">BIRD NETWORK DATA</span>
-            </div>
+          <div className="flex bg-white dark:bg-[#1E293B] rounded-2xl p-1.5 shadow-sm border border-slate-100 dark:border-slate-800 w-full md:w-auto overflow-x-auto scrollbar-hide">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
+                  activeCategory === cat 
+                  ? 'bg-amber-500 text-white shadow-md' 
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
 
-            <CardContent className="p-6 md:p-8">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                  <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400 leading-none tracking-tight">
-                    Mercúrio
-                  </h1>
-                  <p className="mt-2 text-slate-600 dark:text-slate-400 font-medium">
-                    Curadoria de Notícias, Jornais e Tendências da Rede em Tempo Real.
-                  </p>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+          
+          {/* COLUNA PRINCIPAL: NOTÍCIAS DA ÍRIS */}
+          <div className="space-y-6">
+            <AnimatePresence mode="wait">
+              {isLoading ? (
+                <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center py-20">
+                  <div className="relative">
+                    <Globe className="w-12 h-12 text-amber-500 animate-pulse" />
+                    <Sparkles className="w-5 h-5 text-purple-500 absolute -top-1 -right-1 animate-spin" />
+                  </div>
+                  <p className="mt-4 text-slate-500 font-medium">Íris está mapeando o mundo...</p>
+                </motion.div>
+              ) : (
+                <motion.div key="content" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Destaque Principal (Ocupa 2 colunas se houver espaço) */}
+                  {news.length > 0 && (
+                    <div className="md:col-span-2 group relative rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#0F172A] cursor-pointer">
+                      <div className="h-[300px] md:h-[400px] w-full overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent z-10" />
+                        <img src={news[0].imageUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Destaque" />
+                        <div className="absolute top-6 left-6 z-20 bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-md">
+                          Destaque
+                        </div>
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 z-20">
+                        <div className="flex items-center gap-3 mb-3 text-white/80 text-sm font-medium">
+                          <span className="flex items-center gap-1.5"><Globe className="w-4 h-4" /> {news[0].source}</span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {timeAgo(news[0].publishedAt)}</span>
+                        </div>
+                        <h2 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3 drop-shadow-lg group-hover:text-amber-400 transition-colors">
+                          {news[0].title}
+                        </h2>
+                        <p className="text-slate-200 text-sm md:text-base line-clamp-2 md:line-clamp-3 mb-4 max-w-3xl">
+                          {news[0].summary}
+                        </p>
+                        
+                        {/* INSIGHT DA ÍRIS */}
+                        {news[0].aiInsight && (
+                          <div className="bg-purple-900/40 backdrop-blur-md border border-purple-500/30 rounded-2xl p-4 flex items-start gap-3 w-fit">
+                            <Sparkles className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+                            <p className="text-sm text-purple-100 font-medium">{news[0].aiInsight}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Grid Secundário (Bento Grid) */}
+                  {news.slice(1).map((item, idx) => (
+                    <div key={item.id} className="bg-white dark:bg-[#1E293B] rounded-[2rem] overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-xl transition-all group flex flex-col cursor-pointer">
+                      <div className="h-48 overflow-hidden relative">
+                         <img src={item.imageUrl} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="News" />
+                         <div className="absolute top-4 left-4 bg-white/90 dark:bg-black/70 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-slate-800 dark:text-white">
+                           {item.category}
+                         </div>
+                      </div>
+                      <div className="p-6 flex-1 flex flex-col">
+                        <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-3">
+                           <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5" /> {item.source}</span>
+                           <span>{timeAgo(item.publishedAt)}</span>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug mb-2 group-hover:text-amber-500 transition-colors line-clamp-3">
+                          {item.title}
+                        </h3>
+                        {item.aiInsight && (
+                           <div className="mt-auto pt-4 flex items-center gap-2 text-purple-600 dark:text-purple-400 text-xs font-bold">
+                             <Sparkles className="w-4 h-4" /> Insight da Íris
+                           </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* COLUNA DIREITA: RADAR TAS E AÇÕES */}
+          <div className="space-y-6">
+            
+            {/* RADAR TAS (Tendências do Backend) */}
+            <div className="bg-white dark:bg-[#1E293B] rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 p-6 sticky top-28">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-cyan-100 dark:bg-cyan-500/20 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                 </div>
-                <Button onClick={fetchData} disabled={loading} className="rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 font-bold shadow-lg">
-                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                  {loading ? 'Buscando...' : 'Sincronizar'}
-                </Button>
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900 dark:text-white leading-none">Radar TAS</h3>
+                  <p className="text-xs text-slate-500 mt-1">Assuntos do momento no Lyv</p>
+                </div>
               </div>
 
-              {/* Filtros rápidos */}
-              <nav className="mt-6 flex flex-wrap gap-2">
-                {["Últimas", "Jornalismo", "Esportes", "Entretenimento", "Mundo"].map((label) => (
-                  <button key={label} className="rounded-full px-4 py-2 text-xs font-bold bg-white/50 dark:bg-black/20 text-slate-800 dark:text-slate-200 hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors border border-slate-200 dark:border-slate-800">
-                    {label}
-                  </button>
-                ))}
-              </nav>
-            </CardContent>
-          </GlassCard>
-
-          {/* BLOCO 1: Manchete Principal e Destaques Laterais */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* MANCHETE HERO */}
-            <GlassCard className="lg:col-span-8 rounded-[2rem] overflow-hidden border-0 md:border group cursor-pointer relative" onClick={() => navigate(`${basePath}/noticia/${getTrendSlug(hero)}`)}>
-              {hero?.image_url && (
-                <div className="absolute inset-0 w-full h-full z-0">
-                  <img src={hero.image_url} alt="Capa" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent dark:from-black dark:via-black/80" />
-                </div>
-              )}
-              
-              <CardContent className="relative z-10 p-6 md:p-10 h-full flex flex-col justify-end min-h-[400px] md:min-h-[500px]">
-                <div className="mb-4"><OriginPill origin={hero?.origin} weight={hero?.weight} /></div>
-                <h2 className="text-3xl md:text-5xl font-black text-white leading-tight drop-shadow-lg max-w-3xl">
-                  {hero?.title || "Carregando destaques..."}
-                </h2>
-                <p className="mt-4 text-slate-200 font-medium max-w-2xl line-clamp-2 md:line-clamp-3 text-lg">
-                  {hero?.summary}
-                </p>
-                <div className="mt-6 flex items-center gap-3">
-                  <span className="bg-cyan-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg">Ler matéria</span>
-                  <span className="text-slate-300 text-sm font-medium">Fonte: {hero?.source}</span>
-                </div>
-              </CardContent>
-            </GlassCard>
-
-            {/* DESTAQUES LATERAIS */}
-            <div className="lg:col-span-4 flex flex-col gap-4">
-              {sideHighlights.map((item) => (
-                <GlassCard key={item.id} className="rounded-2xl flex-1 hover:bg-white/80 dark:hover:bg-[#1E293B]/80 transition-colors">
-                  <Link to={`${basePath}/noticia/${getTrendSlug(item)}`} className="block p-5 h-full">
-                    <div className="flex items-center justify-between mb-2">
-                      <OriginPill origin={item.origin} weight={item.weight} />
-                      <span className={`text-[10px] font-black uppercase tracking-wider ${categoryStyle[item.category] || "text-cyan-500"}`}>{item.category}</span>
+              <div className="space-y-4">
+                {trends.length === 0 && !isLoading && (
+                  <p className="text-sm text-slate-500 text-center py-4">O radar está silencioso hoje.</p>
+                )}
+                {trends.map((trend, index) => (
+                  <div key={index} className="flex items-center justify-between group cursor-pointer p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors -mx-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-300 dark:text-slate-600 font-black text-lg w-4">{index + 1}</span>
+                      <div>
+                        <p className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-cyan-500 transition-colors">{trend.tag}</p>
+                        <p className="text-xs text-slate-500">{trend.posts}</p>
+                      </div>
                     </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug group-hover:text-cyan-600 transition-colors">
-                      {item.title}
-                    </h3>
-                  </Link>
-                </GlassCard>
-              ))}
+                    <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                ))}
+              </div>
+              
+              <button className="w-full mt-6 py-3 rounded-xl text-sm font-bold text-cyan-600 bg-cyan-50 dark:bg-cyan-500/10 hover:bg-cyan-100 dark:hover:bg-cyan-500/20 transition-colors">
+                Explorar mais tendências
+              </button>
             </div>
-          </section>
+            
+            {/* WIDGET DE CLIMA/LOCAL (Extra elegante) */}
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2rem] shadow-lg p-6 text-white overflow-hidden relative">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10" />
+               <h3 className="font-bold text-lg opacity-90 mb-1">Seu Mundo</h3>
+               <p className="text-3xl font-black mb-4">24°C <span className="text-lg opacity-80 font-medium">Bahia, BR</span></p>
+               <p className="text-sm opacity-80 leading-relaxed">Céu limpo. Um ótimo dia para explorar o ecossistema Lyv.</p>
+            </div>
 
-          {/* BLOCO 2: Editorias em Grid (Três Colunas) */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <EditoriaColumn title="Jornalismo" color="text-rose-600 dark:text-rose-400" items={editorias.Jornalismo} basePath={basePath} />
-            <EditoriaColumn title="Esportes" color="text-emerald-600 dark:text-emerald-400" items={editorias.Esportes} basePath={basePath} />
-            <EditoriaColumn title="Entretenimento" color="text-amber-600 dark:text-amber-400" items={editorias.Entretenimento} basePath={basePath} />
-          </section>
+          </div>
 
         </div>
       </div>
-    </BirdLayout>
-  );
-}
-
-// Subcomponente para as colunas de Editoria
-function EditoriaColumn({ title, color, items, basePath }: { title: string; color: string; items: Trend[]; basePath: string; }) {
-  return (
-    <GlassCard className="rounded-[2rem]">
-      <CardContent className="p-5">
-        <h3 className={`text-xl font-black mb-4 flex items-center gap-2 ${color}`}>
-          {title}
-        </h3>
-        <div className="space-y-3">
-          {items.map((item) => (
-            <Link key={item.id} to={`${basePath}/noticia/${getTrendSlug(item)}`} className="block rounded-2xl bg-white/40 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 p-4 hover:bg-white/80 dark:hover:bg-black/40 transition-colors">
-              <div className="mb-2"><OriginPill origin={item.origin} /></div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight line-clamp-3">
-                {item.title}
-              </h4>
-              <p className="mt-2 text-xs font-medium text-slate-500">Fonte: {item.source}</p>
-            </Link>
-          ))}
-        </div>
-      </CardContent>
-    </GlassCard>
+    </LyvLayout>
   );
 }

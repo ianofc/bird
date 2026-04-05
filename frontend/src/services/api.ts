@@ -12,7 +12,7 @@ export const api = axios.create({
 
 // Injetar o Token de Autenticação em todas as requisições, se existir
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('@bird:token');
+  const token = localStorage.getItem('@lyv:token');
   if (token) {
     config.headers.Authorization = `Token ${token}`;
   }
@@ -41,13 +41,60 @@ export const feedService = {
   },
   createPost: async (formData: FormData) => {
     // Usando multipart/form-data para suportar imagens
-    const response = await api.post('/birds/', formData, {
+    const response = await api.post('/lyvs/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   },
   toggleLike: async (postId: string) => {
-    const response = await api.post(`/birds/${postId}/like/`);
+    const response = await api.post(`/lyvs/${postId}/like/`);
     return response.data;
+  }
+};
+
+export const chatService = {
+  getRooms: async () => {
+    const response = await api.get('/chat/rooms/');
+    return response.data;
+  },
+  getMessages: async (roomId: string) => {
+    const response = await api.get(`/chat/rooms/${roomId}/messages/`);
+    return response.data;
+  },
+  sendMessage: async (roomId: string, content: string) => {
+    const response = await api.post(`/chat/rooms/${roomId}/messages/`, { content });
+    return response.data;
+  },
+  startDm: async (username: string) => {
+    const response = await api.post('/chat/start-dm/', { username });
+    return response.data;
+  }
+};
+
+// --- TAS (Motor de Recomendação e Trends) ---
+export const tasService = {
+  getTrending: async () => {
+    const res = await api.get('/trending/');
+    return res.data;
+  },
+  getSuggested: async () => {
+    const res = await api.get('/suggested/');
+    return res.data;
+  },
+  followUser: async (username: string) => {
+    const res = await api.post(`/users/${username}/follow/`);
+    return res.data;
+  }
+};
+
+// --- HEIMDALL (Guardião de Notificações e Segurança) ---
+export const heimdallService = {
+  getNotifications: async () => {
+    const res = await api.get('/notifications/');
+    return res.data;
+  },
+  markAsRead: async () => {
+    const res = await api.post('/notifications/read/');
+    return res.data;
   }
 };

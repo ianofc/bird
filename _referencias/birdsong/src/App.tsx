@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import Feed from "./pages/Feed";
 import Profile from "./pages/Profile";
-import Gorjeio from "./pages/Gorjeio";
+import Post from "./pages/Post";
 import Network from "./pages/Network";
 import Communities from "./pages/Communities";
 import Explore from "./pages/Explore";
@@ -26,7 +26,7 @@ const App = () => (
             <Route path="/" element={<Feed />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/perfil" element={<Profile />} />
-            <Route path="/gorjeio" element={<Gorjeio />} />
+            <Route path="/post" element={<Post />} />
             <Route path="/rede" element={<Network />} />
             <Route path="/comunidades" element={<Communities />} />
             <Route path="/explorar" element={<Explore />} />

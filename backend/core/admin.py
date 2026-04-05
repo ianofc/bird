@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Profile, WorkExperience, Education,
-    Bird, Comment, Connection, SocialBond,
+    Lyv, Comment, Connection, SocialBond,
     Event, Room, Message, Notification
 )
 
@@ -10,8 +10,8 @@ class ProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'full_name', 'is_verified', 'created_at')
     search_fields = ('user__username', 'full_name')
 
-@admin.register(Bird)
-class BirdAdmin(admin.ModelAdmin):
+@admin.register(Lyv)
+class LyvAdmin(admin.ModelAdmin):
     list_display = ('author', 'post_type', 'created_at', 'visibility')
     list_filter = ('post_type', 'visibility')
 

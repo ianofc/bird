@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Bird, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Lyv, Mail, Lock, User, ArrowRight } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -40,9 +40,9 @@ const Auth = () => {
       <div className="glass-strong rounded-3xl p-8 w-full max-w-md shadow-xl animate-fade-in">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
-            <Bird size={32} className="text-primary-foreground" />
+            <Lyv size={32} className="text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Bird</h1>
+          <h1 className="text-3xl font-bold text-foreground">Lyv</h1>
           <p className="text-muted-foreground mt-1">
             {isLogin ? "Bem-vindo de volta!" : "Crie sua conta"}
           </p>

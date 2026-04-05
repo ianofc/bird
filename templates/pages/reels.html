@@ -1,4 +1,4 @@
-{% extends 'layout/base_bird.html' %}
+{% extends 'layout/base_lyv.html' %}
 {% load static %}
 
 {% block main_content %}
@@ -10,12 +10,12 @@
             <i class="fas fa-arrow-left text-2xl"></i>
         </a>
 
-        {% for bird in videos %}
+        {% for lyv in videos %}
         <div class="snap-start relative w-full h-full flex items-center justify-center bg-gray-900 md:my-4 md:h-[95%] md:rounded-2xl overflow-hidden" 
              x-data="videoPlayer()">
             
             <video x-ref="player"
-                   src="{{ bird.video.url }}" 
+                   src="{{ lyv.video.url }}" 
                    class="h-full w-full object-cover cursor-pointer" 
                    loop playsinline 
                    @click="togglePlay()"
@@ -38,20 +38,20 @@
             <div class="absolute right-4 bottom-24 flex flex-col items-center space-y-6 z-20">
                 
                 <div class="flex flex-col items-center">
-                    <button hx-post="{% url 'toggle_like' bird.id %}" 
+                    <button hx-post="{% url 'toggle_like' lyv.id %}" 
                             hx-swap="outerHTML"
                             class="w-12 h-12 rounded-full bg-gray-800/60 backdrop-blur-md flex items-center justify-center transition active:scale-90 hover:bg-gray-700">
-                        {% if user in bird.likes.all %}
+                        {% if user in lyv.likes.all %}
                             <i class="fas fa-heart text-2xl text-rose-500"></i>
                         {% else %}
                             <i class="fas fa-heart text-2xl text-white"></i>
                         {% endif %}
                     </button>
-                    <span class="text-white text-xs font-bold mt-1 shadow-black drop-shadow-md">{{ bird.likes.count }}</span>
+                    <span class="text-white text-xs font-bold mt-1 shadow-black drop-shadow-md">{{ lyv.likes.count }}</span>
                 </div>
 
                 <div class="flex flex-col items-center">
-                    <a href="{% url 'bird_detail' bird.id %}" class="w-12 h-12 rounded-full bg-gray-800/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-gray-700 transition">
+                    <a href="{% url 'lyv_detail' lyv.id %}" class="w-12 h-12 rounded-full bg-gray-800/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-gray-700 transition">
                         <i class="fas fa-comment-dots text-2xl"></i>
                     </a>
                     <span class="text-white text-xs font-bold mt-1 shadow-black drop-shadow-md">Ver</span>
@@ -67,21 +67,21 @@
             <div class="absolute left-4 bottom-8 right-16 text-white z-20">
                 
                 <div class="flex items-center space-x-3 mb-3">
-                    <a href="{% url 'profile_detail' bird.author.username %}" class="block">
+                    <a href="{% url 'profile_detail' lyv.author.username %}" class="block">
                         <div class="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
-                            {% if bird.author.profile.avatar %}
-                                <img src="{{ bird.author.profile.avatar.url }}" class="w-full h-full object-cover">
+                            {% if lyv.author.profile.avatar %}
+                                <img src="{{ lyv.author.profile.avatar.url }}" class="w-full h-full object-cover">
                             {% else %}
-                                <img src="https://ui-avatars.com/api/?name={{ bird.author.username }}" class="w-full h-full object-cover">
+                                <img src="https://ui-avatars.com/api/?name={{ lyv.author.username }}" class="w-full h-full object-cover">
                             {% endif %}
                         </div>
                     </a>
-                    <a href="{% url 'profile_detail' bird.author.username %}" class="font-bold text-shadow-sm hover:underline">
-                        @{{ bird.author.username }}
+                    <a href="{% url 'profile_detail' lyv.author.username %}" class="font-bold text-shadow-sm hover:underline">
+                        @{{ lyv.author.username }}
                     </a>
                     
-                    {% if user != bird.author %}
-                        <form action="{% url 'toggle_follow' bird.author.username %}" method="POST">
+                    {% if user != lyv.author %}
+                        <form action="{% url 'toggle_follow' lyv.author.username %}" method="POST">
                             {% csrf_token %}
                             <button class="bg-transparent border border-white/50 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm hover:bg-white/20 transition">
                                 Seguir
@@ -92,9 +92,9 @@
 
                 <div x-data="{ expanded: false }">
                     <p class="text-sm leading-relaxed drop-shadow-md" :class="expanded ? '' : 'line-clamp-2'">
-                        {{ bird.content }}
+                        {{ lyv.content }}
                     </p>
-                    {% if bird.content|length > 100 %}
+                    {% if lyv.content|length > 100 %}
                     <button @click="expanded = !expanded" class="text-xs text-gray-300 font-bold mt-1 hover:text-white">
                         <span x-text="expanded ? 'Ocultar' : 'Ver mais'"></span>
                     </button>
@@ -104,7 +104,7 @@
                 <div class="flex items-center gap-2 mt-3 opacity-80">
                     <i class="fas fa-music text-xs animate-pulse"></i>
                     <div class="text-xs overflow-hidden w-32">
-                        <div class="whitespace-nowrap animate-marquee">Som original - {{ bird.author.username }}</div>
+                        <div class="whitespace-nowrap animate-marquee">Som original - {{ lyv.author.username }}</div>
                     </div>
                 </div>
 

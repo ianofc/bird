@@ -8,7 +8,7 @@ const navItems = [
   { divider: true },
   { icon: Home, path: "/", label: "Início" },
   { icon: Edit3, path: "/explorar", label: "Explorar" },
-  { icon: MessageCircle, path: "/gorjeio", label: "Gorjeio" },
+  { icon: MessageCircle, path: "/post", label: "Post" },
   { icon: Users, path: "/rede", label: "Rede" },
   { icon: Layers, path: "/comunidades", label: "Comunidades" },
   { divider: true },
@@ -84,7 +84,7 @@ const Sidebar = () => {
           <div className="absolute inset-0 bg-foreground/20 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <nav className="absolute left-0 top-0 bottom-0 w-64 glass-strong p-4 flex flex-col gap-1 shadow-2xl animate-fade-in">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-foreground">Bird</h2>
+              <h2 className="text-lg font-bold text-foreground">Lyv</h2>
               <button onClick={() => setMobileOpen(false)} className="text-muted-foreground">
                 <X size={20} />
               </button>

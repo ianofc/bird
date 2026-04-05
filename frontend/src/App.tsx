@@ -3,13 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { BirdProvider, useBird } from "@/contexts/BirdContext";
+import { LyvProvider, useLyv } from "@/contexts/LyvContext";
 
 // Páginas de Autenticação (Públicas)
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
-// Páginas do Ecossistema Bird (Privadas)
+// Páginas do Ecossistema Lyv (Privadas)
 import Feed from "./pages/Feed"; // O Feed Principal (Momentos)
 import Explore from "./pages/Explore";
 import Notifications from "./pages/Notifications";
@@ -27,7 +27,7 @@ const queryClient = new QueryClient();
 
 // 🛡️ Rota Privada: Só entra se estiver autenticado
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated, isLoading } = useBird();
+  const { isAuthenticated, isLoading } = useLyv();
 
   if (isLoading) return null; // Evita piscar tela de login enquanto recupera o token
 
@@ -36,7 +36,7 @@ const PrivateRoute = ({ children }: { children: JSX.Element }) => {
 
 // 🔓 Rota Pública: Se já estiver logado, pula o login/signup e vai pra Home
 const PublicRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated, isLoading } = useBird();
+  const { isAuthenticated, isLoading } = useLyv();
 
   if (isLoading) return null;
 
@@ -49,7 +49,7 @@ const AppRoutes = () => (
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
     
-    {/* Rotas Privadas do Ecossistema Bird */}
+    {/* Rotas Privadas do Ecossistema Lyv */}
     <Route path="/" element={<PrivateRoute><Feed /></PrivateRoute>} />
     <Route path="/explore" element={<PrivateRoute><Explore /></PrivateRoute>} />
     <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
@@ -76,11 +76,11 @@ const App = () => (
     <TooltipProvider delayDuration={100}>
       {/* BrowserRouter configurado para futuras atualizações do React Router v7 */}
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <BirdProvider>
+        <LyvProvider>
           <AppRoutes />
           <Toaster />
           <Sonner />
-        </BirdProvider>
+        </LyvProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -1,10 +1,10 @@
 from django.urls import path
-from core.views import feed, profile, posts, interactions, settings, discovery, gorjeio, events, groups, network, auth, general
+from core.views import feed, profile, posts, interactions, settings, discovery, post, events, groups, network, auth, general
 from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     # --- ROTA CRÍTICA DO PERFIL (Auth) ---
-    # O prefixo '/api/' já vem do bird/urls.py, então aqui usamos apenas 'auth/me/'
+    # O prefixo '/api/' já vem do lyv/urls.py, então aqui usamos apenas 'auth/me/'
     # URL Final: /api/auth/me/
     path('auth/me/', auth.current_user_django, name='current_user_api'),
     
@@ -21,27 +21,27 @@ urlpatterns = [
     
     # Interações
     path('profile/<str:username>/follow/', interactions.toggle_follow, name='toggle_follow'),
-    path('bird/<int:bird_id>/like/', interactions.toggle_like, name='toggle_like'),
-    path('bird/<int:bird_id>/comment/', interactions.add_comment, name='add_comment'),
-    path('bird/<int:bird_id>/save/', interactions.toggle_save, name='toggle_save'),
-    path('bird/<int:bird_id>/share/', interactions.share_post, name='share_post'),
+    path('lyv/<int:lyv_id>/like/', interactions.toggle_like, name='toggle_like'),
+    path('lyv/<int:lyv_id>/comment/', interactions.add_comment, name='add_comment'),
+    path('lyv/<int:lyv_id>/save/', interactions.toggle_save, name='toggle_save'),
+    path('lyv/<int:lyv_id>/share/', interactions.share_post, name='share_post'),
     path('comment/<int:comment_id>/delete/', interactions.delete_comment, name='delete_comment'),
 
     # Chat
 
     # Chat API (SPA/React)
-    path('chat/rooms/', gorjeio.chat_rooms_api, name='chat_rooms_api'),
-    path('chat/rooms/<int:room_id>/messages/', gorjeio.chat_messages_api, name='chat_messages_api'),
-    path('chat/start-dm/', gorjeio.start_dm_api, name='chat_start_dm_api'),
-    path('start_chat/<str:username>/', gorjeio.start_dm, name='start_chat'),
-    path('messages/', gorjeio.chat_index, name='chat_index'),
-    path('messages/t/<str:username>/', gorjeio.start_dm, name='start_dm'),
-    path('messages/<int:room_id>/', gorjeio.chat_room, name='chat_room'),
+    path('chat/rooms/', post.chat_rooms_api, name='chat_rooms_api'),
+    path('chat/rooms/<int:room_id>/messages/', post.chat_messages_api, name='chat_messages_api'),
+    path('chat/start-dm/', post.start_dm_api, name='chat_start_dm_api'),
+    path('start_chat/<str:username>/', post.start_dm, name='start_chat'),
+    path('messages/', post.chat_index, name='chat_index'),
+    path('messages/t/<str:username>/', post.start_dm, name='start_dm'),
+    path('messages/<int:room_id>/', post.chat_room, name='chat_room'),
 
-    # Posts (Birds)
-    path('bird/create/', posts.create_bird, name='create_bird'),
-    path('bird/<int:bird_id>/', posts.bird_detail, name='bird_detail'),
-    path('bird/<int:bird_id>/delete/', posts.delete_bird, name='delete_bird'),
+    # Posts (Lyvs)
+    path('lyv/create/', posts.create_lyv, name='create_lyv'),
+    path('lyv/<int:lyv_id>/', posts.lyv_detail, name='lyv_detail'),
+    path('lyv/<int:lyv_id>/delete/', posts.delete_lyv, name='delete_lyv'),
 
     # Outros
     path('settings/', settings.settings_view, name='settings'),

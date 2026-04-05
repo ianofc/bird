@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import { useBird } from "@/contexts/BirdContext";
+import { useLyv } from "@/contexts/LyvContext";
 import { authService } from "@/services/api";
 import { 
   Lock, User, ArrowRight, Loader2, AlertCircle, Eye, EyeOff, 
@@ -22,7 +22,7 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const BirdIcon = ({ className }: { className?: string }) => (
+const LyvIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M22 6c0-2.2-2-4-4-4-.8 0-2 .4-3 1-2-1-5-1-7 0a4 4 0 0 0-3-1 4 4 0 0 0-3 3 8 8 0 0 0 0 10c0 2.2 2 4 4 4 .8 0 2-.4 3-1 2 1 5 1 7 0a4 4 0 0 0 3-1 4 4 0 0 0 3-3V6z" />
     <path d="M14 9h.01" /><path d="M10 9h.01" /><path d="M12 14c1.5 0 2.5-.5 2.5-1.5" />
@@ -36,7 +36,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { login } = useBird();
+  const { login } = useLyv();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +74,7 @@ export default function Login() {
       {/* CONTAINER CENTRALIZADO (Aproxima o Mockup do Login) */}
       <div className="relative z-10 flex flex-row items-center justify-center w-full max-w-[900px] gap-8 lg:gap-16">
         
-        {/* LADO ESQUERDO: Mockup 3D Realista do Feed BIRD */}
+        {/* LADO ESQUERDO: Mockup 3D Realista do Feed LYV */}
         <div className="hidden lg:flex shrink-0">
           <motion.div 
             initial={{ opacity: 0, y: 30, rotateY: -8 }} 
@@ -91,7 +91,7 @@ export default function Login() {
              {/* Header do App */}
              <div className="relative z-10 pt-10 px-5 pb-3 flex items-center justify-between">
                 <h2 className="font-black text-slate-800 text-xl tracking-tight flex items-center gap-1">
-                  Bird
+                  Lyv
                 </h2>
                 <div className="flex gap-3 text-slate-600">
                   <Heart className="w-5 h-5" />
@@ -126,9 +126,9 @@ export default function Login() {
                         </Avatar>
                         <div className="flex flex-col">
                           <span className="font-bold text-[13px] text-slate-900 flex items-center gap-1">
-                            Sistema BIRD <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
+                            Sistema LYV <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
                           </span>
-                          <span className="text-[10px] text-slate-500">@bird_admin • Agora</span>
+                          <span className="text-[10px] text-slate-500">@lyv_admin • Agora</span>
                         </div>
                       </div>
                       <MoreHorizontal className="w-4 h-4 text-slate-400" />
@@ -136,7 +136,7 @@ export default function Login() {
                     
                     {/* Texto */}
                     <p className="text-[13px] text-slate-700 leading-tight mb-3">
-                      O sistema BIRD está oficialmente operacional. Explorando as novas capacidades do layout em mosaico! 🦅 <span className="text-cyan-600 font-medium">#Soberania</span>
+                      O sistema LYV está oficialmente operacional. Explorando as novas capacidades do layout em mosaico! 🦅 <span className="text-cyan-600 font-medium">#Soberania</span>
                     </p>
 
                     {/* Mosaico de Imagens */}
@@ -184,10 +184,10 @@ export default function Login() {
 
             <div className="px-8 pt-10 pb-6 text-center relative z-10">
               <div className="relative inline-flex items-center justify-center w-16 h-16 mb-6 shadow-xl rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 shadow-cyan-500/30">
-                <BirdIcon className="relative z-10 w-8 h-8 text-white" />
+                <LyvIcon className="relative z-10 w-8 h-8 text-white" />
                 <Sparkles className="absolute w-4 h-4 text-yellow-300 -top-1 -right-1 animate-pulse" />
               </div>
-              <h1 className="mb-2 text-2xl font-black text-slate-800 tracking-tight">Bem-vindo ao Bird</h1>
+              <h1 className="mb-2 text-2xl font-black text-slate-800 tracking-tight">Bem-vindo ao Lyv</h1>
               <p className="text-sm font-medium text-slate-500">SISTEMA OPERATIVO DE VIDA</p>
             </div>
 

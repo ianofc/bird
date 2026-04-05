@@ -55,9 +55,9 @@ class RecommendationService:
         topic_token = (topic or "").replace("_", " ")
         return topic_token.strip(), hashtag_token.strip()
 
-    async def _load_bird_counts(self, topic: str, hashtag: str) -> Dict[str, int]:
+    async def _load_lyv_counts(self, topic: str, hashtag: str) -> Dict[str, int]:
         """
-        Cruza tendências com tabelas do Django (`core_bird` e `core_comment`) no mesmo PostgreSQL.
+        Cruza tendências com tabelas do Django (`core_lyv` e `core_comment`) no mesmo PostgreSQL.
         Se as tabelas não existirem/estiverem indisponíveis, retorna zeros sem quebrar o endpoint.
         """
         topic_token, hashtag_token = self._trend_tokens(topic, hashtag)
@@ -79,12 +79,12 @@ class RecommendationService:
         post_where_clause = " OR ".join(post_like_terms) if post_like_terms else "1=0"
         comment_where_clause = " OR ".join(comment_like_terms) if comment_like_terms else "1=0"
 
-        posts_sql = text(f"SELECT COUNT(*) FROM core_bird b WHERE {post_where_clause}")
+        posts_sql = text(f"SELECT COUNT(*) FROM core_lyv b WHERE {post_where_clause}")
         comments_sql = text(
             f"""
             SELECT COUNT(*)
             FROM core_comment c
-            JOIN core_bird b ON b.id = c.bird_id
+            JOIN core_lyv b ON b.id = c.lyv_id
             WHERE ({post_where_clause}) OR ({comment_where_clause})
             """
         )
@@ -203,7 +203,7 @@ class RecommendationService:
 
         if prepared_trends:
             counters_by_trend = await asyncio.gather(
-                *(self._load_bird_counts(topic, hashtag) for _, _, topic, hashtag, _ in prepared_trends)
+                *(self._load_lyv_counts(topic, hashtag) for _, _, topic, hashtag, _ in prepared_trends)
             )
         else:
             counters_by_trend = []
@@ -229,7 +229,7 @@ class RecommendationService:
             for idx, topic in enumerate(defaults[:limit]):
 
                 hashtag = self._to_hashtag(topic)
-                counters = await self._load_bird_counts(topic, hashtag)
+                counters = await self._load_lyv_counts(topic, hashtag)
 
                 trends.append(
                     {

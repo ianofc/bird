@@ -7,12 +7,12 @@ from django.core.exceptions import ValidationError
 User = get_user_model()
 
 # --- FUNÇÕES DE UPLOAD ---
-def upload_post_media(instance, filename): return f'birds/media/{instance.author.username}/{filename}'
+def upload_post_media(instance, filename): return f'lyvs/media/{instance.author.username}/{filename}'
 def upload_event_cover(instance, filename): return f'events/covers/{instance.id}/{filename}'
 def upload_group_cover(instance, filename): return f'groups/covers/{uuid.uuid4()}/{filename}'
 def upload_avatar(instance, filename): return f'avatars/{instance.user.username}/{uuid.uuid4()}.{filename.split(".")[-1]}'
 def upload_cover(instance, filename): return f'covers/{instance.user.username}/{uuid.uuid4()}.{filename.split(".")[-1]}'
-def upload_chat_attachment(instance, filename): return f'gorjeio/attachments/{instance.room.id}/{uuid.uuid4()}_{filename}'
+def upload_chat_attachment(instance, filename): return f'post/attachments/{instance.room.id}/{uuid.uuid4()}_{filename}'
 
 
 # --- PERFIL ---
@@ -47,20 +47,20 @@ class Education(models.Model):
     end_date = models.DateField(null=True, blank=True)
 
 
-# --- SOCIAL (ECOSSISTEMA BIRD) ---
-class Bird(models.Model):
+# --- SOCIAL (ECOSSISTEMA LYV) ---
+class Lyv(models.Model):
     POST_TYPES = (('text', 'Texto'), ('image', 'Imagem'), ('video', 'Vídeo'), ('story', 'Story'))
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='birds')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lyvs')
     content = models.TextField(blank=True)
     image = models.ImageField(upload_to=upload_post_media, blank=True, null=True)
     video = models.FileField(upload_to=upload_post_media, blank=True, null=True)
     post_type = models.CharField(max_length=10, choices=POST_TYPES, default='text')
     created_at = models.DateTimeField(auto_now_add=True)
-    likes = models.ManyToManyField(User, related_name='liked_birds', blank=True)
+    likes = models.ManyToManyField(User, related_name='liked_lyvs', blank=True)
     visibility = models.CharField(max_length=20, default='public')
 
 class Comment(models.Model):
-    bird = models.ForeignKey(Bird, on_delete=models.CASCADE, related_name='comments')
+    lyv = models.ForeignKey(Lyv, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -88,7 +88,7 @@ class Connection(models.Model):
 
 class SavedPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_posts')
-    post = models.ForeignKey(Bird, on_delete=models.CASCADE, related_name='saved_by')
+    post = models.ForeignKey(Lyv, on_delete=models.CASCADE, related_name='saved_by')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -129,7 +129,7 @@ class Room(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
     type = models.CharField(max_length=20, choices=ROOM_TYPES, default='dm')
     
-    icon = models.ImageField(upload_to='gorjeio/group_icons/', blank=True, null=True)
+    icon = models.ImageField(upload_to='post/group_icons/', blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     participants = models.ManyToManyField(User, related_name='chat_rooms')
     admins = models.ManyToManyField(User, related_name='admin_rooms', blank=True)
@@ -147,7 +147,7 @@ class Room(models.Model):
 
 class ChatFolder(models.Model):
     """
-    Representa o sistema de 'Ninhos' (Pastas de chat) do Gorjeio.
+    Representa o sistema de 'Agoras' (Pastas de chat) do Post.
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_folders')
     name = models.CharField(max_length=100) # Ex: Dev, Arte, Pessoal
@@ -159,7 +159,7 @@ class ChatFolder(models.Model):
         ordering = ['created_at']
 
     def __str__(self):
-        return f"Ninho {self.name} - {self.user.username}"
+        return f"Agora {self.name} - {self.user.username}"
 
 
 class Message(models.Model):
@@ -193,3 +193,47 @@ class Notification(models.Model):
     text = models.CharField(max_length=255)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Lives
+
+class LiveStream(models.Model):
+    LIVE_TYPES = (
+        ('normal', 'Transmissão Normal'),
+        ('pk', 'Batalha PK'),
+        ('sala', 'Sala de Conversa (Múltiplos)')
+    )
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_streams')
+    title = models.CharField(max_length=200, blank=True)
+    stream_type = models.CharField(max_length=15, choices=LIVE_TYPES, default='normal')
+    
+    # Thumbnail/Capa da Live
+    cover_image = models.ImageField(upload_to='streams/covers/', blank=True, null=True)
+    
+    # Pessoas assistindo agora (Para fins de banco, vamos usar um contador inteiro por enquanto)
+    viewers_count = models.IntegerField(default=0)
+    
+    # Opcionais para participações e PKs
+    guests = models.ManyToManyField(User, related_name='guested_streams', blank=True)
+    
+    is_active = models.BooleanField(default=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.get_stream_type_display()} de {self.host.username}"
+    
+    # Produtos Loja
+
+class Product(models.Model):
+    seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    category = models.CharField(max_length=100, default='Geral')
+    image = models.ImageField(upload_to='marketplace/', blank=True, null=True)
+    location = models.CharField(max_length=150, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.title} - R$ {self.price}"

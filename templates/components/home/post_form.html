@@ -1,12 +1,12 @@
 {% load static %}
 
 <div class="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-sm mb-6 border border-gray-100 dark:border-gray-700">
-    <form hx-post="{% url 'create_bird' %}" 
+    <form hx-post="{% url 'create_lyv' %}" 
           hx-target="#{{ post_target_id|default:'feed-list' }}" 
           hx-swap="afterbegin" 
           hx-encoding="multipart/form-data"
           enctype="multipart/form-data"
-          id="create-bird-form">
+          id="create-lyv-form">
         
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.path }}">
@@ -99,7 +99,7 @@
 
         // Limpar tudo após postar com sucesso (HTMX Event)
         document.body.addEventListener('htmx:afterRequest', function(evt) {
-            if(evt.detail.elt.id === 'create-bird-form' && evt.detail.successful) {
+            if(evt.detail.elt.id === 'create-lyv-form' && evt.detail.successful) {
                 evt.detail.elt.reset();
                 clearPostMedia();
             }

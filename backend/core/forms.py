@@ -1,12 +1,12 @@
 from django import forms
-from .models import Bird, Profile, Community, WorkExperience, Education
+from .models import Lyv, Profile, Community, WorkExperience, Education
 
 # ========================================================
-# 🦅 BIRD (POSTAGEM)
+# 🦅 LYV (POSTAGEM)
 # ========================================================
-class BirdForm(forms.ModelForm):
+class LyvForm(forms.ModelForm):
     class Meta:
-        model = Bird
+        model = Lyv
         fields = ['content', 'image', 'video']
         widgets = {
             'content': forms.Textarea(attrs={
@@ -14,7 +14,7 @@ class BirdForm(forms.ModelForm):
                 'placeholder': 'No que você está pensando?',
                 'rows': 2,
                 'maxlength': '500',
-                'id': 'bird-content-input'
+                'id': 'lyv-content-input'
             }),
             'image': forms.FileInput(attrs={
                 'class': 'hidden', 

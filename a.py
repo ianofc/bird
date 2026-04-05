@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 🚀 PENTAIA SYSTEM AUTOMATOR
-Script mestre para gerenciamento do ecossistema Bird/MultiVerso IO
+Script mestre para gerenciamento do ecossistema Lyv/MultiVerso IO
 Autor: Ian Santos
 Versão: 2.0.0
 """
@@ -48,7 +48,7 @@ SERVICES = {
     "tas": Service(
         name="TAS",
         port=8001,
-        container="bird_tas",
+        container="lyv_tas",
         endpoints=["/", "/health", "/api/v1/recommend/trends"],
         required_files={
             "main.py": "async def get_trends",
@@ -58,7 +58,7 @@ SERVICES = {
     "zios": Service(
         name="ZIOS",
         port=8002,
-        container="bird_zios",
+        container="lyv_zios",
         endpoints=["/", "/v1/proactive/heimdall/check?ip=127.0.0.1"],
         required_files={
             "main.py": "async def heimdall_check"
@@ -67,7 +67,7 @@ SERVICES = {
     "iris": Service(
         name="IRIS",
         port=8003,
-        container="bird_iris",
+        container="lyv_iris",
         endpoints=["/", "/scan/full"],
         required_files={
             "main.py": "perform_scan"
@@ -76,7 +76,7 @@ SERVICES = {
     "mercurio": Service(
         name="MERCÚRIO",
         port=8004,
-        container="bird_mercurio",
+        container="lyv_mercurio",
         endpoints=["/", "/api/v1/mercurio/bundle"],
         required_files={
             "main.py": "get_integrated_bundle"
@@ -85,14 +85,14 @@ SERVICES = {
     "backend": Service(
         name="DJANGO BACKEND",
         port=8000,
-        container="bird_backend",
+        container="lyv_backend",
         endpoints=["/api/auth/me/"],
         required_files={}
     ),
     "frontend": Service(
         name="FRONTEND",
         port=8080,
-        container="bird_frontend",
+        container="lyv_frontend",
         endpoints=["/"],
         required_files={}
     )

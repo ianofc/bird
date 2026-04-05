@@ -1,7 +1,7 @@
 {% load static %}
 <div id="feed-list" class="space-y-4">
-    {% for bird in birds %}
-        {% include "components/bird_item.html" %}
+    {% for lyv in lyvs %}
+        {% include "components/lyv_item.html" %}
     {% empty %}
         <div class="text-center py-10 text-gray-500">
             <p>Nenhum post ainda. Seja o primeiro!</p>

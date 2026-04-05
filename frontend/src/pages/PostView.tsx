@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BirdLayout } from "@/components/bird/BirdLayout";
-import { PostCard, Post } from "@/components/bird/PostCard";
+import { LyvLayout } from "@/components/lyv/LyvLayout";
+import { PostCard, Post } from "@/components/lyv/PostCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Send, Heart, MoreHorizontal, Smile } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ export default function PostView() {
   // Simulando a busca do Post no Banco de Dados
   const mockPost: Post = {
     id: id || "1",
-    content: "O ecossistema Bird rodando liso na nova atualização. O Glassmorphism direto na Aurora muda tudo! 🌌 A arquitetura que estamos montando aqui vai servir de base para o futuro. #BirdOS #Aurora",
+    content: "O ecossistema Lyv rodando liso na nova atualização. O Glassmorphism direto na Aurora muda tudo! 🌌 A arquitetura que estamos montando aqui vai servir de base para o futuro. #LyvOS #Aurora",
     author: { name: "Ian Santos", handle: "@iansantos", avatar: "https://i.pravatar.cc/150?u=ian", isPremium: true },
     layoutPreference: 'grid',
     media: [
@@ -39,16 +39,16 @@ export default function PostView() {
 
   if (isLoading) {
     return (
-      <BirdLayout>
+      <LyvLayout>
         <div className="w-full max-w-[650px] mx-auto min-h-screen pt-10 flex justify-center">
           <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      </BirdLayout>
+      </LyvLayout>
     );
   }
 
   return (
-    <BirdLayout>
+    <LyvLayout>
       <div className="w-full max-w-[650px] mx-auto min-h-screen pt-2 pb-24 px-0 md:px-0 bg-transparent">
         
         {/* Header Pegajoso (Sticky) */}
@@ -134,6 +134,6 @@ export default function PostView() {
         </div>
 
       </div>
-    </BirdLayout>
+    </LyvLayout>
   );
 }

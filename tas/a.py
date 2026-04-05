@@ -48,7 +48,7 @@ def finalize():
 
     print("\n🏆 [PROJETO CONCLUÍDO]")
     print("O TAS Engine está 100% funcional, documentado e soberano.")
-    print("Pronto para ser o motor do Bird e outros sistemas.")
+    print("Pronto para ser o motor do Lyv e outros sistemas.")
 
 if __name__ == "__main__":
     finalize()

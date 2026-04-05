@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
-from .routers import education, chat, proactive, gorjeio
+from .routers import education, chat, proactive, post
 try:
     from heimdall import attach_heimdall
 except ImportError:  # compatibilidade para execução isolada do serviço
@@ -45,7 +45,7 @@ def health_check():
     return {
         "status": "active", 
         "system": "IO CONSCIOS", 
-        "modules": ["Education", "Chat", "Proactive", "Gorjeio"],
+        "modules": ["Education", "Chat", "Proactive", "Post"],
         "security": {"heimdall": "active" if heimdall_active else "inactive"},
         "mode": os.getenv("APP_ENV", "guerrilla")
     }
@@ -71,9 +71,9 @@ app.include_router(
 )
 
 
-# 4. Módulo Gorjeio (Supra-Messenger)
+# 4. Módulo Post (Supra-Messenger)
 app.include_router(
-    gorjeio.router
+    post.router
 )
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ from core.config import (
     MERCURIO_CIRCUIT_FAILURE_LIMIT,
     MERCURIO_TOPIC_ALIASES,
     MERCURIO_WEIGHT_API,
-    MERCURIO_WEIGHT_BIRD,
+    MERCURIO_WEIGHT_LYV,
     MERCURIO_WEIGHT_RSS,
     REQUEST_TIMEOUT_DEFAULT,
     SERVICE_NAME,
@@ -84,7 +84,7 @@ def _topic_path_for_tag(hashtag: str) -> str:
     return f"/mercurio/topico/{_normalize_slug(hashtag)}"
 
 
-def _build_bird_signal(seed_text: str) -> Dict[str, Any]:
+def _build_lyv_signal(seed_text: str) -> Dict[str, Any]:
     seed = int(hashlib.sha256(seed_text.encode("utf-8")).hexdigest(), 16)
     posts = 20 + (seed % 380)
     comments = int(posts * 2.4)
@@ -95,7 +95,7 @@ def _build_bird_signal(seed_text: str) -> Dict[str, Any]:
         "top_authors": [
             f"@trend_{(seed % 97) + 1}",
             f"@pulse_{(seed % 79) + 1}",
-            f"@bird_{(seed % 53) + 1}",
+            f"@lyv_{(seed % 53) + 1}",
         ],
     }
 
@@ -160,7 +160,7 @@ def _extract_media_urls(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 def _infer_external_origin(data: Dict[str, Any]) -> str:
     explicit = str(data.get("origin", "")).upper().strip()
-    if explicit in {"BIRD_NETWORK", "RSS", "API_NEWS"}:
+    if explicit in {"LYV_NETWORK", "RSS", "API_NEWS"}:
         return explicit
 
     source = str(data.get("source", "")).lower()
@@ -172,8 +172,8 @@ def _infer_external_origin(data: Dict[str, Any]) -> str:
 
 
 def _weight_for_origin(origin: str) -> int:
-    if origin == "BIRD_NETWORK":
-        return MERCURIO_WEIGHT_BIRD
+    if origin == "LYV_NETWORK":
+        return MERCURIO_WEIGHT_LYV
     if origin == "RSS":
         return MERCURIO_WEIGHT_RSS
     if origin == "API_NEWS":
@@ -182,7 +182,7 @@ def _weight_for_origin(origin: str) -> int:
 
 
 def _score_trend(trend: Dict[str, Any]) -> float:
-    signal = trend.get("bird_signal", {}) if isinstance(trend.get("bird_signal"), dict) else {}
+    signal = trend.get("lyv_signal", {}) if isinstance(trend.get("lyv_signal"), dict) else {}
     posts = _parse_numeric(signal.get("posts_count", 0))
     comments = _parse_numeric(signal.get("comments_count", 0))
     volume = _parse_numeric(trend.get("volume", 0))
@@ -219,18 +219,18 @@ def _normalize_tas_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "category": trend.get("category", "Geral"),
                 "title": topic,
                 "topic": topic,
-                "summary": f"Assunto em alta no BIRD com foco em {topic.lower()}.",
-                "source": "BIRD",
-                "origin": "BIRD_NETWORK",
-                "weight": _weight_for_origin("BIRD_NETWORK"),
+                "summary": f"Assunto em alta no LYV com foco em {topic.lower()}.",
+                "source": "LYV",
+                "origin": "LYV_NETWORK",
+                "weight": _weight_for_origin("LYV_NETWORK"),
                 "hashtag": hashtag,
                 "volume": trend.get("engagement", trend.get("volume", "N/A")),
                 "link": trend.get("link") or _topic_path_for_tag(hashtag),
                 "media": media["media"],
                 "image_url": media["image_url"],
                 "video_url": media["video_url"],
-                "bird_signal": {
-                    **_build_bird_signal(topic),
+                "lyv_signal": {
+                    **_build_lyv_signal(topic),
                     "posts_count": int(trend.get("related_posts_count", 0) or 0),
                     "comments_count": int(trend.get("related_news_count", 0) or 0),
                 },
@@ -266,8 +266,8 @@ def _normalize_iris_trends(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "media": media["media"],
                 "image_url": media["image_url"],
                 "video_url": media["video_url"],
-                "bird_signal": {
-                    **_build_bird_signal(topic),
+                "lyv_signal": {
+                    **_build_lyv_signal(topic),
                     "posts_count": int(trend.get("related_posts_count", 0) or 0),
                     "comments_count": int(trend.get("related_news_count", 0) or 0),
                 },
@@ -363,7 +363,7 @@ async def get_integrated_bundle(request: Request):
     except requests.RequestException as exc:
         logger.warning("Heimdall indisponível, fallback local ativado: %s", exc)
 
-    bird_trends: List[Dict[str, Any]] = []
+    lyv_trends: List[Dict[str, Any]] = []
     external_trends: List[Dict[str, Any]] = []
     news: List[Dict[str, Any]] = []
     sources: List[str] = []
@@ -372,9 +372,9 @@ async def get_integrated_bundle(request: Request):
         try:
             tas_res = requests.get(TAS_TRENDS_URL, timeout=REQUEST_TIMEOUT_DEFAULT)
             if tas_res.ok:
-                bird_trends = _normalize_tas_trends(tas_res.json())
-                if bird_trends:
-                    sources.append("BIRD_NETWORK")
+                lyv_trends = _normalize_tas_trends(tas_res.json())
+                if lyv_trends:
+                    sources.append("LYV_NETWORK")
                 _mark_source_success("tas")
             else:
                 _mark_source_failure("tas")
@@ -402,7 +402,7 @@ async def get_integrated_bundle(request: Request):
     else:
         logger.info("IRIS em cooldown de circuit breaker")
 
-    final_trends = _rank_weighted_trends([*bird_trends, *external_trends])
+    final_trends = _rank_weighted_trends([*lyv_trends, *external_trends])
 
     if not final_trends:
         final_trends = [
@@ -418,7 +418,7 @@ async def get_integrated_bundle(request: Request):
                 "hashtag": "#Sincronizando",
                 "volume": "N/A",
                 "link": "/mercurio",
-                "bird_signal": _build_bird_signal("sincronizando"),
+                "lyv_signal": _build_lyv_signal("sincronizando"),
             }
         ]
         news = [{"source": "SYSTEM", "title": "Sem conexão com provedores", "link": "", "published": "N/A", "origin": "SYSTEM", "weight": 0}]
@@ -436,7 +436,7 @@ async def get_integrated_bundle(request: Request):
             "source": primary_source,
             "sources": sources,
             "weight_policy": {
-                "BIRD_NETWORK": MERCURIO_WEIGHT_BIRD,
+                "LYV_NETWORK": MERCURIO_WEIGHT_LYV,
                 "RSS": MERCURIO_WEIGHT_RSS,
                 "API_NEWS": MERCURIO_WEIGHT_API,
             },

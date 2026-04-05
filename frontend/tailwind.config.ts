@@ -57,9 +57,9 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        bird: {
-          premium: "hsl(var(--bird-premium-bg))",
-          "premium-foreground": "hsl(var(--bird-premium-fg))",
+        lyv: {
+          premium: "hsl(var(--lyv-premium-bg))",
+          "premium-foreground": "hsl(var(--lyv-premium-fg))",
         },
       },
       borderRadius: {

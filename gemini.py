@@ -8,7 +8,7 @@ import uuid
 CHAVE_API = "AIzaSyAYrpRdYQHBz0dLZuCezGVUShLOitGY1OY"
 genai.configure(api_key=CHAVE_API)
 
-def bird_vision_nano():
+def lyv_vision_nano():
     path_capturas = "./capturas"
     path_modelo = "./modelo_base"
     path_output = "./geradas"
@@ -31,7 +31,7 @@ def bird_vision_nano():
 
         # Carregar Galeria
         capturas = [f for f in os.listdir(path_capturas) if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
-        print(f"Bird Vision: Processando {len(capturas)} imagens...")
+        print(f"Lyv Vision: Processando {len(capturas)} imagens...")
 
         for i, nome_arquivo in enumerate(capturas):
             try:
@@ -70,4 +70,4 @@ def bird_vision_nano():
         print(f"Erro no Motor: {e}")
 
 if __name__ == "__main__":
-    bird_vision_nano()
+    lyv_vision_nano()

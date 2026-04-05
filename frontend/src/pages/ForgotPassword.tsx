@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useBird } from "@/contexts/BirdContext";
+import { useLyv } from "@/contexts/LyvContext";
 import { Button } from "@/components/ui/button";
 import { KeyRound, ArrowLeft, ShieldCheck } from "lucide-react";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
-  const { recoverSovereignty } = useBird();
+  const { recoverSovereignty } = useLyv();
 
   const handleRecover = (e: React.FormEvent) => {
     e.preventDefault();

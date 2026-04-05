@@ -23,7 +23,7 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, f"Bem-vindo ao Bird, @{user.username}!")
+            messages.success(request, f"Bem-vindo ao Lyv, @{user.username}!")
             return redirect('home')
         else:
             for field, errors in form.errors.items():

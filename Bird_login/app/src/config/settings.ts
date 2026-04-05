@@ -1,16 +1,16 @@
-// BIRD System - Configurações Globais
+// LYV System - Configurações Globais
 
 export const SETTINGS = {
   // Nome do sistema
-  APP_NAME: 'BIRD',
+  APP_NAME: 'LYV',
   
   // Versão
   VERSION: '1.0.0',
   
   // Configurações de autenticação
   AUTH: {
-    TOKEN_KEY: 'bird_token',
-    USER_KEY: 'bird_user',
+    TOKEN_KEY: 'lyv_token',
+    USER_KEY: 'lyv_user',
     SESSION_DURATION: 24 * 60 * 60 * 1000, // 24 horas em ms
   },
   

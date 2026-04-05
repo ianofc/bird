@@ -1,15 +1,15 @@
-import { BirdLayout } from "@/components/bird/BirdLayout";
-import { useBird } from "@/contexts/BirdContext";
+import { LyvLayout } from "@/components/lyv/LyvLayout";
+import { useLyv } from "@/contexts/LyvContext";
 import { Terminal, ShieldAlert, Power, Activity, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ThalamusAdmin() {
-  const { currentUser, isSystemActive, triggerKillSwitch, logs } = useBird();
+  const { currentUser, isSystemActive, triggerKillSwitch, logs } = useLyv();
 
   if (currentUser?.role !== "SUPERUSER") return null;
 
   return (
-    <BirdLayout>
+    <LyvLayout>
       <div className="max-w-[1100px] mx-auto pt-6 space-y-8 animate-in fade-in duration-700">
         <div className="flex items-center justify-between">
             <h1 className="text-4xl font-black text-gray-900 tracking-tighter flex items-center gap-3">
@@ -72,6 +72,6 @@ export default function ThalamusAdmin() {
             </div>
         </div>
       </div>
-    </BirdLayout>
+    </LyvLayout>
   );
 }

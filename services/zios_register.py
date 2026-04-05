@@ -17,7 +17,7 @@ def chat_com_zios(user_data, context='ONBOARDING'):
         prompt = (
             f"O usuário {username} acaba de despertar no MultiVerso. "
             "Atue como seu Mentor Proativo. Dê as boas-vindas ao Life OS. "
-            "Explique que você cuidará da burocracia no background enquanto ele foca no Bird e Lumenios."
+            "Explique que você cuidará da burocracia no background enquanto ele foca no Lyv e Lumenios."
         )
         
         return brain.process(prompt, context=context)

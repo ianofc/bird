@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, F, Q
 from django.shortcuts import render
 
-from core.models import Bird, Connection
+from core.models import Lyv, Connection
 
 
 @login_required
@@ -16,30 +16,30 @@ def explore_view(request):
         status='active',
     ).values_list('target_id', flat=True)
 
-    birds = Bird.objects.filter(visibility='public').select_related('author', 'author__profile')
+    lyvs = Lyv.objects.filter(visibility='public').select_related('author', 'author__profile')
 
     if media == 'images':
-        birds = birds.filter(image__isnull=False)
+        lyvs = lyvs.filter(image__isnull=False)
     elif media == 'videos':
-        birds = birds.filter(video__isnull=False)
+        lyvs = lyvs.filter(video__isnull=False)
     elif media == 'following':
-        birds = birds.filter(author_id__in=following_ids)
+        lyvs = lyvs.filter(author_id__in=following_ids)
 
     if query:
-        birds = birds.filter(
+        lyvs = lyvs.filter(
             Q(content__icontains=query)
             | Q(author__username__icontains=query)
             | Q(author__profile__full_name__icontains=query)
         )
 
-    birds = birds.annotate(
+    lyvs = lyvs.annotate(
         likes_count=Count('likes', distinct=True),
         comments_count=Count('comments', distinct=True),
         popularity=F('likes_count') * 2 + F('comments_count') * 3,
     ).order_by('-popularity', '-created_at')[:90]
 
     context = {
-        'birds': birds,
+        'lyvs': lyvs,
         'active_media': media,
         'query': query,
     }

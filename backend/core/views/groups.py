@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 
-from core.models import Bird, Room, SavedPost
+from core.models import Lyv, Room, SavedPost
 
 
 def _decorate_group(room):
@@ -65,7 +65,7 @@ def group_detail(request, group_id: int):
     is_member = group.participants.filter(id=request.user.id).exists()
     can_view = is_member or not group.is_private
 
-    posts = Bird.objects.filter(author__in=group.participants.all()).select_related('author', 'author__profile').order_by('-created_at')[:40] if can_view else []
+    posts = Lyv.objects.filter(author__in=group.participants.all()).select_related('author', 'author__profile').order_by('-created_at')[:40] if can_view else []
 
     context = {
         'group': group,

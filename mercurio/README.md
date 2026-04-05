@@ -1,6 +1,6 @@
 # 🛰️ Mercurio (Hub de Distribuição PentaIA)
 
-**Mercurio** é o serviço de ponte e distribuição de dados em tempo real do ecossistema BIRD/PentaIA. Ele atua como um hub centralizado para geração de pacotes dinâmicos (bundles) e roteamento de informações entre microsserviços (ZIOS, TAS, IRIS, Backend) e clientes finais.
+**Mercurio** é o serviço de ponte e distribuição de dados em tempo real do ecossistema LYV/PentaIA. Ele atua como um hub centralizado para geração de pacotes dinâmicos (bundles) e roteamento de informações entre microsserviços (ZIOS, TAS, IRIS, Backend) e clientes finais.
 
 O nome Mercurio faz referência ao mensageiro dos deuses, refletindo a função de garantir que cada nó do sistema receba atualizações com baixa latência e tolerância a falhas.
 
@@ -118,4 +118,4 @@ uvicorn main:app --host 0.0.0.0 --port 8004 --reload
 
 ## 📄 Licença
 
-Uso exclusivo do grupo **IO Santos Group** e do ecossistema **BIRD**. Todos os direitos reservados.
+Uso exclusivo do grupo **IO Santos Group** e do ecossistema **LYV**. Todos os direitos reservados.

@@ -9,13 +9,13 @@ from django.urls import reverse
 User = get_user_model()
 
 try:
-    from ..models import Bird, Connection, Notification, Profile, Comment
+    from ..models import Lyv, Connection, Notification, Profile, Comment
     try:
         from ..models import SavedPost
     except ImportError:
         SavedPost = None
 except ImportError:
-    Bird = Connection = Notification = Profile = Comment = None
+    Lyv = Connection = Notification = Profile = Comment = None
 
 
 def _create_notification(recipient, text):
@@ -23,41 +23,41 @@ def _create_notification(recipient, text):
         Notification.objects.create(recipient=recipient, text=text)
 
 
-def _comment_relation_kwargs(bird):
-    # Compatibilidade defensiva: alguns ambientes antigos podem usar `post` em vez de `bird`.
+def _comment_relation_kwargs(lyv):
+    # Compatibilidade defensiva: alguns ambientes antigos podem usar `post` em vez de `lyv`.
     comment_fields = {f.name for f in Comment._meta.get_fields()} if Comment else set()
-    if 'bird' in comment_fields:
-        return {'bird': bird}
+    if 'lyv' in comment_fields:
+        return {'lyv': lyv}
     if 'post' in comment_fields:
-        return {'post': bird}
-    return {'bird': bird}
+        return {'post': lyv}
+    return {'lyv': lyv}
 
 
 def _comment_target_author(comment):
-    target = getattr(comment, 'bird', None) or getattr(comment, 'post', None)
+    target = getattr(comment, 'lyv', None) or getattr(comment, 'post', None)
     return getattr(target, 'author', None)
 
 
 @login_required
-def toggle_like(request, bird_id):
-    if not Bird:
+def toggle_like(request, lyv_id):
+    if not Lyv:
         return HttpResponse("Erro: Modelos não carregados.", status=500)
 
-    bird = get_object_or_404(Bird, id=bird_id)
+    lyv = get_object_or_404(Lyv, id=lyv_id)
     user = request.user
 
-    if bird.likes.filter(id=user.id).exists():
-        bird.likes.remove(user)
+    if lyv.likes.filter(id=user.id).exists():
+        lyv.likes.remove(user)
     else:
-        bird.likes.add(user)
-        if bird.author != user:
-            _create_notification(bird.author, f"@{user.username} curtiu sua publicação.")
+        lyv.likes.add(user)
+        if lyv.author != user:
+            _create_notification(lyv.author, f"@{user.username} curtiu sua publicação.")
 
     if request.headers.get('HX-Request'):
-        icon_class = 'fas text-rose-500' if bird.likes.filter(id=user.id).exists() else 'far text-gray-500 group-hover:text-rose-500'
-        likes = bird.likes.count()
+        icon_class = 'fas text-rose-500' if lyv.likes.filter(id=user.id).exists() else 'far text-gray-500 group-hover:text-rose-500'
+        likes = lyv.likes.count()
         count_html = f'<span class="text-sm font-medium text-gray-600">{likes}</span>' if likes > 0 else ''
-        like_url = reverse('toggle_like', args=[bird.id])
+        like_url = reverse('toggle_like', args=[lyv.id])
         return HttpResponse(
             f'''<button hx-post="{like_url}" hx-swap="outerHTML" class="flex items-center gap-2 group transition-colors">
 '''
@@ -68,15 +68,15 @@ def toggle_like(request, bird_id):
 
 
 @login_required
-def add_comment(request, bird_id):
+def add_comment(request, lyv_id):
     if request.method == 'POST':
-        bird = get_object_or_404(Bird, id=bird_id)
+        lyv = get_object_or_404(Lyv, id=lyv_id)
         content = request.POST.get('content', '').strip()
 
         if content and Comment:
-            Comment.objects.create(author=request.user, content=content, **_comment_relation_kwargs(bird))
-            if bird.author != request.user:
-                _create_notification(bird.author, f"@{request.user.username} comentou no seu post.")
+            Comment.objects.create(author=request.user, content=content, **_comment_relation_kwargs(lyv))
+            if lyv.author != request.user:
+                _create_notification(lyv.author, f"@{request.user.username} comentou no seu post.")
 
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
@@ -140,11 +140,11 @@ def block_user(request, username):
 
 
 @login_required
-def toggle_save(request, bird_id):
-    bird = get_object_or_404(Bird, id=bird_id)
+def toggle_save(request, lyv_id):
+    lyv = get_object_or_404(Lyv, id=lyv_id)
 
     if SavedPost:
-        saved, created = SavedPost.objects.get_or_create(user=request.user, post=bird)
+        saved, created = SavedPost.objects.get_or_create(user=request.user, post=lyv)
         if not created:
             saved.delete()
             messages.info(request, "Item removido dos salvos.")
@@ -158,9 +158,9 @@ def toggle_save(request, bird_id):
 
 
 @login_required
-def share_post(request, bird_id):
-    bird = get_object_or_404(Bird, id=bird_id)
-    share_url = request.build_absolute_uri(reverse('bird_detail', args=[bird.id]))
+def share_post(request, lyv_id):
+    lyv = get_object_or_404(Lyv, id=lyv_id)
+    share_url = request.build_absolute_uri(reverse('lyv_detail', args=[lyv.id]))
     messages.success(request, f"Link da publicação: {share_url}")
     next_url = request.POST.get('next') or request.GET.get('next')
     if next_url:

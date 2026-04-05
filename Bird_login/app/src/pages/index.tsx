@@ -1,11 +1,11 @@
-import { useBird } from "@/context/birdcontext";
+import { useLyv } from "@/context/lyvcontext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
-  Bird, 
+  Lyv, 
   LogOut, 
   Home, 
   Users, 
@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 export default function Index() {
-  const { currentUser, logout } = useBird();
+  const { currentUser, logout } = useLyv();
 
   const stats = [
     { title: 'Total de Usuários', value: '1,234', change: '+12%', icon: Users, color: 'bg-blue-500' },
@@ -35,10 +35,10 @@ export default function Index() {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center">
-              <Bird className="w-5 h-5 text-white" />
+              <Lyv className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-              BIRD
+              LYV
             </span>
           </div>
 
@@ -125,7 +125,7 @@ export default function Index() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="border-0 shadow-sm">
               <CardHeader>
-                <CardTitle>Bem-vindo ao BIRD!</CardTitle>
+                <CardTitle>Bem-vindo ao LYV!</CardTitle>
                 <CardDescription>Login realizado com sucesso</CardDescription>
               </CardHeader>
               <CardContent>

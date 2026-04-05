@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BirdLayout } from "@/components/bird/BirdLayout";
-import { useBird } from "@/contexts/BirdContext";
+import { LyvLayout } from "@/components/lyv/LyvLayout";
+import { useLyv } from "@/contexts/LyvContext";
 import { Users, Store, Search, MapPin, Tag, UserPlus, UserCheck, Megaphone, Sparkles as SparklesIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
@@ -9,8 +9,8 @@ export default function Network() {
   const [activeMainTab, setActiveMainTab] = useState<'comunidades' | 'marketplace' | 'pessoas'>('comunidades');
   const [activePeopleTab, setActivePeopleTab] = useState<'suggestions' | 'following' | 'followers'>('suggestions');
 
-  // --- LÓGICA DE DADOS DO BIRD (CONTEXTO REAL) ---
-  const bird = useBird() as {
+  // --- LÓGICA DE DADOS DO LYV (CONTEXTO REAL) ---
+  const lyv = useLyv() as {
     users?: Array<{
       id: string;
       color?: string;
@@ -25,11 +25,11 @@ export default function Network() {
     unfollowUser?: (id: string) => void;
   };
 
-  const users = bird.users ?? [];
-  const currentUserId = bird.currentUser?.id;
-  const followingIds = bird.followingIds ?? [];
-  const followUser = bird.followUser ?? (() => undefined);
-  const unfollowUser = bird.unfollowUser ?? (() => undefined);
+  const users = lyv.users ?? [];
+  const currentUserId = lyv.currentUser?.id;
+  const followingIds = lyv.followingIds ?? [];
+  const followUser = lyv.followUser ?? (() => undefined);
+  const unfollowUser = lyv.unfollowUser ?? (() => undefined);
 
   const otherUsers = users.filter(u => u.id !== currentUserId);
   const followedUsers = otherUsers.filter(u => followingIds.includes(u.id));
@@ -50,7 +50,7 @@ export default function Network() {
   ];
 
   return (
-    <BirdLayout>
+    <LyvLayout>
       <div className="w-full max-w-[1200px] mx-auto min-h-screen pt-4 md:pt-8 pb-24 px-4 md:px-8 bg-transparent">
         
         {/* Cabeçalho */}
@@ -279,6 +279,6 @@ export default function Network() {
 
         </AnimatePresence>
       </div>
-    </BirdLayout>
+    </LyvLayout>
   );
 }

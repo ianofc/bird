@@ -1,14 +1,14 @@
-import { BirdLayout } from "@/components/bird/BirdLayout";
+import { LyvLayout } from "@/components/lyv/LyvLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, ShieldCheck, Sparkles, Star, Zap, Crown, Palette } from "lucide-react";
-import { useBird } from "@/contexts/BirdContext";
+import { useLyv } from "@/contexts/LyvContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export default function Premium() {
-  const { currentUser, login } = useBird(); // Usamos login para simular update do usuario
+  const { currentUser, login } = useLyv(); // Usamos login para simular update do usuario
   const navigate = useNavigate();
 
   const handleSubscribe = () => {
@@ -19,9 +19,9 @@ export default function Premium() {
         const updatedUser = { ...currentUser, isPremium: true };
         // Forçamos uma atualização do estado simulando um novo login com os dados novos
         // Nota: Idealmente teriamos uma função updateProfile no context, mas isso serve pro teste
-        // Voce precisa adicionar isPremium: boolean na interface User no BirdContext
+        // Voce precisa adicionar isPremium: boolean na interface User no LyvContext
         
-        toast.success("Bem-vindo ao Bird Gold! 🌟", {
+        toast.success("Bem-vindo ao Lyv Gold! 🌟", {
             description: "Seu perfil agora brilha mais que os outros."
         });
         
@@ -30,7 +30,7 @@ export default function Premium() {
   };
 
   return (
-    <BirdLayout>
+    <LyvLayout>
       <div className="max-w-4xl px-4 py-8 mx-auto space-y-8 duration-500 animate-in fade-in">
         
         {/* Hero Section */}
@@ -38,7 +38,7 @@ export default function Premium() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] bg-amber-500/20 blur-[100px] rounded-full -z-10" />
           
           <Badge className="bg-gradient-to-r from-amber-300 via-yellow-500 to-amber-600 text-white border-0 px-4 py-1.5 text-xs tracking-widest font-black uppercase shadow-lg shadow-amber-500/20">
-            Bird Gold
+            Lyv Gold
           </Badge>
           
           <h1 className="text-4xl font-black tracking-tight md:text-6xl text-foreground">
@@ -113,12 +113,12 @@ export default function Premium() {
               </Button>
               
               <p className="text-[10px] text-center text-muted-foreground">
-                Ao assinar, você concorda com os Termos de Serviço do Bird. Cancelamento a qualquer momento.
+                Ao assinar, você concorda com os Termos de Serviço do Lyv. Cancelamento a qualquer momento.
               </p>
             </CardContent>
           </Card>
 
       </div>
-    </BirdLayout>
+    </LyvLayout>
   );
 }

@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useBird } from "@/context/birdcontext";
+import { useLyv } from "@/context/lyvcontext";
 
 // Páginas
 import Index from "@/pages/index"; 
@@ -7,7 +7,7 @@ import Login from "@/pages/login";
 
 // Componente para proteger rotas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useBird();
+  const { isAuthenticated, isLoading } = useLyv();
   
   if (isLoading) {
     return (
@@ -26,7 +26,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 // Componente para rotas públicas (redireciona se já estiver logado)
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useBird();
+  const { isAuthenticated, isLoading } = useLyv();
   
   if (isLoading) {
     return (
